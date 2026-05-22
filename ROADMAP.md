@@ -13,7 +13,7 @@ Pre-development. Documentation phase in progress.
 **Goal:** Working skeleton that proves the end-to-end flow.
 
 - [x] Repository structure scaffolded
-- [ ] Domain models defined (Pydantic)
+- [x] Domain models defined (Pydantic)
 - [ ] PostgreSQL schema created and migrated (Alembic)
 - [x] Local dev environment with Docker Compose (Postgres, Redis)
 - [ ] CI pipeline configured (Azure DevOps Pipelines)

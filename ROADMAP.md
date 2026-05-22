@@ -12,12 +12,12 @@ Pre-development. Documentation phase in progress.
 
 **Goal:** Working skeleton that proves the end-to-end flow.
 
-- [ ] Repository structure scaffolded
+- [x] Repository structure scaffolded
 - [ ] Domain models defined (Pydantic)
 - [ ] PostgreSQL schema created and migrated (Alembic)
-- [ ] Local dev environment with Docker Compose (Postgres, Redis, Service Bus emulator)
+- [x] Local dev environment with Docker Compose (Postgres, Redis)
 - [ ] CI pipeline configured (Azure DevOps Pipelines)
-- [ ] Basic FastAPI app with health check endpoint
+- [x] Basic FastAPI app with health check endpoint
 - [ ] Basic React dashboard shell
 
 ---

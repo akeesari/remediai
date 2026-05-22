@@ -1,0 +1,60 @@
+from functools import lru_cache
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+
+    # Application
+    app_env: str = "development"
+    log_level: str = "INFO"
+    correlation_id_header: str = "X-Correlation-ID"
+
+    # Database
+    postgres_host: str = "localhost"
+    postgres_port: int = 5432
+    postgres_db: str = "remediai"
+    postgres_user: str = "remediai"
+    postgres_password: str = "change_me_locally"
+
+    # Redis
+    redis_url: str = "redis://localhost:6379/0"
+
+    # Azure OpenAI
+    azure_openai_endpoint: str = ""
+    azure_openai_deployment: str = "gpt-4o"
+    azure_openai_api_version: str = "2024-08-01-preview"
+
+    # Azure Service Bus
+    azure_servicebus_namespace: str = ""
+    azure_servicebus_topic: str = "incident-events"
+    azure_servicebus_subscription: str = "agent-worker"
+
+    # Azure DevOps
+    azure_devops_org_url: str = ""
+    azure_devops_project: str = ""
+    azure_devops_pat: str = ""
+
+    # Azure AI Search
+    azure_search_endpoint: str = ""
+    azure_search_index: str = "remediai-rag"
+
+    # Azure Monitor
+    azure_monitor_workspace_id: str = ""
+
+    # Ingestion
+    ingestion_poll_interval_seconds: int = 60
+    ingestion_lookback_minutes: int = 10
+
+    @property
+    def database_url(self) -> str:
+        return (
+            f"postgresql+asyncpg://{self.postgres_user}:{self.postgres_password}"
+            f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
+        )
+
+
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()

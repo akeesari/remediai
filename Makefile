@@ -1,4 +1,4 @@
-.PHONY: install dev stop api test test-unit lint format typecheck ci
+.PHONY: install dev stop api test test-unit lint format typecheck ci migrate migrate-down
 
 install:
 	pip install poetry && poetry install
@@ -26,5 +26,11 @@ format:
 
 typecheck:
 	mypy apps/ packages/ --strict
+
+migrate:
+	alembic upgrade head
+
+migrate-down:
+	alembic downgrade -1
 
 ci: lint typecheck test

@@ -14,7 +14,7 @@ Pre-development. Documentation phase in progress.
 
 - [x] Repository structure scaffolded
 - [x] Domain models defined (Pydantic)
-- [ ] PostgreSQL schema created and migrated (Alembic)
+- [x] PostgreSQL schema created and migrated (Alembic)
 - [x] Local dev environment with Docker Compose (Postgres, Redis)
 - [ ] CI pipeline configured (Azure DevOps Pipelines)
 - [x] Basic FastAPI app with health check endpoint

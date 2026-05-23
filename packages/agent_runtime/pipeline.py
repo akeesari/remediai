@@ -6,6 +6,7 @@ import structlog
 from langchain_core.language_models.chat_models import BaseChatModel
 from langgraph.graph import END, StateGraph
 
+from packages.agent_runtime.bug_creator.agent import ADOBoardsClientProtocol, make_bug_creator_node
 from packages.agent_runtime.code_context.agent import ADOClientProtocol, make_code_context_node
 from packages.agent_runtime.fix_planner.agent import make_fix_planner_node
 from packages.agent_runtime.rag.agent import SearchClientProtocol, make_rag_node
@@ -21,6 +22,7 @@ def build_pipeline(
     settings: Any = None,
     ado_client: ADOClientProtocol | None = None,
     search_client: SearchClientProtocol | None = None,
+    boards_client: ADOBoardsClientProtocol | None = None,
 ) -> Any:
     """Compile and return the LangGraph incident-analysis pipeline.
 
@@ -50,11 +52,16 @@ def build_pipeline(
     )
     graph.add_node("rag", make_rag_node(search_client=search_client, settings=settings))
     graph.add_node("fix_planner", make_fix_planner_node(llm=llm))
+    graph.add_node(
+        "bug_creator",
+        make_bug_creator_node(boards_client=boards_client, settings=settings),
+    )
     graph.set_entry_point("triage")
     graph.add_edge("triage", "root_cause")
     graph.add_edge("root_cause", "code_context")
     graph.add_edge("code_context", "rag")
     graph.add_edge("rag", "fix_planner")
-    graph.add_edge("fix_planner", END)
+    graph.add_edge("fix_planner", "bug_creator")
+    graph.add_edge("bug_creator", END)
 
     return graph.compile()

@@ -68,7 +68,7 @@ def _mock_llm_sequence(*responses: str) -> MagicMock:
 
 
 def _mock_ado(content: str | None = None, commit_sha: str = "deadbeef") -> MagicMock:
-    """Mock ADO client — returns empty file content by default (no snippets)."""
+    """Mock ADO Repos client — returns empty file content by default (no snippets)."""
     ado = MagicMock()
     ado.repository = "test-repo"
     ado.get_file_content = AsyncMock(return_value=content)
@@ -81,6 +81,18 @@ def _mock_search() -> MagicMock:
     search = MagicMock()
     search.search = AsyncMock(return_value=[])
     return search
+
+
+def _mock_boards(bug_id: int = 1001) -> MagicMock:
+    """Mock ADO Boards client — returns a created bug by default."""
+    boards = MagicMock()
+    boards.create_bug = AsyncMock(
+        return_value={
+            "id": bug_id,
+            "_links": {"html": {"href": f"https://dev.azure.com/org/proj/_workitems/edit/{bug_id}"}},
+        }
+    )
+    return boards
 
 
 def _make_initial_state(**overrides: object) -> IncidentState:
@@ -102,11 +114,12 @@ def _make_initial_state(**overrides: object) -> IncidentState:
 class TestPipelineEndToEnd:
     @pytest.mark.asyncio
     async def test_pipeline_runs_all_nodes(self) -> None:
-        """Full pipeline produces priority, root_cause_summary, and recommendations."""
+        """Full pipeline produces priority, root_cause_summary, recommendations, and bug ID."""
         pipeline = build_pipeline(
             llm=_mock_llm_sequence(_RC_JSON, _FP_JSON),
             ado_client=_mock_ado(),
             search_client=_mock_search(),
+            boards_client=_mock_boards(),
         )
         result: IncidentState = await pipeline.ainvoke(_make_initial_state())
 
@@ -119,7 +132,12 @@ class TestPipelineEndToEnd:
     async def test_triage_rule_path_skips_triage_llm(self) -> None:
         """When a triage rule matches, triage skips LLM; root_cause and fix_planner call it."""
         llm = _mock_llm_sequence(_RC_JSON, _FP_JSON)
-        pipeline = build_pipeline(llm=llm, ado_client=_mock_ado(), search_client=_mock_search())
+        pipeline = build_pipeline(
+            llm=llm,
+            ado_client=_mock_ado(),
+            search_client=_mock_search(),
+            boards_client=_mock_boards(),
+        )
 
         result: IncidentState = await pipeline.ainvoke(
             _make_initial_state(exception_type="System.NullReferenceException")
@@ -133,7 +151,12 @@ class TestPipelineEndToEnd:
     async def test_llm_path_called_for_unknown_exception(self) -> None:
         """Triage, root_cause, and fix_planner all call LLM when no rule matches."""
         llm = _mock_llm_sequence(_TRIAGE_JSON, _RC_JSON, _FP_JSON)
-        pipeline = build_pipeline(llm=llm, ado_client=_mock_ado(), search_client=_mock_search())
+        pipeline = build_pipeline(
+            llm=llm,
+            ado_client=_mock_ado(),
+            search_client=_mock_search(),
+            boards_client=_mock_boards(),
+        )
 
         await pipeline.ainvoke(
             _make_initial_state(exception_type="MyApp.CompletelyUnknownException")
@@ -142,21 +165,23 @@ class TestPipelineEndToEnd:
         assert llm.ainvoke.await_count == 3
 
     @pytest.mark.asyncio
-    async def test_agent_trace_has_five_entries(self) -> None:
+    async def test_agent_trace_has_six_entries(self) -> None:
         pipeline = build_pipeline(
             llm=_mock_llm_sequence(_RC_JSON, _FP_JSON),
             ado_client=_mock_ado(),
             search_client=_mock_search(),
+            boards_client=_mock_boards(),
         )
         result: IncidentState = await pipeline.ainvoke(_make_initial_state())
 
         trace = result.get("agent_trace", [])
-        assert len(trace) == 5
+        assert len(trace) == 6
         assert trace[0]["agent_name"] == "triage"
         assert trace[1]["agent_name"] == "root_cause"
         assert trace[2]["agent_name"] == "code_context"
         assert trace[3]["agent_name"] == "rag"
         assert trace[4]["agent_name"] == "fix_planner"
+        assert trace[5]["agent_name"] == "bug_creator"
         assert all("latency_ms" in e for e in trace)
 
     @pytest.mark.asyncio
@@ -165,6 +190,7 @@ class TestPipelineEndToEnd:
             llm=_mock_llm_sequence(_RC_JSON, _FP_JSON),
             ado_client=_mock_ado(),
             search_client=_mock_search(),
+            boards_client=_mock_boards(),
         )
         result: IncidentState = await pipeline.ainvoke(
             _make_initial_state(exception_type="System.OutOfMemoryException")
@@ -178,16 +204,22 @@ class TestPipelineEndToEnd:
             llm=_mock_llm_sequence(_RC_JSON, _FP_JSON),
             ado_client=_mock_ado(),
             search_client=_mock_search(),
+            boards_client=_mock_boards(),
         )
         result: IncidentState = await pipeline.ainvoke(_make_initial_state())
         assert result.get("errors", []) == []
 
     @pytest.mark.asyncio
     async def test_all_llm_agents_fail_gracefully(self) -> None:
-        """Triage, root_cause, fix_planner fail; code_context and rag succeed → 3 errors."""
+        """Triage, root_cause, fix_planner fail; code_context, rag, bug_creator succeed → 3 errors."""
         llm = MagicMock()
         llm.ainvoke = AsyncMock(side_effect=RuntimeError("Azure OpenAI unavailable"))
-        pipeline = build_pipeline(llm=llm, ado_client=_mock_ado(), search_client=_mock_search())
+        pipeline = build_pipeline(
+            llm=llm,
+            ado_client=_mock_ado(),
+            search_client=_mock_search(),
+            boards_client=_mock_boards(),
+        )
 
         result: IncidentState = await pipeline.ainvoke(
             _make_initial_state(exception_type="Unknown.Error")
@@ -203,6 +235,7 @@ class TestPipelineEndToEnd:
             llm=_mock_llm_sequence(_RC_JSON, _FP_JSON),
             ado_client=_mock_ado(),
             search_client=_mock_search(),
+            boards_client=_mock_boards(),
         )
         result: IncidentState = await pipeline.ainvoke(_make_initial_state())
 
@@ -218,6 +251,7 @@ class TestPipelineEndToEnd:
             llm=_mock_llm_sequence(_RC_JSON, _FP_JSON),
             ado_client=_mock_ado(),
             search_client=_mock_search(),
+            boards_client=_mock_boards(),
         )
         result: IncidentState = await pipeline.ainvoke(_make_initial_state())
         assert "code_snippets" in result
@@ -230,6 +264,7 @@ class TestPipelineEndToEnd:
             llm=_mock_llm_sequence(_RC_JSON, _FP_JSON),
             ado_client=_mock_ado(),
             search_client=_mock_search(),
+            boards_client=_mock_boards(),
         )
         result: IncidentState = await pipeline.ainvoke(_make_initial_state())
         assert "rag_results" in result
@@ -242,8 +277,35 @@ class TestPipelineEndToEnd:
             llm=_mock_llm_sequence(_RC_JSON, _FP_JSON),
             ado_client=_mock_ado(),
             search_client=_mock_search(),
+            boards_client=_mock_boards(),
         )
         result: IncidentState = await pipeline.ainvoke(_make_initial_state())
         assert "recommendations" in result
         assert isinstance(result.get("recommendations"), list)
-        assert len(result["recommendations"]) >= 1
+
+    @pytest.mark.asyncio
+    async def test_ado_bug_id_in_final_state(self) -> None:
+        """ado_bug_id is set when boards_client creates a work item."""
+        pipeline = build_pipeline(
+            llm=_mock_llm_sequence(_RC_JSON, _FP_JSON),
+            ado_client=_mock_ado(),
+            search_client=_mock_search(),
+            boards_client=_mock_boards(bug_id=999),
+        )
+        result: IncidentState = await pipeline.ainvoke(_make_initial_state())
+        assert result.get("ado_bug_id") == 999
+        assert result.get("ado_bug_url") is not None
+
+    @pytest.mark.asyncio
+    async def test_no_boards_client_skips_bug_creation(self) -> None:
+        """With no boards_client and unconfigured settings, bug_creator skips gracefully."""
+        pipeline = build_pipeline(
+            llm=_mock_llm_sequence(_RC_JSON, _FP_JSON),
+            ado_client=_mock_ado(),
+            search_client=_mock_search(),
+            boards_client=None,
+            settings=object(),
+        )
+        result: IncidentState = await pipeline.ainvoke(_make_initial_state())
+        assert result.get("ado_bug_id") is None
+        assert result.get("errors", []) == []

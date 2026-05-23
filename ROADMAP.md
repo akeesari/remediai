@@ -54,11 +54,11 @@ Pre-development. Documentation phase in progress.
 
 **Goal:** Analyzed incidents automatically become Azure DevOps Bugs.
 
-- [ ] Azure DevOps Boards REST client
-- [ ] Bug creation from incident analysis
-- [ ] Work item linked back to incident record
-- [ ] Error handling and retry logic for ADO API failures
-- [ ] Integration test with mock ADO client
+- [x] Azure DevOps Boards REST client
+- [x] Bug creation from incident analysis
+- [x] Work item linked back to incident record
+- [x] Error handling and retry logic for ADO API failures
+- [x] Integration test with mock ADO client
 
 ---
 

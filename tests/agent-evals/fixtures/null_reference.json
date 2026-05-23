@@ -1,0 +1,20 @@
+{
+  "incident_id": "eval-null-ref-001",
+  "correlation_id": "corr-eval-001",
+  "exception_type": "System.NullReferenceException",
+  "exception_message": "Object reference not set to an instance of an object.",
+  "stack_trace": "   at UserService.GetById(Int32 id) in /src/services/UserService.cs:line 42\n   at OrderService.Process(Order order) in /src/services/OrderService.cs:line 100\n   at Microsoft.AspNetCore.Mvc.Infrastructure.ActionMethodExecutor.Execute()",
+  "raw_payload": {},
+  "agent_trace": [],
+  "errors": [],
+  "triage_labels": [],
+  "expected": {
+    "priority": "high",
+    "triage_labels_contains": ["null-reference"],
+    "triage_rule_matched": true,
+    "trace_agent_names": ["triage", "root_cause", "code_context", "rag", "fix_planner", "bug_creator"],
+    "errors_empty": true,
+    "has_root_cause_summary": true,
+    "has_recommendations": true
+  }
+}

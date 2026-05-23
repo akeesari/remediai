@@ -41,16 +41,10 @@ _DEFAULT_OUTPUT = FixPlannerOutput(
     ]
 )
 
-_PROMPT_DIR = None
-
-
 def _load_prompt() -> str:
-    from pathlib import Path
+    from packages.agent_runtime.prompt_registry import get_registry
 
-    prompt_path = (
-        Path(__file__).parent.parent.parent.parent / "docs" / "prompts" / "fix_planner_v1.md"
-    )
-    return prompt_path.read_text(encoding="utf-8")
+    return get_registry().load("fix_planner", "1")
 
 
 def make_fix_planner_node(

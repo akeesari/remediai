@@ -1,0 +1,18 @@
+{
+  "incident_id": "eval-unknown-001",
+  "correlation_id": "corr-eval-003",
+  "exception_type": "MyApp.Domain.PaymentGatewayException",
+  "exception_message": "Payment gateway returned unexpected status code 503.",
+  "stack_trace": "   at PaymentGatewayClient.Charge(PaymentRequest req) in /src/integrations/PaymentGatewayClient.cs:line 88\n   at OrderService.CompleteCheckout(Order order) in /src/services/OrderService.cs:line 144",
+  "raw_payload": {},
+  "agent_trace": [],
+  "errors": [],
+  "triage_labels": [],
+  "expected": {
+    "triage_rule_matched": false,
+    "trace_agent_names": ["triage", "root_cause", "code_context", "rag", "fix_planner", "bug_creator"],
+    "llm_call_count": 3,
+    "has_root_cause_summary": true,
+    "has_recommendations": true
+  }
+}

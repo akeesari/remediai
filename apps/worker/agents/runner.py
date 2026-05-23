@@ -67,10 +67,12 @@ class AgentPipelineRunner:
         await self._update_incident(final_state, incident)
         await self._session.flush()
 
+        rc_json = final_state.get("root_cause_json") or {}
         log.info(
             "pipeline_complete",
             priority=final_state.get("priority"),
             labels=final_state.get("triage_labels"),
+            root_cause_component=rc_json.get("component"),
             errors=len(final_state.get("errors", [])),
         )
         return final_state
@@ -106,7 +108,7 @@ class AgentPipelineRunner:
         priority = state.get("priority") or incident.priority.value
         has_errors = bool(state.get("errors"))
         new_status = (
-            IncidentStatus.ANALYSIS_FAILED.value if has_errors else IncidentStatus.TRIAGING.value
+            IncidentStatus.ANALYSIS_FAILED.value if has_errors else IncidentStatus.ANALYZED.value
         )
         await self._session.execute(
             update(IncidentOrm)

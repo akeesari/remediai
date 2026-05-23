@@ -41,7 +41,7 @@ Pre-development. Documentation phase in progress.
 
 - [x] LangGraph pipeline scaffolded
 - [x] Triage Agent: priority assignment, grouping, labeling
-- [ ] Root Cause Agent: structured root cause summary with agent trace
+- [x] Root Cause Agent: structured root cause summary with agent trace
 - [ ] Code Context Agent: Azure DevOps Repos code lookup
 - [ ] RAG Retrieval Agent: Azure AI Search query + result ranking
 - [ ] Fix Planner Agent: remediation recommendations

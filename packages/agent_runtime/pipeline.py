@@ -6,6 +6,7 @@ import structlog
 from langchain_core.language_models.chat_models import BaseChatModel
 from langgraph.graph import END, StateGraph
 
+from packages.agent_runtime.root_cause.agent import make_root_cause_node
 from packages.agent_runtime.triage.agent import make_triage_node
 from packages.domain.models.agent_state import IncidentState
 
@@ -37,7 +38,9 @@ def build_pipeline(
 
     graph: StateGraph = StateGraph(IncidentState)
     graph.add_node("triage", make_triage_node(llm=llm))
+    graph.add_node("root_cause", make_root_cause_node(llm=llm))
     graph.set_entry_point("triage")
-    graph.add_edge("triage", END)
+    graph.add_edge("triage", "root_cause")
+    graph.add_edge("root_cause", END)
 
     return graph.compile()

@@ -1,0 +1,43 @@
+from __future__ import annotations
+
+from typing import Any
+
+import structlog
+from langchain_core.language_models.chat_models import BaseChatModel
+from langgraph.graph import END, StateGraph
+
+from packages.agent_runtime.triage.agent import make_triage_node
+from packages.domain.models.agent_state import IncidentState
+
+logger = structlog.get_logger()
+
+
+def build_pipeline(
+    llm: BaseChatModel | None = None,
+    settings: Any = None,
+) -> Any:
+    """Compile and return the LangGraph incident-analysis pipeline.
+
+    Pass *llm* explicitly in tests to inject a mock.  When omitted, an
+    ``AzureChatOpenAI`` instance is constructed from *settings* (or the
+    global settings singleton).
+    """
+    if llm is None:
+        from langchain_openai import AzureChatOpenAI
+
+        from apps.api.core.config import get_settings
+
+        s = settings or get_settings()
+        llm = AzureChatOpenAI(
+            azure_endpoint=s.azure_openai_endpoint,
+            azure_deployment=s.azure_openai_deployment,
+            api_version=s.azure_openai_api_version,
+            temperature=0,
+        )
+
+    graph: StateGraph = StateGraph(IncidentState)
+    graph.add_node("triage", make_triage_node(llm=llm))
+    graph.set_entry_point("triage")
+    graph.add_edge("triage", END)
+
+    return graph.compile()

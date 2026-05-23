@@ -39,14 +39,14 @@ Pre-development. Documentation phase in progress.
 
 **Goal:** Incidents are analyzed and root cause summaries are produced.
 
-- [ ] LangGraph pipeline scaffolded
-- [ ] Triage Agent: priority assignment, grouping, labeling
+- [x] LangGraph pipeline scaffolded
+- [x] Triage Agent: priority assignment, grouping, labeling
 - [ ] Root Cause Agent: structured root cause summary with agent trace
 - [ ] Code Context Agent: Azure DevOps Repos code lookup
 - [ ] RAG Retrieval Agent: Azure AI Search query + result ranking
 - [ ] Fix Planner Agent: remediation recommendations
 - [ ] Full agent pipeline runs end-to-end on a sample incident
-- [ ] Audit log entries written for every agent step
+- [x] Audit log entries written for every agent step
 
 ---
 

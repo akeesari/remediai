@@ -150,11 +150,28 @@ Types: `feat`, `fix`, `docs`, `chore`, `refactor`, `test`, `perf`, `ci`
 6. Squash-merge into `main` — keep the commit history clean.
 7. Delete your branch after merge.
 
+### Copilot Customizations
+
+RemediAI includes Copilot acceleration assets to keep implementation consistent and fast:
+
+- Repository-wide policies: `.github/copilot-instructions.md`
+- Scoped instruction layers: `.github/instructions/`
+- Versioned prompt contracts: `docs/prompts/*_v*.md`
+- Prompt validation script: `scripts/validate_prompt_contracts.py`
+
+Recommended local setup:
+
+```bash
+# Validate prompt contracts
+make check-prompts
+```
+
 ### PR Checklist
 
 - [ ] Tests added or updated for the changed behaviour
 - [ ] `mypy` passes with no new errors
 - [ ] `ruff` passes with no new violations
+- [ ] `make check-prompts` passes for prompt or agent behavior changes
 - [ ] No secrets or credentials committed
 - [ ] Documentation updated if behaviour changed
 - [ ] CHANGELOG updated if this is a user-facing change
@@ -188,6 +205,7 @@ Types: `feat`, `fix`, `docs`, `chore`, `refactor`, `test`, `perf`, `ci`
 - One concern per file / module.
 - Keep integrations (Azure clients) isolated in `packages/integrations/`.
 - Keep agent prompts versioned in `docs/prompts/`.
+- Keep prompt contracts explicit: Goal, Required Input, Output Contract, Failure Policy, Safety Rules.
 
 ---
 
@@ -205,6 +223,17 @@ Types: `feat`, `fix`, `docs`, `chore`, `refactor`, `test`, `perf`, `ci`
 Integration tests use mock Azure clients — they do not require a live Azure subscription to run in CI.
 
 E2E tests require a non-production Azure environment and are gated manually.
+
+### Prompt Contract Validation
+
+Prompt contracts are validated with:
+
+```bash
+python scripts/validate_prompt_contracts.py
+pytest tests/agent-evals -v
+```
+
+Use this whenever prompt files in `docs/prompts/` or agent behavior contracts change.
 
 ### TypeScript
 

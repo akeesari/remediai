@@ -43,7 +43,7 @@ Pre-development. Documentation phase in progress.
 - [x] Triage Agent: priority assignment, grouping, labeling
 - [x] Root Cause Agent: structured root cause summary with agent trace
 - [x] Code Context Agent: Azure DevOps Repos code lookup
-- [ ] RAG Retrieval Agent: Azure AI Search query + result ranking
+- [x] RAG Retrieval Agent: Azure AI Search query + result ranking
 - [ ] Fix Planner Agent: remediation recommendations
 - [ ] Full agent pipeline runs end-to-end on a sample incident
 - [x] Audit log entries written for every agent step

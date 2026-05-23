@@ -120,11 +120,15 @@ See [TECH_STACK.md](TECH_STACK.md) for the full stack with rationale and depende
 
 ```
 remediai/
+  .github/
+    copilot-instructions.md  # Repository-wide Copilot rules
+    instructions/            # Scoped instruction layers by concern
+
   docs/
     product/          # Product briefs and discovery notes
     architecture/     # Architecture decision records (ADRs)
     specs/            # Detailed specifications
-    prompts/          # Versioned LLM prompt files
+    prompts/          # Versioned LLM prompt contracts
     runbooks/         # Operational runbooks
 
   apps/
@@ -145,6 +149,9 @@ remediai/
 
   pipelines/
     azure-devops/     # CI/CD pipeline YAML
+
+  scripts/
+    validate_prompt_contracts.py  # Prompt contract validator
 
   tests/
     integration/      # Integration tests (Azure mock clients)

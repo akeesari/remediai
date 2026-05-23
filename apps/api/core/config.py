@@ -45,6 +45,7 @@ class Settings(BaseSettings):
     # Azure AI Search
     azure_search_endpoint: str = ""
     azure_search_index: str = "remediai-rag"
+    azure_search_api_key: str = ""
 
     # Azure Monitor
     azure_monitor_workspace_id: str = ""

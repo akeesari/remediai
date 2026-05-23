@@ -7,6 +7,7 @@ from langchain_core.language_models.chat_models import BaseChatModel
 from langgraph.graph import END, StateGraph
 
 from packages.agent_runtime.code_context.agent import ADOClientProtocol, make_code_context_node
+from packages.agent_runtime.rag.agent import SearchClientProtocol, make_rag_node
 from packages.agent_runtime.root_cause.agent import make_root_cause_node
 from packages.agent_runtime.triage.agent import make_triage_node
 from packages.domain.models.agent_state import IncidentState
@@ -18,6 +19,7 @@ def build_pipeline(
     llm: BaseChatModel | None = None,
     settings: Any = None,
     ado_client: ADOClientProtocol | None = None,
+    search_client: SearchClientProtocol | None = None,
 ) -> Any:
     """Compile and return the LangGraph incident-analysis pipeline.
 
@@ -45,9 +47,11 @@ def build_pipeline(
         "code_context",
         make_code_context_node(ado_client=ado_client, settings=settings),
     )
+    graph.add_node("rag", make_rag_node(search_client=search_client, settings=settings))
     graph.set_entry_point("triage")
     graph.add_edge("triage", "root_cause")
     graph.add_edge("root_cause", "code_context")
-    graph.add_edge("code_context", END)
+    graph.add_edge("code_context", "rag")
+    graph.add_edge("rag", END)
 
     return graph.compile()

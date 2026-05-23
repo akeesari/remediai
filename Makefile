@@ -1,4 +1,6 @@
-.PHONY: install dev stop api test test-unit lint format typecheck ci migrate migrate-down
+.PHONY: install dev stop api test test-unit test-agent-evals lint format typecheck check-prompts ci migrate migrate-down
+
+PYTHON ?= python3
 
 install:
 	pip install poetry && poetry install
@@ -18,6 +20,9 @@ test:
 test-unit:
 	pytest tests/unit/ -v
 
+test-agent-evals:
+	pytest tests/agent-evals/ -v
+
 lint:
 	ruff check .
 
@@ -27,10 +32,13 @@ format:
 typecheck:
 	mypy apps/ packages/ --strict
 
+check-prompts:
+	$(PYTHON) scripts/validate_prompt_contracts.py
+
 migrate:
 	alembic upgrade head
 
 migrate-down:
 	alembic downgrade -1
 
-ci: lint typecheck test
+ci: lint typecheck check-prompts test

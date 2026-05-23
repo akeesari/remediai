@@ -42,6 +42,7 @@ class Settings(BaseSettings):
 
     # Azure Monitor
     azure_monitor_workspace_id: str = ""
+    azure_monitor_app_insights_resource_id: str = ""
 
     # Ingestion
     ingestion_poll_interval_seconds: int = 60

@@ -26,9 +26,9 @@ Pre-development. Documentation phase in progress.
 
 **Goal:** Exceptions from Application Insights land in PostgreSQL as incidents.
 
-- [ ] Azure Monitor KQL connector implemented
-- [ ] Exception fingerprinting logic
-- [ ] Deduplication against existing incidents
+- [x] Azure Monitor KQL connector implemented
+- [x] Exception fingerprinting logic
+- [x] Deduplication against existing incidents
 - [ ] Service Bus publisher
 - [ ] Incident ingestion service running on schedule
 - [ ] Integration test with mock Application Insights client

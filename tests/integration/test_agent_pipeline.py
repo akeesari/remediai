@@ -36,6 +36,22 @@ _RC_JSON = json.dumps(
     }
 )
 
+_FP_JSON = json.dumps(
+    {
+        "recommendations": [
+            {
+                "rank": 1,
+                "title": "Add null guard",
+                "description": "Return 404 when user is missing.",
+                "affected_files": ["svc.cs"],
+                "suggested_change": "Add null check before mapping.",
+                "confidence": 0.85,
+                "source_refs": ["runbook:null"],
+            }
+        ]
+    }
+)
+
 
 def _mock_llm(response_json: str = "") -> MagicMock:
     """Single-response mock — suited for tests where only one LLM call occurs."""
@@ -85,62 +101,70 @@ def _make_initial_state(**overrides: object) -> IncidentState:
 
 class TestPipelineEndToEnd:
     @pytest.mark.asyncio
-    async def test_pipeline_runs_both_nodes(self) -> None:
-        """Full pipeline produces priority (triage) and root_cause_summary."""
+    async def test_pipeline_runs_all_nodes(self) -> None:
+        """Full pipeline produces priority, root_cause_summary, and recommendations."""
         pipeline = build_pipeline(
-            llm=_mock_llm(), ado_client=_mock_ado(), search_client=_mock_search()
+            llm=_mock_llm_sequence(_RC_JSON, _FP_JSON),
+            ado_client=_mock_ado(),
+            search_client=_mock_search(),
         )
         result: IncidentState = await pipeline.ainvoke(_make_initial_state())
 
         assert result.get("priority") is not None
         assert isinstance(result.get("triage_labels"), list)
         assert result.get("root_cause_summary") is not None
+        assert isinstance(result.get("recommendations"), list)
 
     @pytest.mark.asyncio
     async def test_triage_rule_path_skips_triage_llm(self) -> None:
-        """When a triage rule matches, triage skips LLM; root_cause still calls it once."""
-        llm = _mock_llm()
+        """When a triage rule matches, triage skips LLM; root_cause and fix_planner call it."""
+        llm = _mock_llm_sequence(_RC_JSON, _FP_JSON)
         pipeline = build_pipeline(llm=llm, ado_client=_mock_ado(), search_client=_mock_search())
 
         result: IncidentState = await pipeline.ainvoke(
             _make_initial_state(exception_type="System.NullReferenceException")
         )
 
-        llm.ainvoke.assert_awaited_once()  # only root_cause called LLM
+        assert llm.ainvoke.await_count == 2  # root_cause + fix_planner
         assert result["priority"] == "high"
         assert "null-reference" in result["triage_labels"]
 
     @pytest.mark.asyncio
     async def test_llm_path_called_for_unknown_exception(self) -> None:
-        """Both triage and root_cause call LLM when no rule matches."""
-        llm = _mock_llm_sequence(_TRIAGE_JSON, _RC_JSON)
+        """Triage, root_cause, and fix_planner all call LLM when no rule matches."""
+        llm = _mock_llm_sequence(_TRIAGE_JSON, _RC_JSON, _FP_JSON)
         pipeline = build_pipeline(llm=llm, ado_client=_mock_ado(), search_client=_mock_search())
 
         await pipeline.ainvoke(
             _make_initial_state(exception_type="MyApp.CompletelyUnknownException")
         )
 
-        assert llm.ainvoke.await_count == 2
+        assert llm.ainvoke.await_count == 3
 
     @pytest.mark.asyncio
-    async def test_agent_trace_has_four_entries(self) -> None:
+    async def test_agent_trace_has_five_entries(self) -> None:
         pipeline = build_pipeline(
-            llm=_mock_llm(), ado_client=_mock_ado(), search_client=_mock_search()
+            llm=_mock_llm_sequence(_RC_JSON, _FP_JSON),
+            ado_client=_mock_ado(),
+            search_client=_mock_search(),
         )
         result: IncidentState = await pipeline.ainvoke(_make_initial_state())
 
         trace = result.get("agent_trace", [])
-        assert len(trace) == 4
+        assert len(trace) == 5
         assert trace[0]["agent_name"] == "triage"
         assert trace[1]["agent_name"] == "root_cause"
         assert trace[2]["agent_name"] == "code_context"
         assert trace[3]["agent_name"] == "rag"
+        assert trace[4]["agent_name"] == "fix_planner"
         assert all("latency_ms" in e for e in trace)
 
     @pytest.mark.asyncio
     async def test_critical_exception_priority_in_final_state(self) -> None:
         pipeline = build_pipeline(
-            llm=_mock_llm(), ado_client=_mock_ado(), search_client=_mock_search()
+            llm=_mock_llm_sequence(_RC_JSON, _FP_JSON),
+            ado_client=_mock_ado(),
+            search_client=_mock_search(),
         )
         result: IncidentState = await pipeline.ainvoke(
             _make_initial_state(exception_type="System.OutOfMemoryException")
@@ -151,14 +175,16 @@ class TestPipelineEndToEnd:
     @pytest.mark.asyncio
     async def test_errors_empty_on_clean_run(self) -> None:
         pipeline = build_pipeline(
-            llm=_mock_llm(), ado_client=_mock_ado(), search_client=_mock_search()
+            llm=_mock_llm_sequence(_RC_JSON, _FP_JSON),
+            ado_client=_mock_ado(),
+            search_client=_mock_search(),
         )
         result: IncidentState = await pipeline.ainvoke(_make_initial_state())
         assert result.get("errors", []) == []
 
     @pytest.mark.asyncio
-    async def test_both_llm_agents_fail_gracefully(self) -> None:
-        """Triage and root_cause LLM calls fail; code_context (no LLM) succeeds → 2 errors."""
+    async def test_all_llm_agents_fail_gracefully(self) -> None:
+        """Triage, root_cause, fix_planner fail; code_context and rag succeed → 3 errors."""
         llm = MagicMock()
         llm.ainvoke = AsyncMock(side_effect=RuntimeError("Azure OpenAI unavailable"))
         pipeline = build_pipeline(llm=llm, ado_client=_mock_ado(), search_client=_mock_search())
@@ -169,12 +195,14 @@ class TestPipelineEndToEnd:
 
         assert result["priority"] == "medium"
         assert "unknown" in result["triage_labels"]
-        assert len(result.get("errors", [])) == 2
+        assert len(result.get("errors", [])) == 3
 
     @pytest.mark.asyncio
     async def test_root_cause_json_in_final_state(self) -> None:
         pipeline = build_pipeline(
-            llm=_mock_llm(), ado_client=_mock_ado(), search_client=_mock_search()
+            llm=_mock_llm_sequence(_RC_JSON, _FP_JSON),
+            ado_client=_mock_ado(),
+            search_client=_mock_search(),
         )
         result: IncidentState = await pipeline.ainvoke(_make_initial_state())
 
@@ -187,7 +215,9 @@ class TestPipelineEndToEnd:
     async def test_code_snippets_key_in_final_state(self) -> None:
         """code_snippets is present in state even when no files are fetched."""
         pipeline = build_pipeline(
-            llm=_mock_llm(), ado_client=_mock_ado(), search_client=_mock_search()
+            llm=_mock_llm_sequence(_RC_JSON, _FP_JSON),
+            ado_client=_mock_ado(),
+            search_client=_mock_search(),
         )
         result: IncidentState = await pipeline.ainvoke(_make_initial_state())
         assert "code_snippets" in result
@@ -197,8 +227,23 @@ class TestPipelineEndToEnd:
     async def test_rag_results_key_in_final_state(self) -> None:
         """rag_results is present in state even when search returns nothing."""
         pipeline = build_pipeline(
-            llm=_mock_llm(), ado_client=_mock_ado(), search_client=_mock_search()
+            llm=_mock_llm_sequence(_RC_JSON, _FP_JSON),
+            ado_client=_mock_ado(),
+            search_client=_mock_search(),
         )
         result: IncidentState = await pipeline.ainvoke(_make_initial_state())
         assert "rag_results" in result
         assert isinstance(result.get("rag_results"), list)
+
+    @pytest.mark.asyncio
+    async def test_recommendations_key_in_final_state(self) -> None:
+        """recommendations is present in state after fix_planner runs."""
+        pipeline = build_pipeline(
+            llm=_mock_llm_sequence(_RC_JSON, _FP_JSON),
+            ado_client=_mock_ado(),
+            search_client=_mock_search(),
+        )
+        result: IncidentState = await pipeline.ainvoke(_make_initial_state())
+        assert "recommendations" in result
+        assert isinstance(result.get("recommendations"), list)
+        assert len(result["recommendations"]) >= 1

@@ -28,6 +28,7 @@ Your mission is to make dependency and secret-scanning gates pass while minimizi
 - Never expose or commit secrets.
 - After local security validations pass, commit, push, and monitor remote pipeline status automatically.
 - If pipeline still fails, continue fixing without user prompts until the gate is green or access is blocked.
+- Report security pipeline status every 1 minute while the run is in progress.
 
 ## Execution Loop (Run Until Green)
 1. Identify failing security job and exact failing tool output.
@@ -44,8 +45,15 @@ Your mission is to make dependency and secret-scanning gates pass while minimizi
    - mypy apps/ packages/ --strict
    - pytest tests/ -q --ignore=tests/e2e
 5. Commit and push the fix.
-6. Monitor the remote run to completion.
+6. Monitor the remote run to completion with 1-minute status updates.
 7. If security gate fails again, repeat from step 1.
+
+## Monitoring Protocol
+1. Query run-level status from GitHub Actions API.
+2. Query jobs endpoint to identify failing security jobs and step conclusions.
+3. Publish a 1-minute heartbeat with current gate status (queued/running/completed).
+4. On failure, report root cause and immediately execute next fix iteration.
+5. On success, report green status and stop.
 
 ## Decision Rules
 - Do not use `npm audit fix --force` by default; only use if no safer path exists and document breaking impact.

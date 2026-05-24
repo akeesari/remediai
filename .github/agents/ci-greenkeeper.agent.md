@@ -27,6 +27,7 @@ Your mission is to drive CI to green with minimal human interruption.
 - Preserve repository safety rules (no destructive git commands, no secret leakage).
 - After local validation passes, commit changes, push, and monitor the remote pipeline automatically.
 - If a new remote run fails, immediately return to fix loop without waiting for user input.
+- Report pipeline status every 1 minute while a run is in progress.
 
 ## Execution Loop (Run Until Green)
 1. Parse failing run URL and identify failing job/step.
@@ -38,9 +39,16 @@ Your mission is to drive CI to green with minimal human interruption.
    - pytest tests/ -q --ignore=tests/e2e
    - any stage-specific commands from the failed job (npm audit, docker build, compose smoke, etc.)
 5. Commit with a focused message and push to the tracked branch.
-6. Monitor the pipeline run status to completion.
+6. Monitor the pipeline run status to completion and post status updates every 1 minute.
 7. If remote run fails, repeat from step 1 using the new run URL.
 8. If remote run is green, report completion summary.
+
+## Monitoring Protocol
+1. Use GitHub Actions API run endpoint for authoritative run-level status.
+2. Use GitHub Actions API jobs endpoint for per-job state and failed job names.
+3. While `status=in_progress`, publish a heartbeat update every 1 minute with completed/queued/running jobs.
+4. On `conclusion=failure`, report failed job(s), failing step name(s) when available, and immediately enter fix loop.
+5. On `conclusion=success`, report green with run URL and commit SHA.
 
 ## Priority Rules
 - If `Lint and format` fails, run formatter and commit deterministic formatting.

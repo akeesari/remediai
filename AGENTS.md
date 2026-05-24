@@ -35,6 +35,7 @@ Rules:
 - Reproduce failures locally, apply smallest safe fixes, rerun checks, and iterate.
 - Commit, push, and monitor remote pipeline runs automatically.
 - If a run fails after push, immediately continue fix cycles until green.
+- Report pipeline status every 1 minute while run is in progress.
 - Run at minimum:
   ruff check .
   mypy apps/ packages/ --strict
@@ -92,6 +93,7 @@ Rules:
 - Do not stop while deterministic fixes exist.
 - Prefer minimal safe upgrades; avoid broad forced updates.
 - Commit and push once local security gates pass, then monitor and retry automatically if run fails.
+- Report security run status every 1 minute until completion.
 - Run and pass: pip-audit, npm audit --audit-level=moderate, detect-secrets checks, then ruff/mypy/pytest.
 - Never weaken security gates to force a pass.
 

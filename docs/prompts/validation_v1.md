@@ -34,7 +34,7 @@ Constraints:
 - reviewer_notes should provide actionable guidance for a human reviewer.
 - concerns should list concrete risks (may be empty).
 
-## Failure Behavior
+## Failure Policy
 
 If evidence is insufficient:
 - Set risk_level to "medium".

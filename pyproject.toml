@@ -58,7 +58,10 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
-testpaths = ["tests"]
+testpaths = ["tests/unit", "tests/integration", "tests/agent-evals"]
+markers = [
+    "e2e: end-to-end tests requiring a live PostgreSQL instance",
+]
 
 [tool.mypy]
 strict = true

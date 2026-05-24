@@ -77,7 +77,7 @@ discrete **Pending Phases** backlog — each phase must have a spec in
 - [x] React dashboard: incident detail view with root cause and recommendations
 - [x] React dashboard: metrics panel (volume, by status, top errors)
 - [x] Work item link visible on incident detail
-- [ ] End-to-end acceptance test of first milestone flow → **Phase 16**
+- [x] End-to-end acceptance test of first milestone flow → **Phase 16**
 
 ---
 

@@ -1,4 +1,4 @@
-.PHONY: install dev stop api test test-unit test-agent-evals lint format typecheck check-prompts ci migrate migrate-down ui ui-install ui-build ui-dev
+.PHONY: install dev stop api test test-unit test-agent-evals test-e2e lint format typecheck check-prompts ci migrate migrate-down ui ui-install ui-build ui-dev
 
 PYTHON ?= python3
 
@@ -15,13 +15,16 @@ api:
 	uvicorn apps.api.main:app --reload --host 0.0.0.0 --port 8000
 
 test:
-	pytest tests/ -x -v
+	pytest tests/ -x -v --ignore=tests/e2e
 
 test-unit:
 	pytest tests/unit/ -v
 
 test-agent-evals:
 	pytest tests/agent-evals/ -v
+
+test-e2e:
+	pytest tests/e2e/ -v -m e2e
 
 lint:
 	ruff check .

@@ -66,8 +66,15 @@ def _load_fixture(name: str) -> dict[str, Any]:
 
 def _make_state(fixture: dict[str, Any]) -> IncidentState:
     keys = {
-        "incident_id", "correlation_id", "exception_type", "exception_message",
-        "stack_trace", "raw_payload", "agent_trace", "errors", "triage_labels",
+        "incident_id",
+        "correlation_id",
+        "exception_type",
+        "exception_message",
+        "stack_trace",
+        "raw_payload",
+        "agent_trace",
+        "errors",
+        "triage_labels",
     }
     return {k: fixture[k] for k in keys if k in fixture}  # type: ignore[return-value]
 
@@ -349,6 +356,7 @@ class TestUnknownExceptionFixture:
 class TestPromptRegistry:
     def test_registry_loads_triage_prompt(self) -> None:
         from packages.agent_runtime.prompt_registry import PromptRegistry
+
         registry = PromptRegistry()
         content = registry.load("triage", "1")
         assert "## Goal" in content
@@ -356,18 +364,21 @@ class TestPromptRegistry:
 
     def test_registry_loads_root_cause_prompt(self) -> None:
         from packages.agent_runtime.prompt_registry import PromptRegistry
+
         registry = PromptRegistry()
         content = registry.load("root_cause", "1")
         assert "## Goal" in content
 
     def test_registry_loads_fix_planner_prompt(self) -> None:
         from packages.agent_runtime.prompt_registry import PromptRegistry
+
         registry = PromptRegistry()
         content = registry.load("fix_planner", "1")
         assert "## Goal" in content
 
     def test_registry_caches_on_second_load(self) -> None:
         from packages.agent_runtime.prompt_registry import PromptRegistry
+
         registry = PromptRegistry()
         first = registry.load("triage", "1")
         second = registry.load("triage", "1")
@@ -375,6 +386,7 @@ class TestPromptRegistry:
 
     def test_registry_available_versions(self) -> None:
         from packages.agent_runtime.prompt_registry import PromptRegistry
+
         registry = PromptRegistry()
         versions = registry.available_versions("triage")
         assert "1" in versions
@@ -382,6 +394,7 @@ class TestPromptRegistry:
 
     def test_registry_loads_triage_v2_prompt(self) -> None:
         from packages.agent_runtime.prompt_registry import PromptRegistry
+
         registry = PromptRegistry()
         content = registry.load("triage", "2")
         assert "## Goal" in content
@@ -389,6 +402,7 @@ class TestPromptRegistry:
 
     def test_registry_loads_root_cause_v2_prompt(self) -> None:
         from packages.agent_runtime.prompt_registry import PromptRegistry
+
         registry = PromptRegistry()
         content = registry.load("root_cause", "2")
         assert "## Goal" in content
@@ -396,6 +410,7 @@ class TestPromptRegistry:
 
     def test_registry_clear_cache(self) -> None:
         from packages.agent_runtime.prompt_registry import PromptRegistry
+
         registry = PromptRegistry()
         registry.load("triage", "1")
         registry.clear_cache()

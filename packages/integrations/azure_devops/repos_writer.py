@@ -57,9 +57,7 @@ class ADOReposWriter:
             json=payload,
         )
         if resp.status_code >= 400:
-            raise ADOReposWriterError(
-                f"create_branch failed: {resp.status_code} {resp.text[:200]}"
-            )
+            raise ADOReposWriterError(f"create_branch failed: {resp.status_code} {resp.text[:200]}")
         logger.info("ado_branch_created", branch=branch_name)
 
     async def get_latest_commit_sha(self) -> str:
@@ -108,9 +106,7 @@ class ADOReposWriter:
             json=payload,
         )
         if resp.status_code >= 400:
-            raise ADOReposWriterError(
-                f"push_patch failed: {resp.status_code} {resp.text[:200]}"
-            )
+            raise ADOReposWriterError(f"push_patch failed: {resp.status_code} {resp.text[:200]}")
         logger.info("ado_patch_pushed", branch=branch, path=file_path)
 
     async def create_pull_request(

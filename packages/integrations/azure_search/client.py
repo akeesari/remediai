@@ -54,7 +54,9 @@ class AzureSearchClient:
                 from azure.search.documents.models import VectorizableTextQuery
 
                 search_kwargs["vector_queries"] = [
-                    VectorizableTextQuery(text=vector_text, k_nearest_neighbors=top, fields="content_vector")
+                    VectorizableTextQuery(
+                        text=vector_text, k_nearest_neighbors=top, fields="content_vector"
+                    )
                 ]
             except Exception:
                 # Fall back to keyword/semantic-only search if vector query types are unavailable.

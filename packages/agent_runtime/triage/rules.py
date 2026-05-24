@@ -3,6 +3,7 @@
 Rules are ordered by severity: higher-severity rules appear first so a single
 exception type is never downgraded by a later, lower-severity generic rule.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass

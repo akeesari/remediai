@@ -69,7 +69,7 @@ async def _generate_embeddings(texts: list[str], settings: object) -> list[list[
             except Exception as exc:
                 if attempt == _MAX_RETRIES - 1:
                     raise
-                wait = 2 ** attempt
+                wait = 2**attempt
                 logger.warning("embedding_retry", attempt=attempt + 1, wait=wait, error=str(exc))
                 await asyncio.sleep(wait)
 

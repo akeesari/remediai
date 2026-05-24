@@ -16,7 +16,7 @@ class IncidentState(TypedDict, total=False):
     group_id: str | None
 
     # Phase 19 — approval gate
-    approval_status: str | None       # None | "approved" | "rejected"
+    approval_status: str | None  # None | "approved" | "rejected"
     approved_recommendation_rank: int | None
 
     # Root cause outputs

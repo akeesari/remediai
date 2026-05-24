@@ -1,4 +1,5 @@
 """Unit tests for the IncidentEvent domain model."""
+
 from __future__ import annotations
 
 from uuid import uuid4
@@ -43,9 +44,18 @@ class TestIncidentEvent:
     def test_all_fields_in_json(self) -> None:
         event = _make_event()
         json_str = event.model_dump_json()
-        for field in ("incident_id", "correlation_id", "source", "exception_type",
-                      "exception_message", "fingerprint", "priority", "status",
-                      "published_at", "event_id"):
+        for field in (
+            "incident_id",
+            "correlation_id",
+            "source",
+            "exception_type",
+            "exception_message",
+            "fingerprint",
+            "priority",
+            "status",
+            "published_at",
+            "event_id",
+        ):
             assert field in json_str
 
     def test_priority_stored_as_string(self) -> None:

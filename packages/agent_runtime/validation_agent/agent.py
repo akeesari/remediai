@@ -220,9 +220,7 @@ def _build_report_from_llm(
         overall_status = "approved"
     else:
         overall_status = "needs_review"
-    overall_status_literal = cast(
-        Literal["approved", "needs_review", "blocked"], overall_status
-    )
+    overall_status_literal = cast(Literal["approved", "needs_review", "blocked"], overall_status)
 
     return ValidationReport(
         overall_status=overall_status_literal,

@@ -22,9 +22,7 @@ from .conftest import make_incident_orm
 pytestmark = pytest.mark.e2e
 
 
-async def _seed_incidents(
-    session: AsyncSession, count: int = 3
-) -> list[IncidentOrm]:
+async def _seed_incidents(session: AsyncSession, count: int = 3) -> list[IncidentOrm]:
     incidents = []
     priorities = ["critical", "high", "medium"]
     statuses = ["new", "analyzed", "new"]
@@ -93,9 +91,7 @@ class TestIncidentListEndpoint:
         assert all(i["status"] == "analyzed" for i in data["items"])
 
     @pytest.mark.asyncio
-    async def test_list_incidents_empty_db_returns_zero(
-        self, api_client: AsyncClient
-    ) -> None:
+    async def test_list_incidents_empty_db_returns_zero(self, api_client: AsyncClient) -> None:
         resp = await api_client.get("/api/v1/incidents")
         assert resp.status_code == 200
         assert resp.json()["total"] == 0
@@ -122,9 +118,7 @@ class TestIncidentDetailEndpoint:
         assert isinstance(data["work_items"], list)
 
     @pytest.mark.asyncio
-    async def test_get_incident_404_on_missing(
-        self, api_client: AsyncClient
-    ) -> None:
+    async def test_get_incident_404_on_missing(self, api_client: AsyncClient) -> None:
         resp = await api_client.get(f"/api/v1/incidents/{uuid.uuid4()}")
         assert resp.status_code == 404
 
@@ -165,9 +159,7 @@ class TestMetricsEndpoint:
         assert by_status_sum == data["total_incidents"]
 
     @pytest.mark.asyncio
-    async def test_metrics_empty_db_returns_zeros(
-        self, api_client: AsyncClient
-    ) -> None:
+    async def test_metrics_empty_db_returns_zeros(self, api_client: AsyncClient) -> None:
         resp = await api_client.get("/api/v1/metrics")
         assert resp.status_code == 200
         data = resp.json()

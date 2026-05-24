@@ -129,9 +129,7 @@ async def api_client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, No
 def mock_pipeline() -> object:
     """Full pipeline with mocked LLM (rule path: 2 calls), ADO, Search, Boards."""
     llm = MagicMock()
-    llm.ainvoke = AsyncMock(
-        side_effect=[AIMessage(content=_RC_JSON), AIMessage(content=_FP_JSON)]
-    )
+    llm.ainvoke = AsyncMock(side_effect=[AIMessage(content=_RC_JSON), AIMessage(content=_FP_JSON)])
     ado = MagicMock()
     ado.repository = "test-repo"
     ado.get_file_content = AsyncMock(return_value=None)

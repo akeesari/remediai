@@ -7,7 +7,9 @@ from packages.domain import Incident, IncidentPriority, IncidentStatus
 
 
 def test_incident_defaults() -> None:
-    inc = Incident(source="api", exception_type="NullReferenceException", exception_message="Object not set")
+    inc = Incident(
+        source="api", exception_type="NullReferenceException", exception_message="Object not set"
+    )
     assert isinstance(inc.id, UUID)
     assert isinstance(inc.correlation_id, UUID)
     assert inc.priority == IncidentPriority.MEDIUM
@@ -17,7 +19,9 @@ def test_incident_defaults() -> None:
 
 
 def test_incident_fingerprint_derived_automatically() -> None:
-    inc = Incident(source="api", exception_type="TimeoutException", exception_message="Connection timed out")
+    inc = Incident(
+        source="api", exception_type="TimeoutException", exception_message="Connection timed out"
+    )
     expected = hashlib.sha256(b"TimeoutException:Connection timed out").hexdigest()
     assert inc.fingerprint == expected
 

@@ -89,7 +89,9 @@ def _mock_boards(bug_id: int = 1001) -> MagicMock:
     boards.create_bug = AsyncMock(
         return_value={
             "id": bug_id,
-            "_links": {"html": {"href": f"https://dev.azure.com/org/proj/_workitems/edit/{bug_id}"}},
+            "_links": {
+                "html": {"href": f"https://dev.azure.com/org/proj/_workitems/edit/{bug_id}"}
+            },
         }
     )
     return boards
@@ -105,11 +107,7 @@ def _mock_repos_writer() -> MagicMock:
     writer.create_pull_request = AsyncMock(
         return_value={
             "pullRequestId": 123,
-            "_links": {
-                "web": {
-                    "href": "https://dev.azure.com/org/proj/_git/repo/pullrequest/123"
-                }
-            },
+            "_links": {"web": {"href": "https://dev.azure.com/org/proj/_git/repo/pullrequest/123"}},
         }
     )
     return writer

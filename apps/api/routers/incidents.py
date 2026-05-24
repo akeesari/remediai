@@ -62,9 +62,7 @@ async def list_incidents(
     analyzed_ids: set[UUID] = set()
     if incidents:
         inc_ids = [i.id for i in incidents]
-        analysis_stmt = select(AnalysisOrm.incident_id).where(
-            AnalysisOrm.incident_id.in_(inc_ids)
-        )
+        analysis_stmt = select(AnalysisOrm.incident_id).where(AnalysisOrm.incident_id.in_(inc_ids))
         analysis_rows = await db.execute(analysis_stmt)
         analyzed_ids = set(analysis_rows.scalars().all())
 

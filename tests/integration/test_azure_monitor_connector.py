@@ -1,4 +1,5 @@
 """Integration tests for IngestionConnector with mocked Azure Monitor and DB session."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -30,9 +31,7 @@ class TestAzureMonitorClientFetchRecentExceptions:
     async def test_returns_parsed_incidents_on_success(self) -> None:
         mock_incident = _make_incident()
 
-        with patch(
-            "packages.integrations.azure_monitor.client.LogsQueryClient"
-        ) as MockLogs:
+        with patch("packages.integrations.azure_monitor.client.LogsQueryClient") as MockLogs:
             instance = AsyncMock()
             MockLogs.return_value = instance
 
@@ -42,6 +41,7 @@ class TestAzureMonitorClientFetchRecentExceptions:
 
             # Use a real LogsQueryResult so isinstance() checks in the client pass.
             from azure.monitor.query import LogsQueryResult
+
             mock_result = LogsQueryResult(tables=[mock_table])
             instance.query_workspace = AsyncMock(return_value=mock_result)
 
@@ -65,9 +65,7 @@ class TestAzureMonitorClientFetchRecentExceptions:
 
     @pytest.mark.asyncio
     async def test_returns_empty_list_when_no_tables(self) -> None:
-        with patch(
-            "packages.integrations.azure_monitor.client.LogsQueryClient"
-        ) as MockLogs:
+        with patch("packages.integrations.azure_monitor.client.LogsQueryClient") as MockLogs:
             instance = AsyncMock()
             MockLogs.return_value = instance
 
@@ -91,9 +89,7 @@ class TestAzureMonitorClientFetchRecentExceptions:
     async def test_propagates_http_response_error(self) -> None:
         from azure.core.exceptions import HttpResponseError
 
-        with patch(
-            "packages.integrations.azure_monitor.client.LogsQueryClient"
-        ) as MockLogs:
+        with patch("packages.integrations.azure_monitor.client.LogsQueryClient") as MockLogs:
             instance = AsyncMock()
             MockLogs.return_value = instance
             instance.query_workspace = AsyncMock(
@@ -115,9 +111,7 @@ class TestAzureMonitorClientFetchRecentExceptions:
     async def test_context_manager_closes_client(self) -> None:
         from azure.identity import DefaultAzureCredential
 
-        with patch(
-            "packages.integrations.azure_monitor.client.LogsQueryClient"
-        ) as MockLogs:
+        with patch("packages.integrations.azure_monitor.client.LogsQueryClient") as MockLogs:
             instance = AsyncMock()
             MockLogs.return_value = instance
 
@@ -204,9 +198,7 @@ class TestIngestionConnector:
         dup_incident = _make_incident(exception_type="System.TimeoutException")
 
         mock_client = AsyncMock(spec=AzureMonitorClient)
-        mock_client.fetch_recent_exceptions = AsyncMock(
-            return_value=[new_incident, dup_incident]
-        )
+        mock_client.fetch_recent_exceptions = AsyncMock(return_value=[new_incident, dup_incident])
 
         existing_orm = MagicMock()
         mock_session = AsyncMock()

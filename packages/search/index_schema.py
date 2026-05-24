@@ -18,14 +18,16 @@ class SearchDocument(BaseModel):
     repo: str | None = None
     file_path: str | None = None
     exception_type: str | None = None
-    created_at: str = Field(
-        default_factory=lambda: datetime.now(tz=UTC).isoformat()
-    )
+    created_at: str = Field(default_factory=lambda: datetime.now(tz=UTC).isoformat())
 
     def to_index_dict(self) -> dict[str, Any]:
         d = self.model_dump(exclude_none=False)
         # Azure AI Search requires None to be omitted or sent as null
-        return {k: v for k, v in d.items() if v is not None or k in ("url", "repo", "file_path", "exception_type")}
+        return {
+            k: v
+            for k, v in d.items()
+            if v is not None or k in ("url", "repo", "file_path", "exception_type")
+        }
 
 
 def create_or_update_index(endpoint: str, index_name: str, api_key: str = "") -> None:
@@ -58,7 +60,9 @@ def create_or_update_index(endpoint: str, index_name: str, api_key: str = "") ->
 
     fields = [
         SimpleField(name="id", type=SearchFieldDataType.String, key=True, filterable=True),
-        SimpleField(name="source_type", type=SearchFieldDataType.String, filterable=True, facetable=True),
+        SimpleField(
+            name="source_type", type=SearchFieldDataType.String, filterable=True, facetable=True
+        ),
         SearchField(name="title", type=SearchFieldDataType.String, searchable=True),
         SearchField(name="content", type=SearchFieldDataType.String, searchable=True),
         SearchField(
@@ -77,7 +81,11 @@ def create_or_update_index(endpoint: str, index_name: str, api_key: str = "") ->
 
     vector_search = VectorSearch(
         algorithms=[HnswAlgorithmConfiguration(name="remediai-hnsw-algo")],
-        profiles=[VectorSearchProfile(name="remediai-hnsw", algorithm_configuration_name="remediai-hnsw-algo")],
+        profiles=[
+            VectorSearchProfile(
+                name="remediai-hnsw", algorithm_configuration_name="remediai-hnsw-algo"
+            )
+        ],
     )
 
     semantic_config = SemanticConfiguration(

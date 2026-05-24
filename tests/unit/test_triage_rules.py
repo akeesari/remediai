@@ -1,4 +1,5 @@
 """Unit tests for the rule-based triage classifier — no LLM or DB required."""
+
 from __future__ import annotations
 
 from packages.agent_runtime.triage.rules import RuleMatch, apply_rules

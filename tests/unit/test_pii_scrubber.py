@@ -58,9 +58,7 @@ from packages.integrations.pii_scrubber import PiiScrubber, scrub
         ),
     ],
 )
-def test_scrub_replaces_pii(
-    input_text: str, expected_fragment: str, absent_fragment: str
-) -> None:
+def test_scrub_replaces_pii(input_text: str, expected_fragment: str, absent_fragment: str) -> None:
     result = scrub(input_text)
     assert expected_fragment in result
     assert absent_fragment not in result

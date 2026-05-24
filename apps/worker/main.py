@@ -3,6 +3,7 @@
 Run with:
     poetry run python -m apps.worker.main
 """
+
 from __future__ import annotations
 
 import asyncio

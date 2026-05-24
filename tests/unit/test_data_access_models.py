@@ -56,9 +56,7 @@ def test_incident_orm_fingerprint_index_is_unique() -> None:
 
 def test_analysis_orm_has_incident_fk() -> None:
     fk_targets = {
-        fk.column.table.name
-        for col in AnalysisOrm.__table__.columns
-        for fk in col.foreign_keys
+        fk.column.table.name for col in AnalysisOrm.__table__.columns for fk in col.foreign_keys
     }
     assert "incidents" in fk_targets
 
@@ -70,9 +68,7 @@ def test_analysis_orm_has_index_on_incident_id() -> None:
 
 def test_work_item_orm_has_incident_fk() -> None:
     fk_targets = {
-        fk.column.table.name
-        for col in WorkItemOrm.__table__.columns
-        for fk in col.foreign_keys
+        fk.column.table.name for col in WorkItemOrm.__table__.columns for fk in col.foreign_keys
     }
     assert "incidents" in fk_targets
 

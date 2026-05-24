@@ -27,7 +27,9 @@ def test_code_snippet_construction() -> None:
 
 
 def test_rag_result_optional_url() -> None:
-    result = RAGResult(source="runbook", title="Fix null ref", excerpt="Check for null...", relevance_score=0.91)
+    result = RAGResult(
+        source="runbook", title="Fix null ref", excerpt="Check for null...", relevance_score=0.91
+    )
     assert result.url is None
 
 

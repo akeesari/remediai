@@ -42,6 +42,7 @@ _DEFAULT_OUTPUT = FixPlannerOutput(
     ]
 )
 
+
 def _load_prompt() -> str:
     from packages.agent_runtime.prompt_registry import get_registry
 

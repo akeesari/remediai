@@ -11,7 +11,9 @@ from packages.agent_runtime.bug_creator.agent import AGENT_NAME, make_bug_creato
 from packages.domain.models.agent_state import IncidentState
 
 
-def _mock_boards(bug_id: int = 42, bug_url: str = "https://dev.azure.com/org/proj/_workitems/edit/42") -> MagicMock:
+def _mock_boards(
+    bug_id: int = 42, bug_url: str = "https://dev.azure.com/org/proj/_workitems/edit/42"
+) -> MagicMock:
     client = MagicMock()
     client.create_bug = AsyncMock(
         return_value={

@@ -1,4 +1,5 @@
 """Regex-based PII scrubber applied to exception payloads before storage and LLM calls."""
+
 from __future__ import annotations
 
 import re
@@ -11,8 +12,7 @@ _BEARER_TOKEN = re.compile(r"Bearer\s+\S+", re.IGNORECASE)
 _SAS_TOKEN = re.compile(r"(?i)(?<=sig=)[A-Za-z0-9%+/=]+")
 # Azure subscription ID inside resource paths — matched before generic UUID
 _SUBSCRIPTION_ID = re.compile(
-    r"(?i)(?<=/subscriptions/)"
-    r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+    r"(?i)(?<=/subscriptions/)" r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
 )
 _IPV6 = re.compile(
     r"(?:"

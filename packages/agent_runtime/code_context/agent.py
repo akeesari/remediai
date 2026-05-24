@@ -50,7 +50,9 @@ def make_code_context_node(
         try:
             commit_sha = await client.get_latest_commit_sha()
             frames = parse_stack_frames(stack_trace)
-            path_prefix: str = getattr(settings, "ado_source_path_prefix", "") if settings is not None else ""
+            path_prefix: str = (
+                getattr(settings, "ado_source_path_prefix", "") if settings is not None else ""
+            )
             qualifying = filter_frames(frames, path_prefix=path_prefix)
 
             for frame in qualifying[:_MAX_SNIPPETS]:

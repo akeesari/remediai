@@ -22,9 +22,7 @@ class IngestionConnector:
 
     async def run(self, lookback_minutes: int = 10) -> list[Incident]:
         """Fetch, deduplicate, and persist new incidents. Returns only newly created ones."""
-        raw = await self._monitor_client.fetch_recent_exceptions(
-            lookback_minutes=lookback_minutes
-        )
+        raw = await self._monitor_client.fetch_recent_exceptions(lookback_minutes=lookback_minutes)
         if not raw:
             logger.info("ingestion_no_exceptions_found")
             return []

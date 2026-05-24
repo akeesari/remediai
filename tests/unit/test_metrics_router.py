@@ -67,13 +67,15 @@ def _default_session(
         by_priority = [("high", 3), ("medium", 2)]
     if top_errors is None:
         top_errors = [("System.NullReferenceException", 4), ("System.TimeoutException", 1)]
-    return _make_session([
-        _scalar_result(total),
-        _scalar_result(analyzed),
-        _agg_result(by_status),
-        _agg_result(by_priority),
-        _agg_result(top_errors),
-    ])
+    return _make_session(
+        [
+            _scalar_result(total),
+            _scalar_result(analyzed),
+            _agg_result(by_status),
+            _agg_result(by_priority),
+            _agg_result(top_errors),
+        ]
+    )
 
 
 class TestGetMetrics:
@@ -139,7 +141,9 @@ class TestGetMetrics:
 
     @pytest.mark.asyncio
     async def test_empty_database_returns_zeros(self) -> None:
-        _override(_default_session(total=0, analyzed=0, by_status=[], by_priority=[], top_errors=[]))
+        _override(
+            _default_session(total=0, analyzed=0, by_status=[], by_priority=[], top_errors=[])
+        )
         async with httpx.AsyncClient(
             transport=httpx.ASGITransport(app=app), base_url="http://test"
         ) as client:

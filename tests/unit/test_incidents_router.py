@@ -82,10 +82,12 @@ class TestListIncidents:
     @pytest.mark.asyncio
     async def test_returns_200_empty_list(self) -> None:
         _override(
-            _make_session([
-                _scalar_result(0),   # count
-                _scalars_result([]),  # items
-            ])
+            _make_session(
+                [
+                    _scalar_result(0),  # count
+                    _scalars_result([]),  # items
+                ]
+            )
         )
         async with httpx.AsyncClient(
             transport=httpx.ASGITransport(app=app), base_url="http://test"
@@ -100,11 +102,13 @@ class TestListIncidents:
     async def test_returns_incident_list(self) -> None:
         inc = _orm_incident()
         _override(
-            _make_session([
-                _scalar_result(1),       # count
-                _scalars_result([inc]),   # items
-                _scalars_result([inc.id]),  # analyzed_ids
-            ])
+            _make_session(
+                [
+                    _scalar_result(1),  # count
+                    _scalars_result([inc]),  # items
+                    _scalars_result([inc.id]),  # analyzed_ids
+                ]
+            )
         )
         async with httpx.AsyncClient(
             transport=httpx.ASGITransport(app=app), base_url="http://test"
@@ -119,10 +123,12 @@ class TestListIncidents:
     @pytest.mark.asyncio
     async def test_pagination_fields_present(self) -> None:
         _override(
-            _make_session([
-                _scalar_result(0),
-                _scalars_result([]),
-            ])
+            _make_session(
+                [
+                    _scalar_result(0),
+                    _scalars_result([]),
+                ]
+            )
         )
         async with httpx.AsyncClient(
             transport=httpx.ASGITransport(app=app), base_url="http://test"
@@ -138,11 +144,13 @@ class TestListIncidents:
     async def test_has_analysis_true_when_analyzed(self) -> None:
         inc = _orm_incident()
         _override(
-            _make_session([
-                _scalar_result(1),
-                _scalars_result([inc]),
-                _scalars_result([inc.id]),
-            ])
+            _make_session(
+                [
+                    _scalar_result(1),
+                    _scalars_result([inc]),
+                    _scalars_result([inc.id]),
+                ]
+            )
         )
         async with httpx.AsyncClient(
             transport=httpx.ASGITransport(app=app), base_url="http://test"
@@ -154,11 +162,13 @@ class TestListIncidents:
     async def test_has_analysis_false_when_not_analyzed(self) -> None:
         inc = _orm_incident()
         _override(
-            _make_session([
-                _scalar_result(1),
-                _scalars_result([inc]),
-                _scalars_result([]),  # no matching analysis IDs
-            ])
+            _make_session(
+                [
+                    _scalar_result(1),
+                    _scalars_result([inc]),
+                    _scalars_result([]),  # no matching analysis IDs
+                ]
+            )
         )
         async with httpx.AsyncClient(
             transport=httpx.ASGITransport(app=app), base_url="http://test"
@@ -172,11 +182,13 @@ class TestListIncidents:
         wi.ado_item_url = "https://dev.azure.com/org/proj/_workitems/edit/42"
         inc = _orm_incident(work_items=[wi])
         _override(
-            _make_session([
-                _scalar_result(1),
-                _scalars_result([inc]),
-                _scalars_result([]),
-            ])
+            _make_session(
+                [
+                    _scalar_result(1),
+                    _scalars_result([inc]),
+                    _scalars_result([]),
+                ]
+            )
         )
         async with httpx.AsyncClient(
             transport=httpx.ASGITransport(app=app), base_url="http://test"
@@ -187,10 +199,12 @@ class TestListIncidents:
     @pytest.mark.asyncio
     async def test_page_size_capped_at_100(self) -> None:
         _override(
-            _make_session([
-                _scalar_result(0),
-                _scalars_result([]),
-            ])
+            _make_session(
+                [
+                    _scalar_result(0),
+                    _scalars_result([]),
+                ]
+            )
         )
         async with httpx.AsyncClient(
             transport=httpx.ASGITransport(app=app), base_url="http://test"

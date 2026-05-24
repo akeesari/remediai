@@ -44,6 +44,4 @@ class IncidentOrm(Base):
     work_items: Mapped[list["WorkItemOrm"]] = relationship(
         "WorkItemOrm", back_populates="incident", cascade="all, delete-orphan"
     )
-    audit_logs: Mapped[list["AuditLogOrm"]] = relationship(
-        "AuditLogOrm", back_populates="incident"
-    )
+    audit_logs: Mapped[list["AuditLogOrm"]] = relationship("AuditLogOrm", back_populates="incident")

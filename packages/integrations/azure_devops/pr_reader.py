@@ -70,7 +70,9 @@ class ADOPrReader:
         pr_data: dict[str, Any] = get_resp.json()
         current_description = str(pr_data.get("description", ""))
         updated_description = (
-            f"{current_description}\n\n{report_markdown}" if current_description else report_markdown
+            f"{current_description}\n\n{report_markdown}"
+            if current_description
+            else report_markdown
         )
 
         patch_resp = await self._http.patch(

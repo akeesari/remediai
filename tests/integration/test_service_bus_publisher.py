@@ -1,4 +1,5 @@
 """Integration tests for ServiceBusPublisher with a mock Azure Service Bus client."""
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -59,9 +60,7 @@ class TestBuildMessage:
 
 class TestServiceBusPublisher:
     def _patched_publisher(self) -> tuple[ServiceBusPublisher, MagicMock]:
-        with patch(
-            "packages.integrations.service_bus.publisher.ServiceBusClient"
-        ) as MockSBClient:
+        with patch("packages.integrations.service_bus.publisher.ServiceBusClient") as MockSBClient:
             mock_sb = MagicMock()
             MockSBClient.return_value = mock_sb
 
@@ -89,9 +88,7 @@ class TestServiceBusPublisher:
         mock_sender.__aenter__ = AsyncMock(return_value=mock_sender)
         mock_sender.__aexit__ = AsyncMock(return_value=None)
 
-        with patch(
-            "packages.integrations.service_bus.publisher.ServiceBusClient"
-        ):
+        with patch("packages.integrations.service_bus.publisher.ServiceBusClient"):
             from unittest.mock import MagicMock as MM
 
             from azure.identity import DefaultAzureCredential
@@ -111,9 +108,7 @@ class TestServiceBusPublisher:
 
     @pytest.mark.asyncio
     async def test_publish_batch_empty_list_is_noop(self) -> None:
-        with patch(
-            "packages.integrations.service_bus.publisher.ServiceBusClient"
-        ):
+        with patch("packages.integrations.service_bus.publisher.ServiceBusClient"):
             from unittest.mock import MagicMock as MM
 
             from azure.identity import DefaultAzureCredential
@@ -134,9 +129,7 @@ class TestServiceBusPublisher:
     async def test_publish_incident_delegates_to_batch(self) -> None:
         event = _make_event()
 
-        with patch(
-            "packages.integrations.service_bus.publisher.ServiceBusClient"
-        ):
+        with patch("packages.integrations.service_bus.publisher.ServiceBusClient"):
             from unittest.mock import AsyncMock as AM
             from unittest.mock import MagicMock as MM
 
@@ -157,13 +150,13 @@ class TestServiceBusPublisher:
         from azure.servicebus.exceptions import ServiceBusError
 
         mock_sender = AsyncMock()
-        mock_sender.create_message_batch = AsyncMock(side_effect=ServiceBusError("connection failed"))
+        mock_sender.create_message_batch = AsyncMock(
+            side_effect=ServiceBusError("connection failed")
+        )
         mock_sender.__aenter__ = AsyncMock(return_value=mock_sender)
         mock_sender.__aexit__ = AsyncMock(return_value=None)
 
-        with patch(
-            "packages.integrations.service_bus.publisher.ServiceBusClient"
-        ):
+        with patch("packages.integrations.service_bus.publisher.ServiceBusClient"):
             from unittest.mock import MagicMock as MM
 
             from azure.identity import DefaultAzureCredential

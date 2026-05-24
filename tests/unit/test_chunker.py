@@ -53,7 +53,7 @@ class TestChunkTextOverlap:
         overlap_chars = 50 * _CHARS_PER_TOKEN
         # Use distinct repeating segments so we can identify them
         segment = "ABCDE" * (chunk_chars // 5 + 1)
-        text = segment[:chunk_chars + overlap_chars + chunk_chars]
+        text = segment[: chunk_chars + overlap_chars + chunk_chars]
 
         chunks = chunk_text(text, max_tokens=512, overlap=50)
         if len(chunks) >= 2:

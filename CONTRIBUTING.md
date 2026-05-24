@@ -178,6 +178,9 @@ Recommended required checks (from `.github/workflows/ci.yml`):
 - `Tests`
 - `Frontend build`
 
+Detailed setup steps are documented in
+`docs/runbooks/github-branch-protection.md`.
+
 ### Copilot Customizations
 
 RemediAI includes Copilot acceleration assets to keep implementation consistent and fast:

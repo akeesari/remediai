@@ -143,8 +143,7 @@ def _build_description(state: IncidentState) -> str:
     recs: list[dict[str, Any]] = state.get("recommendations") or []
 
     recs_html = "".join(
-        f"<li><strong>{r.get('title', '')}</strong>: {r.get('description', '')}</li>"
-        for r in recs
+        f"<li><strong>{r.get('title', '')}</strong>: {r.get('description', '')}</li>" for r in recs
     )
     recommendations_html = f"<ol>{recs_html}</ol>" if recs_html else "<p>None</p>"
 

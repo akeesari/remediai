@@ -160,9 +160,7 @@ def make_pr_agent_node(
 
             pr_id: int = int(pr_data.get("pullRequestId", 0))
             pr_url_val = (
-                pr_data.get("url")
-                or pr_data.get("_links", {}).get("web", {}).get("href", "")
-                or ""
+                pr_data.get("url") or pr_data.get("_links", {}).get("web", {}).get("href", "") or ""
             )
 
             output = PRAgentOutput(
@@ -190,9 +188,7 @@ def make_pr_agent_node(
             prompt_version=PROMPT_VERSION,
             input_summary=f"rank={approved_rank}, file={file_path}",
             output_summary=(
-                f"pr_id={output.pr_id}, branch={output.pr_branch}"
-                if output
-                else "failed"
+                f"pr_id={output.pr_id}, branch={output.pr_branch}" if output else "failed"
             ),
             latency_ms=latency_ms,
             error=error,

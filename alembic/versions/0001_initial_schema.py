@@ -4,6 +4,7 @@ Revision ID: 0001
 Revises:
 Create Date: 2025-05-22 00:00:00.000000
 """
+
 from __future__ import annotations
 
 from collections.abc import Sequence
@@ -54,9 +55,7 @@ def upgrade() -> None:
         sa.Column("agent_trace", postgresql.JSONB, nullable=False, server_default="[]"),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
     )
-    op.create_index(
-        "ix_incident_analyses_incident_id", "incident_analyses", ["incident_id"]
-    )
+    op.create_index("ix_incident_analyses_incident_id", "incident_analyses", ["incident_id"])
 
     op.create_table(
         "work_items",

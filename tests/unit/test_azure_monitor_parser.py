@@ -1,4 +1,5 @@
 """Unit tests for the Azure Monitor KQL parser — no Azure credentials required."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -45,21 +46,21 @@ def _make_row(
 ) -> list[Any]:
     return [
         "2024-01-15T10:00:00Z",  # timestamp
-        operation_id,            # operation_Id
-        exc_type,                # type
-        outer_message,           # outerMessage
-        innermost_message,       # innermostMessage
-        innermost_type,          # innermostType
-        "MyService.dll",         # assembly
-        "UserService.GetById",   # method
-        "MyService.dll",         # outerAssembly
-        "UserController.Get",    # outerMethod
-        details,                 # details
-        "PC",                    # client_Type
-        "GET /api/users/1",      # operation_Name
-        cloud_role,              # cloud_RoleName
-        "1.2.3",                 # application_Version
-        "item-id-001",           # itemId
+        operation_id,  # operation_Id
+        exc_type,  # type
+        outer_message,  # outerMessage
+        innermost_message,  # innermostMessage
+        innermost_type,  # innermostType
+        "MyService.dll",  # assembly
+        "UserService.GetById",  # method
+        "MyService.dll",  # outerAssembly
+        "UserController.Get",  # outerMethod
+        details,  # details
+        "PC",  # client_Type
+        "GET /api/users/1",  # operation_Name
+        cloud_role,  # cloud_RoleName
+        "1.2.3",  # application_Version
+        "item-id-001",  # itemId
     ]
 
 
@@ -102,10 +103,12 @@ class TestParseExceptionRows:
         assert incidents[0].fingerprint == incidents[1].fingerprint
 
     def test_different_exceptions_produce_different_fingerprints(self) -> None:
-        table = _make_table([
-            _make_row(exc_type="System.NullReferenceException"),
-            _make_row(exc_type="System.TimeoutException"),
-        ])
+        table = _make_table(
+            [
+                _make_row(exc_type="System.NullReferenceException"),
+                _make_row(exc_type="System.TimeoutException"),
+            ]
+        )
         incidents = parse_exception_rows(table)
         assert incidents[0].fingerprint != incidents[1].fingerprint
 
@@ -173,7 +176,12 @@ class TestExtractStackTrace:
         details = [
             {
                 "parsedStack": [
-                    {"assembly": "MyApp", "method": "Service.Run", "fileName": "Service.cs", "line": 10},
+                    {
+                        "assembly": "MyApp",
+                        "method": "Service.Run",
+                        "fileName": "Service.cs",
+                        "line": 10,
+                    },
                 ]
             }
         ]

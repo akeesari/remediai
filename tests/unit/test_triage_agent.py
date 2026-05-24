@@ -1,4 +1,5 @@
 """Unit tests for the triage agent node — LLM is mocked throughout."""
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock
@@ -173,9 +174,7 @@ class TestTriageNodeStateIntegration:
     async def test_existing_trace_entries_preserved(self) -> None:
         llm = MagicMock()
         existing = [{"agent_name": "pre-existing", "output_summary": "x"}]
-        state = _make_state(
-            exception_type="System.NullReferenceException", agent_trace=existing
-        )
+        state = _make_state(exception_type="System.NullReferenceException", agent_trace=existing)
         node = make_triage_node(llm)
 
         result = await node(state)

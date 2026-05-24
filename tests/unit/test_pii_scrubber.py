@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 import pytest
 
-from packages.integrations.pii_scrubber import scrub
+from packages.integrations.pii_scrubber import PiiScrubber, scrub
 
 
 @pytest.mark.parametrize(
@@ -18,7 +20,7 @@ from packages.integrations.pii_scrubber import scrub
             "[IP]",
             "192.168.1.100",
         ),
-        # IPv6
+        # IPv6 — compressed notation
         (
             "Host 2001:0db8:85a3:0000:0000:8a2e:0370:7334 unreachable",
             "[IP]",
@@ -30,7 +32,7 @@ from packages.integrations.pii_scrubber import scrub
             "[SUBSCRIPTION_ID]",
             "12345678-1234-1234-1234-123456789abc",
         ),
-        # SAS token
+        # SAS token signature value
         (
             "https://storage.blob.core.windows.net/container?sig=abc123XYZ%2Ftoken%3D",
             "[SAS_TOKEN]",
@@ -41,6 +43,18 @@ from packages.integrations.pii_scrubber import scrub
             "User 550e8400-e29b-41d4-a716-446655440000 triggered the error",
             "[UUID]",
             "550e8400-e29b-41d4-a716-446655440000",
+        ),
+        # Windows path username
+        (
+            "C:\\Users\\john.doe\\AppData\\Local\\Temp\\crash.log",
+            "[USERNAME]",
+            "john.doe",
+        ),
+        # Bearer token
+        (
+            "Authorization: Bearer eyJhbGciOiJSUzI1NiJ9.payload.sig",
+            "[TOKEN]",
+            "eyJhbGciOiJSUzI1NiJ9",
         ),
     ],
 )
@@ -64,6 +78,24 @@ def test_scrub_multiple_patterns_in_one_string() -> None:
     assert "[IP]" in result
     assert "admin@corp.com" not in result
     assert "10.0.0.1" not in result
+
+
+def test_scrub_dict_replaces_nested_string_value() -> None:
+    scrubber = PiiScrubber()
+    data: dict[str, object] = {"msg": "contact x@y.com for support", "count": 1}
+    result = scrubber.scrub_dict(data)  # type: ignore[arg-type]
+    assert result["msg"] == "contact [EMAIL] for support"
+    assert result["count"] == 1
+
+
+def test_scrub_dict_handles_list_values() -> None:
+    scrubber = PiiScrubber()
+    data: dict[str, object] = {"frames": ["at x@y.com line 42", "at safe_method line 7"]}
+    result = scrubber.scrub_dict(data)  # type: ignore[arg-type]
+    frames = result["frames"]
+    assert isinstance(frames, list)
+    assert "[EMAIL]" in frames[0]
+    assert "x@y.com" not in frames[0]
 
 
 def test_scrub_empty_string() -> None:

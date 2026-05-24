@@ -1,4 +1,4 @@
-# Phase 29 — Node.js Exception Support
+# Phase 28 — Node.js Exception Support
 
 ## Goal
 
@@ -7,13 +7,8 @@ application exceptions in addition to .NET exceptions.  Node.js stack traces
 have a different format; triage rules and root cause prompts must be updated
 to handle both.
 
----
-
-## Background
-
-SPEC.md Non-Goals list Node.js as out of scope for MVP.  Milestone 9 expands
-support.  The core pipeline (LangGraph graph, PostgreSQL schema, dashboard)
-remains unchanged; only the parsers, triage rules, and prompts are extended.
+This is a post-v1.0 extension (Milestone 9) that follows the parser registry
+pattern introduced in this phase and extended in Phase 27 (Python).
 
 ---
 
@@ -25,7 +20,7 @@ remains unchanged; only the parsers, triage rules, and prompts are extended.
 | `packages/parsers/parser_registry.py` | `get_parser(exception_source)` — routes to `.net` or `nodejs` parser |
 | Updated `packages/domain/models/agent_state.py` | Add `exception_source: str` field (`dotnet \| nodejs \| python`) |
 | Updated `packages/agent_runtime/triage/rules.py` | Node.js-specific triage rules |
-| `docs/prompts/triage_v3.md` | Triage prompt aware of `exception_source`; different label taxonomy for Node.js |
+| `docs/prompts/triage_v3.md` | Triage prompt aware of `exception_source`; Node.js label taxonomy |
 | `docs/prompts/root_cause_v3.md` | Root cause prompt adapted for Node.js stack frame format |
 | Updated `packages/agent_runtime/triage/agent.py` | Load `triage_v3`; pass `exception_source` to prompt |
 | Updated `packages/agent_runtime/root_cause/agent.py` | Load `root_cause_v3`; use correct parser |
@@ -45,16 +40,13 @@ Error: Cannot read properties of undefined (reading 'userId')
     at async next (/app/node_modules/express/lib/router/route.js:144:13)
 ```
 
-TypeScript (compiled) traces include the original `.ts` source via source maps
-when `source-map-support` is loaded.  The parser must handle both compiled JS
+TypeScript traces include the original `.ts` source via source maps when
+`source-map-support` is loaded.  The parser must handle both compiled JS
 paths and source-mapped TS paths.
 
 ---
 
 ## `StackFrame` Model (shared)
-
-The existing `StackFrame` model is used for both .NET and Node.js frames.
-The parser is responsible for mapping the different formats to the same model:
 
 ```python
 class StackFrame(BaseModel):
@@ -96,8 +88,6 @@ def get_parser(exception_source: str) -> StackParser:
 
 ## `exception_source` Detection
 
-The ingestion service must detect the source language from the exception payload:
-
 ```python
 def detect_exception_source(payload: dict) -> str:
     stack = payload.get("stack_trace", "") or ""
@@ -106,8 +96,8 @@ def detect_exception_source(payload: dict) -> str:
     return "dotnet"  # default
 ```
 
-This heuristic is applied in the ingestion service before publishing to
-Service Bus, so `exception_source` is available to all downstream agents.
+Applied in the ingestion service before publishing to Service Bus so
+`exception_source` is available to all downstream agents.
 
 ---
 
@@ -133,7 +123,7 @@ Service Bus, so `exception_source` is available to all downstream agents.
 ## Acceptance Criteria
 
 - `ruff check .` and `mypy apps/ packages/ --strict` pass.
-- Node.js stack trace fixture produces correct priority and labels via triage rules.
+- Node.js stack trace fixture produces correct priority and labels.
 - Framework frames (`node_modules/`) are filtered by the frame selector.
 - Existing .NET fixtures continue to pass unmodified.
 - `test_nodejs_parser.py` covers: standard Error, TypeScript with source maps,
@@ -143,7 +133,6 @@ Service Bus, so `exception_source` is available to all downstream agents.
 
 ## Out of Scope
 
-- Node.js source map resolution from the ADO Repos code context agent
-  (requires source map file retrieval — deferred).
+- Node.js source map resolution from the ADO Repos code context agent.
 - Deno or Bun runtime support.
-- ESM module path format differences (deferred).
+- ESM module path format differences.

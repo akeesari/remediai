@@ -52,6 +52,7 @@ Reply "commit" to proceed, or give feedback to adjust first.
 - All agent decisions must be written to the `audit_log` table.
 - No unauthenticated HTTP calls or shell execution inside agent tools.
 - Never auto-merge PRs or modify production directly.
+- **Any new agent that calls an LLM must call `scrub()` from `packages.integrations.pii_scrubber` on `exception_message` and `stack_trace` before `json.dumps`. Any phase that modifies an existing agent's `_call_llm()` must preserve these calls. See `docs/specs/phase-15-pii-scrubbing.md`.**
 
 ---
 
@@ -63,6 +64,20 @@ Reply "commit" to proceed, or give feedback to adjust first.
 - `ruff` (lint + format) and `mypy --strict` must pass before finishing any phase.
 - `structlog` with `correlation_id` and `incident_id` bound to every log record.
 - Unit tests for business logic; integration tests with mock clients for Azure connectors.
+
+---
+
+## Spec-Driven Development Rules
+
+- Write specs **1–2 phases ahead**, not all at once. Specs written too early will be wrong.
+- A spec must answer: Goal · Deliverables · Security touchpoints · Acceptance criteria · Out of scope. Nothing else is required.
+- **Security touchpoints** — every spec author must answer these before writing implementation details:
+  - Does this phase make an LLM call? → `scrub()` is required on all user-text fields.
+  - Does this phase write agent decisions? → `AgentTraceEntry` in `state["agent_trace"]` is required.
+  - Does this phase introduce a new credential? → Note it must come from `pydantic-settings`; Key Vault in production.
+  - Does this phase expose a new HTTP endpoint? → State the authentication requirement, even if deferred.
+- Cross-cutting concerns (PII scrubbing, structlog, audit log) are **foundations**, not hardening. They belong in the earliest phase that introduces the pattern — not in a later cleanup phase.
+- When a phase modifies an existing agent's `_call_llm()`, explicitly confirm the existing `scrub()` calls are preserved.
 
 ---
 

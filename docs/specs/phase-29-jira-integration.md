@@ -1,4 +1,4 @@
-# Phase 32 — Jira Work Item Integration
+# Phase 29 — Jira Work Item Integration
 
 ## Goal
 
@@ -6,6 +6,8 @@ Allow teams using Jira (instead of Azure DevOps Boards) to have RemediAI
 create Jira issues from incident analyses.  The work item target is
 configurable per deployment; both ADO Boards and Jira are supported
 simultaneously if required.
+
+This is a post-v1.0 extension (Milestone 9).
 
 ---
 
@@ -125,7 +127,6 @@ def _resolve_client(work_item_client, settings):
     backend = getattr(s, "work_item_backend", "ado")
     if backend == "jira":
         return JiraClient.from_settings(s)
-    # default: ADO
     if not getattr(s, "azure_devops_org_url", ""):
         return None
     return AzureDevOpsBoardsClient.from_settings(s)
@@ -138,27 +139,23 @@ def _resolve_client(work_item_client, settings):
 ```python
 work_item_backend: str = "ado"          # "ado" | "jira" | "none"
 jira_base_url: str = ""                 # e.g., "https://myorg.atlassian.net"
-jira_email: str = ""
-jira_api_token: str = ""               # From Key Vault
+jira_email: str = ""                    # Non-secret; safe in config
+jira_api_token: str = ""               # From Key Vault: jira-api-token
 jira_project_key: str = ""             # e.g., "PLAT"
 jira_issue_type: str = "Bug"
 ```
 
----
-
 ## `WorkItemOrm` Changes
 
-The `ado_item_id` column (integer) is insufficient for Jira issue keys
-(strings like `"PROJ-123"`).  Add a new column:
+The `ado_item_id` column (integer) is insufficient for Jira issue keys.
+Add a new column:
 
 ```sql
 ALTER TABLE work_items ADD COLUMN item_key VARCHAR(50);
 ```
 
-The `ado_item_id` column is retained for backwards compatibility.
-`item_key` stores the canonical identifier for both backends.
-
-Alembic migration required.
+`ado_item_id` is retained for backwards compatibility.  `item_key` stores
+the canonical identifier for both backends.  Alembic migration required.
 
 ---
 
@@ -189,7 +186,7 @@ Alembic migration required.
 
 ## Out of Scope
 
-- Jira Service Management (JSM) specific features (SLA, request types).
+- Jira Service Management (JSM) specific features.
 - Jira Software sprint / board assignment.
 - Bidirectional sync (Jira status → RemediAI incident status).
 - GitHub Issues integration.

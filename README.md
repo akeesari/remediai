@@ -173,21 +173,19 @@ remediai/
 
 ## Implementation Phases
 
-| Phase | Description                          |
-| ----- | ------------------------------------ |
-| 1     | Product spec and architecture        |
-| 2     | Foundation platform                  |
-| 3     | Azure Monitor log ingestion          |
-| 4     | Incident triage                      |
-| 5     | Root cause analysis                  |
-| 6     | Azure DevOps Bug creation            |
-| 7     | Code context and RAG                 |
-| 8     | PR draft generation                  |
-| 9     | Validation agent                     |
-| 10    | Production hardening                 |
-| 11    | Node.js and additional log sources   |
+Phases 1–14 are complete. Remaining work runs across four parallel tracks.
 
-See [ROADMAP.md](ROADMAP.md) for milestone detail and release versioning.
+| Track | Phases | Focus |
+| ----- | ------ | ----- |
+| A — Quality & Security | 15, 17, 18 | PII scrubbing, AI Search index, RAG quality |
+| B — PR Workflow | 19, 20, 21 | PR agent, human approval gate, validation |
+| C — DevOps & Infrastructure | 33, 22, 34, 24, 25, 26, 27 | Local Docker, CI/CD, Terraform, AKS, Key Vault, scaling |
+| D — Testing & Observability | 16, 23, 28 | E2E tests, OpenTelemetry, load + security testing |
+
+Tracks A, B, C, and D can be staffed in parallel. Phase 28 (load + security
+testing) is the final gate that requires all tracks to be complete.
+
+See [ROADMAP.md](ROADMAP.md) for the full dependency graph, milestone detail, and release versioning.
 
 ---
 

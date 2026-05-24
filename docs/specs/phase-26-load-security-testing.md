@@ -1,4 +1,4 @@
-# Phase 28 — Load Testing + Security Review
+# Phase 26 — Load Testing + Security Review
 
 ## Goal
 
@@ -35,8 +35,6 @@ Milestone 8.
 
 ### Scenario 1 — Ingestion Throughput (`incident_ingest.js`)
 
-Simulates 500 incidents/hour arriving via the Service Bus ingestion path.
-
 ```
 Stages:
   0–2 min:   ramp from 0 to 8.33 RPS (500/hr)
@@ -44,14 +42,12 @@ Stages:
   10–12 min: ramp down to 0
 
 Thresholds:
-  http_req_duration p(95) < 500ms   (ingestion API acknowledgement)
+  http_req_duration p(95) < 500ms
   http_req_failed < 1%
-  pipeline_completion_rate > 95%     (custom metric: incidents reaching "analyzed")
+  pipeline_completion_rate > 95%
 ```
 
 ### Scenario 2 — API Read Concurrency (`api_read.js`)
-
-Simulates 50 concurrent dashboard users paging through incidents.
 
 ```
 Virtual Users: 50
@@ -65,13 +61,11 @@ Thresholds:
 
 ### Scenario 3 — Pipeline Soak Test (`pipeline_throughput.js`)
 
-Runs at 60% target load (300 incidents/hour) for 60 minutes to detect memory
-leaks and database connection exhaustion.
-
 ```
-Duration: 60 minutes at 5 RPS
+Duration: 60 minutes at 5 RPS (300 incidents/hour — 60% of target)
+
 Thresholds:
-  No memory growth > 20% over test duration (measured via kubectl top)
+  No memory growth > 20% over test duration
   Database connection pool waiting metric < 5 throughout
   Error rate < 0.5%
 ```
@@ -101,9 +95,8 @@ load-test:
 
 ## Security Review Checklist (`docs/security/security-review-checklist.md`)
 
-Pre-release checklist covering:
-
 ### Code Review
+
 - [ ] No secrets in source code (`detect-secrets` baseline clean).
 - [ ] All API inputs validated via Pydantic (no raw `request.body` parsing).
 - [ ] No raw SQL — SQLAlchemy ORM only.
@@ -113,21 +106,24 @@ Pre-release checklist covering:
 - [ ] PR Agent never sets auto-complete on PRs.
 
 ### Infrastructure
-- [ ] All secrets in Key Vault (Phase 25).
-- [ ] Network policies deny unexpected cross-service traffic (Phase 24).
-- [ ] Private endpoints on all Azure PaaS services (Phase 25).
+
+- [ ] All secrets in Key Vault (Phase 24).
+- [ ] Network policies deny unexpected cross-service traffic (Phase 23).
+- [ ] Private endpoints on all Azure PaaS services (Phase 24).
 - [ ] WAF enabled on Application Gateway ingress.
 - [ ] TLS 1.2+ enforced; TLS 1.0/1.1 disabled.
 - [ ] Container images scanned by Microsoft Defender for Containers.
 - [ ] Base images pinned by digest.
 
 ### Dependencies
+
 - [ ] `pip-audit` finds no critical or high CVEs.
 - [ ] `npm audit` finds no critical or high CVEs.
 - [ ] All Python dependencies pinned in `poetry.lock`.
 - [ ] All npm dependencies pinned in `package-lock.json`.
 
 ### Identity
+
 - [ ] All service identities use Workload Identity (no service principal secrets).
 - [ ] ADO PAT has minimum required scope.
 - [ ] No wildcard RBAC role assignments.
@@ -137,21 +133,23 @@ Pre-release checklist covering:
 ## Penetration Test Scope (`docs/security/pentest-scope.md`)
 
 ### In Scope
+
 - FastAPI backend API (public ingress endpoint).
 - React dashboard (public ingress endpoint).
 - Service Bus ingestion path (authenticated endpoint).
 - Azure AD authentication flows (if implemented).
 
 ### Out of Scope
+
 - AKS control plane.
-- Azure platform services (Service Bus, Key Vault, PostgreSQL) — tested by Microsoft.
-- Third-party SaaS integrations (Azure DevOps, Azure OpenAI).
+- Azure platform services — tested by Microsoft.
 - Production data — test must use a dedicated staging environment.
 
 ### Rules of Engagement
+
 - Testing conducted against the staging environment only.
 - No denial-of-service techniques.
-- Findings reported to the security team within 24 hours of discovery.
+- Findings reported within 24 hours of discovery.
 - Critical findings block the v1.0 release until resolved.
 
 ---
@@ -169,5 +167,5 @@ Pre-release checklist covering:
 ## Out of Scope
 
 - Performance optimisation beyond meeting the 500 incidents/hour NFR.
-- Automated continuous penetration testing (future security operations phase).
-- Browser-based UI load testing (k6 browser extension is a stretch goal).
+- Automated continuous penetration testing.
+- Browser-based UI load testing.

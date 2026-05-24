@@ -1,10 +1,19 @@
-# Phase 22 — CI Pipeline: Azure DevOps Pipelines
+# Phase 21 — CI Pipeline: Azure DevOps Pipelines
 
 ## Goal
 
 Define and implement the Azure DevOps Pipelines YAML configuration for
 automated PR validation and main-branch CI.  Every pull request must pass
 lint, typecheck, security scan, and tests before merge is permitted.
+
+---
+
+## Dependencies
+
+Phase 20 (Local Full-Stack Docker Compose) must be complete before this
+phase.  The Dockerfiles at `apps/api/Dockerfile`, `apps/worker/Dockerfile`,
+and `apps/dashboard/Dockerfile` are created in Phase 20 and referenced by
+Stage 6 (Docker Build) of the main branch CI pipeline.
 
 ---
 
@@ -39,12 +48,12 @@ Stage 3: Security Scan
   - detect-secrets scan --baseline .secrets.baseline
 
 Stage 4: Tests
-  - pytest tests/ -x -v
-  - pytest tests/agent-evals/ -v (agent eval harness)
+  - python scripts/validate_prompt_contracts.py
+  - pytest tests/ -x -v --ignore=tests/e2e (unit + integration + agent-evals)
 
 Stage 5: Frontend Build
   - cd apps/dashboard && npm install --legacy-peer-deps
-  - npm run build (ensures Vite + tsc produce a clean bundle)
+  - npm run build
 ```
 
 Stages run sequentially.  A failure in any stage blocks the PR.
@@ -62,7 +71,7 @@ Stage 6: Docker Build
 Stage 7: Push to ACR
   - Tag images with git SHA and `latest`
   - Push to Azure Container Registry
-  - Update Helm chart image tags in deployment repo (or values file)
+  - Update Helm chart image tags in deployment repo
 ```
 
 ---
@@ -142,8 +151,10 @@ steps:
       displayName: mypy strict
 
   - ${{ if eq(parameters.step, 'test') }}:
-    - script: pytest tests/ -x -v --junitxml=results/test-results.xml
-      displayName: pytest
+    - script: python scripts/validate_prompt_contracts.py
+      displayName: Validate prompt contracts
+    - script: pytest tests/ -x -v --ignore=tests/e2e --junitxml=results/test-results.xml
+      displayName: pytest (unit + integration + agent-evals; e2e excluded)
     - task: PublishTestResults@2
       inputs:
         testResultsFiles: results/test-results.xml
@@ -157,7 +168,7 @@ steps:
 | Connection | Used by | Scope |
 |---|---|---|
 | Azure Container Registry | Release pipeline (Stage 7) | Push images |
-| Azure Resource Manager | Release pipeline | Update AKS Helm release (Phase 24) |
+| Azure Resource Manager | Release pipeline | Update AKS Helm release (Phase 23) |
 
 Service connections are created in Azure DevOps Project Settings.  Names are
 referenced via pipeline variables: `ACR_SERVICE_CONNECTION`, `ARM_SERVICE_CONNECTION`.
@@ -169,8 +180,7 @@ referenced via pipeline variables: `ACR_SERVICE_CONNECTION`, `ARM_SERVICE_CONNEC
 Configure in Azure DevOps Repository Settings → Branch Policies → `main`:
 
 - Require a minimum of 1 reviewer (excluding the PR author).
-- Require the `lint`, `typecheck`, `security`, `test`, and `frontend` pipeline
-  stages to pass before merge is allowed.
+- Require all pipeline stages to pass before merge.
 - Prohibit direct pushes to `main`.
 - Require up-to-date branches before merge.
 
@@ -179,8 +189,8 @@ Configure in Azure DevOps Repository Settings → Branch Policies → `main`:
 ## `detect-secrets` Baseline
 
 Run `detect-secrets scan > .secrets.baseline` once and commit the baseline
-file.  The CI step runs `detect-secrets scan --baseline .secrets.baseline` and
-fails if new secrets are found that are not in the baseline.
+file.  CI runs `detect-secrets scan --baseline .secrets.baseline` and fails
+if new secrets are found that are not in the baseline.
 
 ---
 
@@ -190,16 +200,13 @@ fails if new secrets are found that are not in the baseline.
 ci-local: lint typecheck check-prompts test ui-build
 ```
 
-Runs every check locally in the same order as the pipeline so developers can
-validate before pushing.
-
 ---
 
 ## Acceptance Criteria
 
 - `azure-pipelines.yml` triggers on PR and main branch pushes.
 - All 5 PR stages run and complete successfully on a clean branch.
-- A deliberate ruff error in a PR causes Stage 1 to fail and blocks merge.
+- A deliberate ruff error causes Stage 1 to fail and blocks merge.
 - A deliberate test failure causes Stage 4 to fail and blocks merge.
 - Test results are published to Azure DevOps Test Plans on each run.
 - `detect-secrets` scan fails when a test secret is introduced.
@@ -209,6 +216,7 @@ validate before pushing.
 
 ## Out of Scope
 
-- AKS deployment from CI (Phase 24).
+- AKS deployment from CI (Phase 23).
+- Azure infrastructure provisioning (Phase 23).
 - Environment-specific variable groups / Key Vault integration in pipelines.
 - Scheduled nightly test runs.

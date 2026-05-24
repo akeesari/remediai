@@ -2,12 +2,11 @@
 
 ## Current Status
 
-**Active development.** Phases 1–14 complete and committed. MVP core pipeline
+**Active development.** Phases 1–16 complete and committed. MVP core pipeline
 (ingestion → triage → root cause → code context → RAG → fix planner → bug
 creation) is fully operational with a React dashboard and versioned prompt
-registry.  Work remaining is organised below into milestones and then as a
-discrete **Pending Phases** backlog — each phase must have a spec in
-`docs/specs/` before any implementation begins.
+registry. Work remaining is organised below into milestones and parallel
+development tracks.
 
 ---
 
@@ -23,7 +22,8 @@ discrete **Pending Phases** backlog — each phase must have a spec in
 - [x] Local dev environment with Docker Compose (Postgres, Redis)
 - [x] Basic FastAPI app with health check endpoint
 - [x] React dashboard shell
-- [ ] CI pipeline configured (Azure DevOps Pipelines) → **Phase 15**
+- [ ] Full-stack local Docker Compose (all services) → **Phase 20**
+- [ ] CI pipeline configured (Azure DevOps Pipelines) → **Phase 21**
 
 ---
 
@@ -77,87 +77,167 @@ discrete **Pending Phases** backlog — each phase must have a spec in
 - [x] React dashboard: incident detail view with root cause and recommendations
 - [x] React dashboard: metrics panel (volume, by status, top errors)
 - [x] Work item link visible on incident detail
-- [x] End-to-end acceptance test of first milestone flow → **Phase 16**
+- [x] End-to-end acceptance test of first milestone flow → Phase 16 ✅
 
 ---
 
-### Milestone 6 — Security + Quality Hardening (Phases 15–18)
+### Milestone 6 — Security + Quality Hardening (Phases 15–17)
 
 **Goal:** Production-ready analysis quality and security baseline.
 
-- [ ] PII scrubbing before LLM transmission → **Phase 15**
+- [x] PII scrubbing before LLM transmission → Phase 15 ✅
 - [ ] Azure AI Search index populated with runbooks, source code, prior fixes → **Phase 17**
-- [ ] RAG results demonstrably improve fix recommendation quality → **Phase 18**
-- [ ] Code snippet context improves root cause precision → **Phase 18**
+- [ ] RAG results demonstrably improve fix recommendation quality → **Phase 17**
+- [ ] Code snippet context improves root cause precision → **Phase 17**
 - [x] Prompt versioning system in place
 - [x] Agent eval harness with sample incident fixtures
 
 ---
 
-### Milestone 7 — PR Draft Generation (Phases 19–21)
+### Milestone 7 — PR Draft Generation (Phases 18–19)
 
 **Goal:** Approved recommendations can become pull requests — with humans in the loop.
 
+- [ ] Human approval gate: dashboard action + approval API endpoint → **Phase 19**
 - [ ] PR Agent: branch creation from fix recommendation → **Phase 19**
 - [ ] PR Agent: code patch generation and application → **Phase 19**
 - [ ] PR Agent: draft PR creation in Azure DevOps → **Phase 19**
-- [ ] Human approval gate: dashboard action + approval API endpoint → **Phase 20**
-- [ ] Validation Agent: PR diff review and safety check → **Phase 21**
+- [ ] Validation Agent: PR diff review and safety check → **Phase 18**
 - [ ] PR URL and status tracked in incident record → **Phase 19**
 
 ---
 
-### Milestone 8 — Production Hardening (Phases 22–27)
+### Milestone 8 — Production Hardening (Phases 20–26)
 
 **Goal:** Platform is production-ready on AKS.
 
-- [ ] CI pipeline: Azure DevOps Pipelines YAML → **Phase 22**
-- [ ] Structured logging + OpenTelemetry distributed tracing → **Phase 23**
-- [ ] AKS deployment with Helm charts → **Phase 24**
-- [ ] Key Vault + Workload Identity integration → **Phase 25**
-- [ ] KEDA autoscaling for ingestion and agent worker → **Phase 26**
-- [ ] Azure Monitor alerts for pipeline failures + on-call runbook → **Phase 27**
-- [ ] Load and soak testing → **Phase 28**
-- [ ] Security review and penetration test → **Phase 28**
+- [ ] Full-stack local Docker Compose (all services) → **Phase 20**
+- [ ] CI pipeline: Azure DevOps Pipelines YAML → **Phase 21**
+- [ ] Structured logging + OpenTelemetry distributed tracing → **Phase 22**
+- [ ] Azure infrastructure provisioned via Terraform + AKS + Helm → **Phase 23**
+- [ ] Key Vault + Workload Identity + KEDA autoscaling → **Phase 24**
+- [ ] Azure Monitor alerts for pipeline failures + on-call runbook → **Phase 25**
+- [ ] Load and soak testing → **Phase 26**
+- [ ] Security review and penetration test → **Phase 26**
 
 ---
 
-### Milestone 9 — Extended Language Support (Phases 29–32)
+### Milestone 9 — Extended Language Support (Phases 27–29)
 
-**Goal:** Expand beyond .NET.
+**Goal:** Expand beyond .NET. These are post-v1.0 and out of MVP scope.
 
-- [ ] Node.js exception support → **Phase 29**
-- [ ] Python application exception support → **Phase 30**
-- [ ] Grafana / Loki log source connector → **Phase 31**
-- [ ] Jira work item integration → **Phase 32**
+- [ ] Python application exception support → **Phase 27**
+- [ ] Grafana / Loki log source connector → **Phase 27**
+- [ ] Node.js exception support → **Phase 28**
+- [ ] Jira work item integration → **Phase 29**
+
+---
+
+## Parallel Development Tracks
+
+Phases 17–26 split into four independent tracks that can be staffed in
+parallel.  Phase 26 (Load + Security Testing) is the final merge gate — it
+runs only after all four tracks are complete.
+
+```
+Track A — Quality & RAG              Track B — PR Workflow
+──────────────────────────────────   ─────────────────────────────────
+Phase 17: Search + RAG Quality           Phase 19: PR Agent + Approval
+                                             ↓
+                                         Phase 18: Validation Agent
+
+
+Track C — DevOps & Infrastructure    Track D — Observability
+──────────────────────────────────   ─────────────────────────────────
+Phase 20: Local Docker Compose           Phase 22: Structured Logging
+    ↓                                        + OpenTelemetry
+Phase 21: CI Pipeline
+    ↓
+Phase 23: Terraform + AKS + Helm
+    ↓
+Phase 24: Key Vault + KEDA
+    ↓
+Phase 25: Azure Monitor Alerts
+```
+
+**All tracks merge at Phase 26 (Load + Security Testing).**
+
+Starting points (all depend only on completed Phase 16):
+- Track A: start Phase 17
+- Track B: start Phase 19
+- Track C: start Phase 20
+- Track D: start Phase 22
 
 ---
 
 ## Pending Phases — Spec Required Before Implementation
 
-Each row is a discrete unit of work. A spec (`docs/specs/phase-NN-*.md`) must
-exist and be reviewed before any code is written for that phase.
+A spec (`docs/specs/phase-NN-*.md`) must exist and be reviewed before any
+code is written for that phase.
 
-| Phase | Title | Milestone | Spec |
+### Track A — Quality & RAG
+
+| Phase | Title | Depends on | Spec |
 |---|---|---|---|
-| 15 | PII Scrubbing Middleware | 6 | `docs/specs/phase-15-pii-scrubbing.md` |
-| 16 | End-to-End Acceptance Tests | 5 | `docs/specs/phase-16-e2e-acceptance-tests.md` |
-| 17 | AI Search Index Population | 6 | `docs/specs/phase-17-search-index-population.md` |
-| 18 | RAG & Code Context Quality Hardening | 6 | `docs/specs/phase-18-rag-quality-hardening.md` |
-| 19 | PR Agent — Branch, Patch & Draft PR | 7 | `docs/specs/phase-19-pr-agent.md` |
-| 20 | Human Approval Gate | 7 | `docs/specs/phase-20-human-approval-gate.md` |
-| 21 | Validation Agent — PR Diff Review | 7 | `docs/specs/phase-21-validation-agent.md` |
-| 22 | CI Pipeline — Azure DevOps Pipelines | 1 / 8 | `docs/specs/phase-22-ci-pipeline.md` |
-| 23 | Structured Logging + OpenTelemetry Tracing | 8 | `docs/specs/phase-23-observability.md` |
-| 24 | AKS Deployment + Helm Charts | 8 | `docs/specs/phase-24-aks-helm.md` |
-| 25 | Key Vault + Workload Identity | 8 | `docs/specs/phase-25-keyvault-workload-identity.md` |
-| 26 | KEDA Autoscaling | 8 | `docs/specs/phase-26-keda-autoscaling.md` |
-| 27 | Azure Monitor Alerts + Runbook | 8 | `docs/specs/phase-27-alerting-runbook.md` |
-| 28 | Load Testing + Security Review | 8 | `docs/specs/phase-28-load-security-testing.md` |
-| 29 | Node.js Exception Support | 9 | `docs/specs/phase-29-nodejs-support.md` |
-| 30 | Python Application Exception Support | 9 | `docs/specs/phase-30-python-support.md` |
-| 31 | Grafana / Loki Log Source Connector | 9 | `docs/specs/phase-31-grafana-loki-connector.md` |
-| 32 | Jira Work Item Integration | 9 | `docs/specs/phase-32-jira-integration.md` |
+| 17 | AI Search Index + RAG Quality Hardening | Phase 16 | `docs/specs/phase-17-search-rag-quality.md` |
+
+### Track B — PR Workflow
+
+| Phase | Title | Depends on | Spec |
+|---|---|---|---|
+| 19 | PR Agent + Human Approval Gate | Phase 16 | `docs/specs/phase-19-pr-agent-and-approval.md` |
+| 18 | Validation Agent — PR Diff Review | Phase 19 | `docs/specs/phase-18-validation-agent.md` |
+
+### Track C — DevOps & Infrastructure
+
+| Phase | Title | Depends on | Spec |
+|---|---|---|---|
+| 20 | Local Full-Stack Docker Compose | Phase 16 | `docs/specs/phase-20-local-docker-compose.md` |
+| 21 | CI Pipeline (Azure DevOps Pipelines) | Phase 20 | `docs/specs/phase-21-ci-pipeline.md` |
+| 23 | Terraform IaC + AKS Deployment + Helm | Phase 21 | `docs/specs/phase-23-terraform-aks-helm.md` |
+| 24 | Key Vault + Workload Identity + KEDA | Phase 23 | `docs/specs/phase-24-keyvault-keda.md` |
+| 25 | Azure Monitor Alerts + Runbook | Phase 24 | `docs/specs/phase-25-alerting-runbook.md` |
+
+### Track D — Observability
+
+| Phase | Title | Depends on | Spec |
+|---|---|---|---|
+| 22 | Structured Logging + OpenTelemetry Tracing | Phase 21 | `docs/specs/phase-22-observability.md` |
+| 26 | Load Testing + Security Review | All tracks complete | `docs/specs/phase-26-load-security-testing.md` |
+
+### Post-v1.0 Extensions (out of MVP scope)
+
+| Phase | Title | Spec |
+|---|---|---|
+| 27 | Python Exception Support + Grafana/Loki Connector | `docs/specs/phase-27-python-loki.md` |
+| 28 | Node.js Exception Support | `docs/specs/phase-28-nodejs-support.md` |
+| 29 | Jira Work Item Integration | `docs/specs/phase-29-jira-integration.md` |
+
+---
+
+## Is This a Complete Product?
+
+At the end of Phase 26, RemediAI is a production-ready, fully deployed
+enterprise platform.  The 29-phase count (16 done + 13 remaining) is the
+ceiling — **no phases will be added** unless product requirements change.
+
+| Capability | Covered by |
+|---|---|
+| Exception ingestion from App Insights | Phase 3 ✅ |
+| AI triage + root cause + fix recommendations | Phases 6–10 ✅ |
+| Azure DevOps Bug creation | Phase 11 ✅ |
+| React dashboard | Phase 14 ✅ |
+| PII scrubbing + data security | Phase 15 ✅ |
+| E2E test coverage | Phase 16 ✅ |
+| RAG quality + populated search index | Phase 17 |
+| Draft PR with human approval | Phases 18–19 |
+| Full local dev stack (browser-testable) | Phase 20 |
+| CI/CD pipeline | Phase 21 |
+| Structured logging + tracing | Phase 22 |
+| Azure infrastructure (IaC + AKS + Helm) | Phase 23 |
+| Key Vault + Workload Identity + KEDA | Phase 24 |
+| Observability + alerting | Phase 25 |
+| Load + security validation | Phase 26 |
 
 ---
 
@@ -168,8 +248,8 @@ exist and be reviewed before any code is written for that phase.
 | 1 | Project Structure + FastAPI Shell | `c23ba2d` |
 | 2 | Domain Models (Pydantic) | `92dd0da` |
 | 3 | PostgreSQL Schema + Alembic Migrations | `3024937` |
-| 4 | Azure Monitor KQL Connector | — |
-| 5 | Ingestion Service + Service Bus Publisher | — |
+| 4 | Azure Monitor KQL Connector | `9f1df8c` |
+| 5 | Ingestion Service + Service Bus Publisher | `c44c592` |
 | 6 | Triage Agent | `170bbb5` |
 | 7 | Root Cause Agent | `07e7fcf` |
 | 8 | Code Context Agent + ADO Repos Client | `8580bfb` |
@@ -179,6 +259,8 @@ exist and be reviewed before any code is written for that phase.
 | 12 | FastAPI Dashboard Endpoints | `47539b5` |
 | 13 | Prompt Versioning Registry + Agent Eval Harness | `cc59329` |
 | 14 | React Dashboard | `1521a40` |
+| 15 | PII Scrubbing (pending commit) | — |
+| 16 | End-to-End Acceptance Tests | `d4ab7fc` |
 
 ---
 
@@ -189,7 +271,6 @@ exist and be reviewed before any code is written for that phase.
 | v0.1 | 1–2 | Ingestion skeleton |
 | v0.2 | 3 | Triage and root cause analysis |
 | v0.3 | 4–5 | Bug creation and dashboard |
-| v0.4 | 6 | Security hardening + RAG quality |
-| v0.5 | 7 | PR draft generation |
+| v0.4 | 6–7 | Security hardening, RAG quality, draft PR |
 | v1.0 | 8 | Production-ready on AKS |
 | v1.x | 9 | Extended language and source support |

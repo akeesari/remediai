@@ -1,4 +1,4 @@
-# Phase 23 — Structured Logging + OpenTelemetry Tracing
+# Phase 22 — Structured Logging + OpenTelemetry Tracing
 
 ## Goal
 
@@ -55,18 +55,14 @@ All log records must be emitted as single-line JSON:
 
 ### `configure_logging()` Responsibilities
 
-1. Configure `structlog` with `JSONRenderer` (not `ConsoleRenderer`) in
-   production; `ConsoleRenderer` with colours when `LOG_FORMAT=console`
-   (local dev).
-2. Set the standard log level from `settings.log_level` (default `"INFO"`).
-3. Bridge OpenTelemetry log records into structlog so trace context is
-   automatically injected.
-4. Replace the root Python `logging` handler so third-party library logs
-   (SQLAlchemy, httpx) also emit JSON.
+1. Configure `structlog` with `JSONRenderer` in production; `ConsoleRenderer`
+   with colours when `LOG_FORMAT=console` (local dev).
+2. Set log level from `settings.log_level` (default `"INFO"`).
+3. Bridge OpenTelemetry log records into structlog so trace context is injected.
+4. Replace root Python `logging` handler so third-party logs (SQLAlchemy, httpx)
+   also emit JSON.
 
 ### Mandatory Context Fields
-
-Every log record must include:
 
 | Field | Source |
 |---|---|
@@ -95,12 +91,10 @@ Every log record must include:
 1. Initialise `TracerProvider` with `BatchSpanProcessor`.
 2. Export spans to Azure Monitor via `AzureMonitorTraceExporter`
    (connection string from `settings.applicationinsights_connection_string`).
-3. Also export to `OTLPSpanExporter` if `OTLP_ENDPOINT` is set (for local
-   Jaeger / Tempo debugging).
+3. Also export to `OTLPSpanExporter` if `OTLP_ENDPOINT` is set (local debugging).
 4. Auto-instrument FastAPI (`FastAPIInstrumentor`) and SQLAlchemy
-   (`SQLAlchemyInstrumentor`) when present.
-5. Propagate W3C TraceContext headers (`traceparent`, `tracestate`) on all
-   outbound HTTP calls (httpx instrumentation).
+   (`SQLAlchemyInstrumentor`).
+5. Propagate W3C TraceContext headers on all outbound HTTP calls.
 
 ---
 
@@ -119,9 +113,7 @@ class ObservabilityMiddleware(BaseHTTPMiddleware):
 
 ---
 
-## Configuration Additions
-
-New settings in `packages/config/settings.py`:
+## Configuration Additions (`packages/config/settings.py`)
 
 ```python
 log_level: str = "INFO"
@@ -149,13 +141,12 @@ otlp_endpoint: str = ""               # Optional; for local dev tracing
 - All existing tests continue to pass.
 - Running the API locally: every HTTP log line is valid JSON with all required fields.
 - `correlation_id` is consistent across all log lines for a single request.
-- OpenTelemetry spans appear in Azure Monitor Application Insights (verified
-  with a manual test against a real Application Insights instance).
+- OpenTelemetry spans appear in Azure Monitor Application Insights.
 
 ---
 
 ## Out of Scope
 
-- Custom Prometheus metrics endpoint (Milestone 8 stretch goal).
+- Custom Prometheus metrics endpoint.
 - Grafana dashboard provisioning.
 - Log aggregation pipeline configuration (Azure Log Analytics workspace setup).

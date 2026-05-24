@@ -14,6 +14,7 @@ from packages.agent_runtime.triage.prompt import load_triage_prompt
 from packages.agent_runtime.triage.rules import apply_rules
 from packages.domain.models.agent_state import IncidentState
 from packages.domain.models.audit import AgentTraceEntry
+from packages.integrations.pii_scrubber import scrub
 
 logger = structlog.get_logger()
 
@@ -71,7 +72,7 @@ def make_triage_node(
         trace_entry = AgentTraceEntry(
             agent_name=AGENT_NAME,
             prompt_version=prompt_version,
-            input_summary=f"type={exception_type}, msg={exception_message[:100]}",
+            input_summary=f"type={exception_type}, msg={scrub(exception_message)[:100]}",
             output_summary=f"priority={output.priority}, labels={output.triage_labels}",
             latency_ms=latency_ms,
             error=error,
@@ -95,12 +96,14 @@ def make_triage_node(
 
 async def _call_llm(llm: BaseChatModel, state: IncidentState) -> TriageOutput:
     system_prompt = load_triage_prompt()
+    log = logger.bind(agent=AGENT_NAME, incident_id=state.get("incident_id", ""))
+    log.debug("pii_scrub_applied", fields_scrubbed=["exception_message", "stack_trace"])
     user_content = json.dumps(
         {
             "incident_id": state.get("incident_id", ""),
             "exception_type": state.get("exception_type", ""),
-            "exception_message": state.get("exception_message", ""),
-            "stack_trace": (state.get("stack_trace", "") or "")[:2000],
+            "exception_message": scrub(state.get("exception_message", "") or ""),
+            "stack_trace": scrub((state.get("stack_trace", "") or "")[:2000]),
             "recent_incident_signatures": [],
         },
         ensure_ascii=False,

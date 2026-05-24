@@ -1,4 +1,4 @@
-# Phase 27 — Azure Monitor Alerts + On-Call Runbook
+# Phase 25 — Azure Monitor Alerts + On-Call Runbook
 
 ## Goal
 
@@ -12,14 +12,14 @@ without tribal knowledge.
 
 | Artifact | Description |
 |---|---|
-| `infra/terraform/modules/alerting/main.tf` | Alert rules, action groups, diagnostic settings |
+| `infrastructure/terraform/modules/alerting/main.tf` | Alert rules, action groups, diagnostic settings |
 | `docs/runbooks/oncall-overview.md` | On-call quick-reference: services, access, first steps |
 | `docs/runbooks/pipeline-failure.md` | Runbook: agent pipeline processing failures |
 | `docs/runbooks/ingestion-failure.md` | Runbook: ingestion worker not polling or publishing |
 | `docs/runbooks/servicebus-deadletter.md` | Runbook: dead-letter queue growth |
 | `docs/runbooks/database-issues.md` | Runbook: PostgreSQL connection failures and slow queries |
-| `docs/runbooks/keyvault-rotation.md` | Already defined in Phase 25; verify completeness |
-| `docs/runbooks/keda-scaling.md` | Already defined in Phase 26; verify completeness |
+| `docs/runbooks/keyvault-rotation.md` | Already defined in Phase 24; verify completeness |
+| `docs/runbooks/keda-scaling.md` | Already defined in Phase 24; verify completeness |
 
 ---
 
@@ -45,7 +45,7 @@ or `azurerm_monitor_metric_alert` resources in Terraform.
 | `IngestionWorkerNotRunning` | Log query: no ingestion log events | 0 events | 10 min |
 | `AgentWorkerScaleMaxReached` | KEDA replica count = maxReplicas | sustained | 10 min |
 | `LLMTokenBudgetWarning` | App Insights metric `openai.tokens_used` | > 80% TPM limit | 5 min |
-| `AuditLogGap` | Log query: `audit_log` rows inserted < expected | < 1 row per 5 min when incidents exist | 10 min |
+| `AuditLogGap` | Log query: `audit_log` rows < expected | < 1 row per 5 min when incidents exist | 10 min |
 
 ---
 
@@ -64,13 +64,13 @@ or `azurerm_monitor_metric_alert` resources in Terraform.
 
 ---
 
-## Terraform Module (`infra/terraform/modules/alerting/main.tf`)
+## Terraform Module (`infrastructure/terraform/modules/alerting/main.tf`)
 
 Resources:
 - `azurerm_monitor_action_group` — one for critical, one for warnings.
-- `azurerm_monitor_scheduled_query_rules_alert_v2` — for log-based alerts.
-- `azurerm_monitor_metric_alert` — for metric-based alerts.
-- `azurerm_application_insights_web_test` — for the API availability test.
+- `azurerm_monitor_scheduled_query_rules_alert_v2` — log-based alerts.
+- `azurerm_monitor_metric_alert` — metric-based alerts.
+- `azurerm_application_insights_web_test` — API availability test.
 - `azurerm_monitor_diagnostic_setting` — route AKS, Service Bus, and Key Vault
   diagnostic logs to the Log Analytics workspace.
 
@@ -115,7 +115,7 @@ Covers:
 
 - `terraform validate` and `terraform plan` succeed for the alerting module.
 - All 5 critical alert rules are visible in Azure Monitor after `terraform apply`.
-- A simulated API health check failure triggers the `APIHealthCheckFailing` alert within 10 minutes.
+- A simulated API health check failure triggers `APIHealthCheckFailing` within 10 minutes.
 - Each runbook follows the standard structure and contains working `kubectl` and `az` commands.
 - Action group sends a test notification successfully.
 

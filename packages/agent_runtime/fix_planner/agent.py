@@ -12,6 +12,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from packages.agent_runtime.fix_planner.models import FixPlannerOutput, Recommendation
 from packages.domain.models.agent_state import IncidentState
 from packages.domain.models.audit import AgentTraceEntry
+from packages.integrations.pii_scrubber import scrub
 
 logger = structlog.get_logger()
 
@@ -74,7 +75,7 @@ def make_fix_planner_node(
         trace_entry = AgentTraceEntry(
             agent_name=AGENT_NAME,
             prompt_version=PROMPT_VERSION,
-            input_summary=f"root_cause={root_cause_summary[:100]}",
+            input_summary=f"root_cause={scrub(root_cause_summary)[:100]}",
             output_summary=f"recommendations={len(output.recommendations)}",
             latency_ms=latency_ms,
             error=error,
@@ -96,10 +97,12 @@ def make_fix_planner_node(
 
 async def _call_llm(llm: BaseChatModel, state: IncidentState) -> FixPlannerOutput:
     system_prompt = _load_prompt()
+    log = logger.bind(agent=AGENT_NAME, incident_id=state.get("incident_id", ""))
+    log.debug("pii_scrub_applied", fields_scrubbed=["root_cause_summary"])
     user_content = json.dumps(
         {
             "incident_id": state.get("incident_id", ""),
-            "root_cause_summary": state.get("root_cause_summary", "") or "",
+            "root_cause_summary": scrub(state.get("root_cause_summary", "") or ""),
             "root_cause_json": state.get("root_cause_json") or {},
             "code_snippets": (state.get("code_snippets") or [])[:_MAX_SNIPPETS],
             "rag_results": (state.get("rag_results") or [])[:_MAX_RAG],

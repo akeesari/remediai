@@ -16,7 +16,15 @@ applyTo: "apps/api/**/*.py,apps/worker/**/*.py,packages/**/*.py,tests/**/*.py"
 
 - ruff check .
 - mypy apps/ packages/ --strict
-- pytest tests/ -x -v
+- pytest tests/ -x -v --ignore=tests/e2e
+
+## Before Writing Any Phase Implementation
+
+Read the spec (`docs/specs/phase-NN-*.md`) and confirm these touchpoints are addressed:
+- New LLM call → `scrub()` from `packages.integrations.pii_scrubber` applied before `json.dumps`
+- New agent node → `AgentTraceEntry` written to `state["agent_trace"]`
+- New credential in settings → sourced from `pydantic-settings`; Key Vault comment added
+- New HTTP endpoint → authentication approach stated in spec (even if deferred)
 
 ## Documentation Sync
 

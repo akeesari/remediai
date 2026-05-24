@@ -14,6 +14,7 @@ from packages.agent_runtime.root_cause.prompt import load_root_cause_prompt
 from packages.agent_runtime.root_cause.stack_parser import parse_stack_frames
 from packages.domain.models.agent_state import IncidentState
 from packages.domain.models.audit import AgentTraceEntry
+from packages.integrations.pii_scrubber import scrub
 
 logger = structlog.get_logger()
 
@@ -67,7 +68,7 @@ def make_root_cause_node(
         trace_entry = AgentTraceEntry(
             agent_name=AGENT_NAME,
             prompt_version=PROMPT_VERSION,
-            input_summary=f"type={exception_type}, msg={exception_message[:100]}, frames={len(top_frames)}",
+            input_summary=f"type={exception_type}, msg={scrub(exception_message)[:100]}, frames={len(top_frames)}",
             output_summary=f"component={output.root_cause_json.component}, confidence={output.root_cause_json.confidence}",
             latency_ms=latency_ms,
             error=error,
@@ -94,12 +95,14 @@ async def _call_llm(
     top_frames: list[str],
 ) -> RootCauseOutput:
     system_prompt = load_root_cause_prompt()
+    log = logger.bind(agent=AGENT_NAME, incident_id=state.get("incident_id", ""))
+    log.debug("pii_scrub_applied", fields_scrubbed=["exception_message", "stack_trace"])
     user_content = json.dumps(
         {
             "incident_id": state.get("incident_id", ""),
             "exception_type": state.get("exception_type", ""),
-            "exception_message": state.get("exception_message", ""),
-            "stack_trace": (state.get("stack_trace", "") or "")[:2000],
+            "exception_message": scrub(state.get("exception_message", "") or ""),
+            "stack_trace": scrub((state.get("stack_trace", "") or "")[:2000]),
             "triage_labels": state.get("triage_labels", []),
             "top_stack_frames": top_frames,
         },

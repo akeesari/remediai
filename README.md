@@ -173,13 +173,13 @@ remediai/
 
 ## Implementation Phases
 
-Phases 1–14 are complete. Remaining work runs across four parallel tracks.
+Phases 1–21 are complete. Remaining work runs across parallel tracks.
 
 | Track | Phases | Focus |
 | ----- | ------ | ----- |
 | A — Quality & Security | 15, 17, 18 | PII scrubbing, AI Search index, RAG quality |
 | B — PR Workflow | 19, 20, 21 | PR agent, human approval gate, validation |
-| C — DevOps & Infrastructure | 33, 22, 34, 24, 25, 26, 27 | Local Docker, CI/CD, Terraform, AKS, Key Vault, scaling |
+| C — DevOps & Infrastructure | 22, 23, 24, 25, 26, 27 | CI/CD, Terraform, AKS, Key Vault, scaling |
 | D — Testing & Observability | 16, 23, 28 | E2E tests, OpenTelemetry, load + security testing |
 
 Tracks A, B, C, and D can be staffed in parallel. Phase 28 (load + security

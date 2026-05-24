@@ -1,4 +1,4 @@
-.PHONY: install dev stop api test test-unit test-agent-evals test-e2e lint format typecheck check-prompts ci migrate migrate-down ui ui-install ui-build ui-dev index-populate local-up local-down local-logs local-migrate local-smoke
+.PHONY: install dev stop api test test-unit test-agent-evals test-e2e lint format typecheck security-scan check-prompts ci ci-local migrate migrate-down ui ui-install ui-build ui-dev index-populate local-up local-down local-logs local-migrate local-smoke
 
 PYTHON ?= python3
 
@@ -37,6 +37,12 @@ typecheck:
 
 check-prompts:
 	$(PYTHON) scripts/validate_prompt_contracts.py
+
+security-scan:
+	python -m pip install --quiet pip-audit detect-secrets
+	pip-audit
+	cd apps/dashboard && npm install --legacy-peer-deps && npm audit --audit-level=moderate
+	detect-secrets-hook --baseline .secrets.baseline $$(git ls-files)
 
 migrate:
 	alembic upgrade head
@@ -82,3 +88,5 @@ local-smoke:
 	echo "Local smoke checks passed"
 
 ci: lint typecheck check-prompts test
+
+ci-local: lint typecheck security-scan check-prompts test ui-build

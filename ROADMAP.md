@@ -2,7 +2,7 @@
 
 ## Current Status
 
-**Active development.** Phases 1–19 are complete and committed. The end-to-end
+**Active development.** Phases 1–21 are complete and committed. The end-to-end
 flow now includes approval-gated draft PR creation and validation
 (ingestion → triage → root cause → code context → RAG → fix planner → bug
 creation → approval gate → PR agent → validation agent). Work remaining is
@@ -23,7 +23,7 @@ organised below into milestones and parallel development tracks.
 - [x] Basic FastAPI app with health check endpoint
 - [x] React dashboard shell
 - [ ] Full-stack local Docker Compose (all services) → **Phase 20**
-- [ ] CI pipeline configured (Azure DevOps Pipelines) → **Phase 21**
+- [x] CI pipeline configured (Azure DevOps Pipelines) → **Phase 21**
 
 ---
 
@@ -112,7 +112,7 @@ organised below into milestones and parallel development tracks.
 **Goal:** Platform is production-ready on AKS.
 
 - [x] Full-stack local Docker Compose (all services) → **Phase 20**
-- [ ] CI pipeline: Azure DevOps Pipelines YAML → **Phase 21**
+- [x] CI pipeline: Azure DevOps Pipelines YAML → **Phase 21**
 - [ ] Structured logging + OpenTelemetry distributed tracing → **Phase 22**
 - [ ] Azure infrastructure provisioned via Terraform + AKS + Helm → **Phase 23**
 - [ ] Key Vault + Workload Identity + KEDA autoscaling → **Phase 24**
@@ -216,7 +216,7 @@ ceiling — **no phases will be added** unless product requirements change.
 | RAG quality + populated search index | Phase 17 ✅ |
 | Draft PR with human approval | Phases 18–19 ✅ |
 | Full local dev stack (browser-testable) | Phase 20 |
-| CI/CD pipeline | Phase 21 |
+| CI/CD pipeline | Phase 21 ✅ |
 | Structured logging + tracing | Phase 22 |
 | Azure infrastructure (IaC + AKS + Helm) | Phase 23 |
 | Key Vault + Workload Identity + KEDA | Phase 24 |

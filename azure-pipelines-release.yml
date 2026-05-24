@@ -1,0 +1,66 @@
+trigger: none
+pr: none
+
+variables:
+  ACR_SERVICE_CONNECTION: remediai-acr-connection
+  ACR_LOGIN_SERVER: remediai.azurecr.io
+  API_REPOSITORY: remediai-api
+  WORKER_REPOSITORY: remediai-worker
+  DASHBOARD_REPOSITORY: remediai-dashboard
+
+stages:
+  - stage: release
+    displayName: Build and release container images
+    jobs:
+      - job: push_images
+        displayName: Build and push API, worker, dashboard images
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - checkout: self
+
+          - task: Docker@2
+            displayName: Build and push API image
+            inputs:
+              command: buildAndPush
+              containerRegistry: $(ACR_SERVICE_CONNECTION)
+              repository: $(API_REPOSITORY)
+              Dockerfile: apps/api/Dockerfile
+              buildContext: .
+              tags: |
+                $(Build.SourceVersion)
+                latest
+
+          - task: Docker@2
+            displayName: Build and push worker image
+            inputs:
+              command: buildAndPush
+              containerRegistry: $(ACR_SERVICE_CONNECTION)
+              repository: $(WORKER_REPOSITORY)
+              Dockerfile: apps/worker/Dockerfile
+              buildContext: .
+              tags: |
+                $(Build.SourceVersion)
+                latest
+
+          - task: Docker@2
+            displayName: Build and push dashboard image
+            inputs:
+              command: buildAndPush
+              containerRegistry: $(ACR_SERVICE_CONNECTION)
+              repository: $(DASHBOARD_REPOSITORY)
+              Dockerfile: apps/dashboard/Dockerfile
+              buildContext: .
+              tags: |
+                $(Build.SourceVersion)
+                latest
+
+          - script: |
+              echo "Preparing Helm values update with image tags $(Build.SourceVersion)"
+              if [ -f infrastructure/helm/values.yaml ]; then
+                sed -i.bak "s/tag: .*/tag: $(Build.SourceVersion)/" infrastructure/helm/values.yaml
+                rm -f infrastructure/helm/values.yaml.bak
+              else
+                echo "No helm values file found yet; skipping tag update."
+              fi
+            displayName: Update Helm values image tags

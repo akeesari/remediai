@@ -1,0 +1,101 @@
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    exclude:
+      - docs/**
+      - '*.md'
+
+pr:
+  branches:
+    include:
+      - main
+
+variables:
+  PYTHON_VERSION: '3.12'
+  NODE_VERSION: '20'
+
+stages:
+  - stage: lint
+    displayName: Stage 1 - Lint and format
+    jobs:
+      - template: .azure/templates/python-ci.yml
+        parameters:
+          step: lint
+
+  - stage: typecheck
+    displayName: Stage 2 - Type check
+    dependsOn: lint
+    jobs:
+      - template: .azure/templates/python-ci.yml
+        parameters:
+          step: typecheck
+
+  - stage: security
+    displayName: Stage 3 - Security scan
+    dependsOn: typecheck
+    jobs:
+      - template: .azure/templates/security-scan.yml
+
+  - stage: test
+    displayName: Stage 4 - Tests
+    dependsOn: security
+    jobs:
+      - template: .azure/templates/python-ci.yml
+        parameters:
+          step: test
+
+  - stage: frontend
+    displayName: Stage 5 - Frontend build
+    dependsOn: test
+    jobs:
+      - template: .azure/templates/frontend-ci.yml
+
+  - stage: local_smoke
+    displayName: Local compose smoke
+    dependsOn: frontend
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    jobs:
+      - job: compose_smoke
+        displayName: Compose config + smoke checks
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - checkout: self
+
+          - script: cp .env.local.example .env.local
+            displayName: Prepare local env
+
+          - script: docker compose -f docker-compose.local.yml --env-file .env.local config
+            displayName: Validate compose configuration
+
+          - script: |
+              docker compose -f docker-compose.local.yml --env-file .env.local up -d --build
+              make local-smoke
+            displayName: Bring up stack and run smoke checks
+
+          - script: docker compose -f docker-compose.local.yml down -v
+            displayName: Tear down local stack
+            condition: always()
+
+  - stage: docker_build
+    displayName: Stage 6 - Docker image build
+    dependsOn: local_smoke
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    jobs:
+      - job: build_images
+        displayName: Build API, worker, and dashboard images
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - checkout: self
+
+          - script: docker build -f apps/api/Dockerfile -t remediai-api:$(Build.BuildId) .
+            displayName: Build API image
+
+          - script: docker build -f apps/worker/Dockerfile -t remediai-worker:$(Build.BuildId) .
+            displayName: Build worker image
+
+          - script: docker build -f apps/dashboard/Dockerfile -t remediai-dashboard:$(Build.BuildId) .
+            displayName: Build dashboard image

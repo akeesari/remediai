@@ -99,7 +99,7 @@ diff --git a/src/Service.cs b/src/Service.cs
 
 @pytest.mark.asyncio
 async def test_secret_in_diff_blocks() -> None:
-    diff = '+password = "super-secret"\n'
+    diff = '+password = "super-secret"  # pragma: allowlist secret\n'
     reader = _FakePrReader(diff_text=diff)
     node = make_validation_agent_node(
         llm=_FakeLLM(

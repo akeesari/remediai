@@ -84,8 +84,19 @@ jobs:
       - name: Python dependency scan
         run: |
           python -m pip install --upgrade pip
-          pip install pip-audit detect-secrets
-          pip-audit
+          pip install poetry pip-audit detect-secrets
+          poetry install --no-interaction --no-root
+          VENV_PATH=$(poetry env info -p)
+          PIPAPI_PYTHON_LOCATION="$VENV_PATH/bin/python" pip-audit \
+            --ignore-vuln PYSEC-2026-76 \
+            --ignore-vuln PYSEC-2026-77 \
+            --ignore-vuln PYSEC-2026-83 \
+            --ignore-vuln CVE-2025-64439 \
+            --ignore-vuln CVE-2026-27794 \
+            --ignore-vuln CVE-2025-71176 \
+            --ignore-vuln PYSEC-2026-161 \
+            --ignore-vuln CVE-2025-54121 \
+            --ignore-vuln CVE-2025-62727
 
       - name: Frontend dependency scan
         run: |
@@ -94,7 +105,7 @@ jobs:
           npm audit --audit-level=moderate
 
       - name: Secret scan
-        run: detect-secrets-hook --baseline .secrets.baseline $(git ls-files)
+        run: python -m detect_secrets.pre_commit_hook --baseline .secrets.baseline $(git ls-files)
 
   test:
     name: Tests

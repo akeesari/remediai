@@ -95,6 +95,33 @@ def _mock_boards(bug_id: int = 1001) -> MagicMock:
     return boards
 
 
+def _mock_repos_writer() -> MagicMock:
+    writer = MagicMock()
+    writer.repository = "test-repo"
+    writer.default_branch = "main"
+    writer.get_latest_commit_sha = AsyncMock(return_value="a" * 40)
+    writer.create_branch = AsyncMock(return_value=None)
+    writer.push_patch = AsyncMock(return_value=None)
+    writer.create_pull_request = AsyncMock(
+        return_value={
+            "pullRequestId": 123,
+            "_links": {
+                "web": {
+                    "href": "https://dev.azure.com/org/proj/_git/repo/pullrequest/123"
+                }
+            },
+        }
+    )
+    return writer
+
+
+def _mock_pr_reader(diff_text: str = "") -> MagicMock:
+    reader = MagicMock()
+    reader.get_pr_diff = AsyncMock(return_value=diff_text)
+    reader.append_validation_report = AsyncMock(return_value=None)
+    return reader
+
+
 def _make_initial_state(**overrides: object) -> IncidentState:
     base: IncidentState = {
         "incident_id": "pipeline-test-001",
@@ -309,3 +336,71 @@ class TestPipelineEndToEnd:
         result: IncidentState = await pipeline.ainvoke(_make_initial_state())
         assert result.get("ado_bug_id") is None
         assert result.get("errors", []) == []
+
+    @pytest.mark.asyncio
+    async def test_approved_path_populates_validation_report(self) -> None:
+        pr_patch_json = json.dumps(
+            {
+                "patched_content": (
+                    "public class Service {\n"
+                    "  public void Run() {\n"
+                    "    var x = gateway.Get();\n"
+                    "    if (x == null) return;\n"
+                    "    Console.WriteLine(x.Value);\n"
+                    "  }\n"
+                    "}\n"
+                ),
+                "files_changed": ["src/Service.cs"],
+                "change_summary": "Added a null guard before dereference.",
+            }
+        )
+        validation_json = json.dumps(
+            {
+                "risk_level": "low",
+                "confidence": 0.86,
+                "llm_assessment": "Patch is focused and aligned with root cause.",
+                "reviewer_notes": "Confirm expected null path behavior.",
+                "concerns": [],
+            }
+        )
+
+        writer = _mock_repos_writer()
+        pr_reader = _mock_pr_reader(
+            diff_text=(
+                "diff --git a/src/Service.cs b/src/Service.cs\n"
+                "--- a/src/Service.cs\n"
+                "+++ b/src/Service.cs\n"
+                "@@ -2,4 +2,5 @@\n"
+                "+if (x == null) return;\n"
+            )
+        )
+        pipeline = build_pipeline(
+            llm=_mock_llm_sequence(_RC_JSON, _FP_JSON, pr_patch_json, validation_json),
+            ado_client=_mock_ado(
+                content=(
+                    "public class Service {\n"
+                    "  public void Run() {\n"
+                    "    var x = gateway.Get();\n"
+                    "    Console.WriteLine(x.Value);\n"
+                    "  }\n"
+                    "}\n"
+                )
+            ),
+            search_client=_mock_search(),
+            boards_client=_mock_boards(),
+            ado_writer=writer,
+            pr_reader=pr_reader,
+        )
+
+        result: IncidentState = await pipeline.ainvoke(
+            _make_initial_state(
+                approval_status="approved",
+                approved_recommendation_rank=1,
+            )
+        )
+
+        assert result.get("pr_url") is not None
+        assert result.get("validation_report") is not None
+        assert result["validation_report"]["overall_status"] == "approved"
+        assert pr_reader.get_pr_diff.await_count == 1
+        assert pr_reader.append_validation_report.await_count == 1

@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getIncident } from '../api/incidents'
+import { approveIncident, rejectIncident } from '../api/approvals'
 import { PriorityBadge } from '../components/PriorityBadge'
 import { StatusBadge } from '../components/StatusBadge'
 import type { AgentTraceEntry, Recommendation } from '../types/incident'
@@ -8,11 +10,28 @@ import type { AgentTraceEntry, Recommendation } from '../types/incident'
 export function IncidentDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const [selectedRank, setSelectedRank] = useState<number | null>(null)
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['incident', id],
     queryFn: () => getIncident(id!),
     enabled: !!id,
+  })
+
+  const approveMutation = useMutation({
+    mutationFn: () =>
+      approveIncident(id!, {
+        recommendation_rank: selectedRank!,
+        approved_by: 'engineer',
+      }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['incident', id] }),
+  })
+
+  const rejectMutation = useMutation({
+    mutationFn: () =>
+      rejectIncident(id!, { rejected_by: 'engineer', reason: 'Rejected via dashboard.' }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['incident', id] }),
   })
 
   if (isLoading) return <p className="py-12 text-center text-sm text-gray-500">Loading…</p>
@@ -130,6 +149,74 @@ export function IncidentDetail() {
               </li>
             ))}
           </ol>
+        </Section>
+      )}
+
+      {/* Approval panel */}
+      {data.recommendations.length > 0 && data.status === 'analyzed' && (
+        <Section title="Create Pull Request">
+          {data.approval_status === 'approved' ? (
+            <div className="text-sm text-gray-700">
+              <p>
+                PR queued — approved by{' '}
+                <span className="font-medium">{data.approved_by}</span> at{' '}
+                {data.approved_at ? new Date(data.approved_at).toLocaleString() : '—'}
+              </p>
+              {data.pr_url && (
+                <a
+                  href={data.pr_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-2 inline-block text-indigo-600 hover:underline"
+                >
+                  View draft PR →
+                </a>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {data.approval_status === 'rejected' && (
+                <p className="text-sm text-orange-600">Previously rejected. You may re-approve.</p>
+              )}
+              <p className="text-sm text-gray-600">Select recommendation to apply:</p>
+              <div className="space-y-2">
+                {data.recommendations.map((rec: Recommendation) => (
+                  <label key={rec.rank} className="flex items-center gap-2 text-sm cursor-pointer">
+                    <input
+                      type="radio"
+                      name="rec_rank"
+                      value={rec.rank}
+                      checked={selectedRank === rec.rank}
+                      onChange={() => setSelectedRank(rec.rank)}
+                      className="accent-indigo-600"
+                    />
+                    <span>
+                      <span className="font-medium">#{rec.rank}</span> {rec.title}
+                    </span>
+                  </label>
+                ))}
+              </div>
+              <div className="flex gap-3">
+                <button
+                  disabled={selectedRank === null || approveMutation.isPending}
+                  onClick={() => approveMutation.mutate()}
+                  className="rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+                >
+                  {approveMutation.isPending ? 'Queuing…' : 'Approve & Queue PR'}
+                </button>
+                <button
+                  disabled={rejectMutation.isPending}
+                  onClick={() => rejectMutation.mutate()}
+                  className="rounded border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                >
+                  {rejectMutation.isPending ? 'Rejecting…' : 'Reject All'}
+                </button>
+              </div>
+              {(approveMutation.isError || rejectMutation.isError) && (
+                <p className="text-sm text-red-600">Action failed. Please try again.</p>
+              )}
+            </div>
+          )}
         </Section>
       )}
 

@@ -98,12 +98,12 @@ development tracks.
 
 **Goal:** Approved recommendations can become pull requests — with humans in the loop.
 
-- [ ] Human approval gate: dashboard action + approval API endpoint → **Phase 19**
-- [ ] PR Agent: branch creation from fix recommendation → **Phase 19**
-- [ ] PR Agent: code patch generation and application → **Phase 19**
-- [ ] PR Agent: draft PR creation in Azure DevOps → **Phase 19**
-- [ ] Validation Agent: PR diff review and safety check → **Phase 18**
-- [ ] PR URL and status tracked in incident record → **Phase 19**
+- [x] Human approval gate: dashboard action + approval API endpoint → **Phase 19**
+- [x] PR Agent: branch creation from fix recommendation → **Phase 19**
+- [x] PR Agent: code patch generation and application → **Phase 19**
+- [x] PR Agent: draft PR creation in Azure DevOps → **Phase 19**
+- [x] Validation Agent: PR diff review and safety check → **Phase 18**
+- [x] PR URL and status tracked in incident record → **Phase 19**
 
 ---
 

@@ -59,6 +59,20 @@ export interface IncidentDetail {
   rag_results: unknown[]
   agent_trace: AgentTraceEntry[]
   work_items: WorkItemSummary[]
+  // Phase 19 — approval gate
+  approval_status: string | null
+  approved_by: string | null
+  approved_at: string | null
+  approved_recommendation_rank: number | null
+  pr_url: string | null
+}
+
+export interface ApprovalResponse {
+  incident_id: string
+  approval_status: string
+  approved_recommendation_rank: number | null
+  approved_by: string | null
+  approved_at: string | null
 }
 
 export interface PaginatedResponse<T> {

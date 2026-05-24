@@ -15,6 +15,10 @@ class IncidentState(TypedDict, total=False):
     triage_labels: list[str]
     group_id: str | None
 
+    # Phase 19 — approval gate
+    approval_status: str | None       # None | "approved" | "rejected"
+    approved_recommendation_rank: int | None
+
     # Root cause outputs
     root_cause_summary: str | None
     root_cause_json: dict[str, Any] | None

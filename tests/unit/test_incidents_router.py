@@ -33,6 +33,10 @@ def _orm_incident(
     inc.created_at = _NOW
     inc.updated_at = _NOW
     inc.stack_trace = None
+    inc.approval_status = None
+    inc.approved_by = None
+    inc.approved_at = None
+    inc.approved_recommendation_rank = None
     inc.work_items = work_items or []
     inc.analyses = []
     return inc
@@ -266,6 +270,36 @@ class TestGetIncident:
         work_items = resp.json()["work_items"]
         assert len(work_items) == 1
         assert work_items[0]["ado_item_id"] == 42
+
+    @pytest.mark.asyncio
+    async def test_detail_includes_approval_and_pr_fields(self) -> None:
+        inc_id = uuid4()
+        wi = MagicMock()
+        wi.ado_item_id = 42
+        wi.ado_item_url = "https://dev.azure.com/org/proj/_workitems/edit/42"
+        wi.item_type = "bug"
+        wi.pr_url = "https://dev.azure.com/org/proj/_git/repo/pullrequest/7"
+        inc = _orm_incident(id_=inc_id, work_items=[wi])
+        inc.approval_status = "approved"
+        inc.approved_by = "engineer@contoso.com"
+        inc.approved_at = _NOW
+        inc.approved_recommendation_rank = 1
+
+        result = _scalar_result(inc)
+        result.scalar_one_or_none.return_value = inc
+        _override(_make_session([result]))
+
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            resp = await client.get(f"/api/v1/incidents/{inc_id}")
+
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["approval_status"] == "approved"
+        assert body["approved_by"] == "engineer@contoso.com"
+        assert body["approved_recommendation_rank"] == 1
+        assert body["pr_url"] == wi.pr_url
 
     @pytest.mark.asyncio
     async def test_detail_no_analysis_returns_empty_fields(self) -> None:

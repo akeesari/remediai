@@ -105,6 +105,7 @@ async def get_incident(
         raise HTTPException(status_code=404, detail="Incident not found")
 
     analysis = incident.analyses[0] if incident.analyses else None
+    pr_url = next((wi.pr_url for wi in incident.work_items if wi.pr_url), None)
 
     return IncidentDetail(
         id=incident.id,
@@ -130,4 +131,9 @@ async def get_incident(
             )
             for wi in incident.work_items
         ],
+        approval_status=incident.approval_status,
+        approved_by=incident.approved_by,
+        approved_at=incident.approved_at,
+        approved_recommendation_rank=incident.approved_recommendation_rank,
+        pr_url=pr_url,
     )

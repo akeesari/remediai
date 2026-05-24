@@ -69,3 +69,9 @@ class IncidentDetail(BaseModel):
     rag_results: list[dict[str, Any]] = []
     agent_trace: list[dict[str, Any]] = []
     work_items: list[WorkItemSummary] = []
+    # Phase 19 — approval gate
+    approval_status: str | None = None
+    approved_by: str | None = None
+    approved_at: datetime | None = None
+    approved_recommendation_rank: int | None = None
+    pr_url: str | None = None

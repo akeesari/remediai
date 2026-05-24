@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
-from sqlalchemy import DateTime, Index, String, Text
+from sqlalchemy import DateTime, Index, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -31,6 +31,12 @@ class IncidentOrm(Base):
     raw_payload: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+    # Human approval gate (Phase 19)
+    approval_status: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    approved_by: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    approved_recommendation_rank: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     analyses: Mapped[list["AnalysisOrm"]] = relationship(
         "AnalysisOrm", back_populates="incident", cascade="all, delete-orphan"

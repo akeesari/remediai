@@ -241,6 +241,7 @@ override.tf.json
 # Local environment / secrets
 .env
 .env.*
+!.env.local.example
 !.env.example
 *.pem
 *.key

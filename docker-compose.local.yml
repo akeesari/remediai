@@ -1,0 +1,109 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: remediai
+      POSTGRES_USER: remediai
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me_locally}
+    ports:
+      - "${LOCAL_POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U remediai"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "${LOCAL_REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  servicebus-emulator:
+    image: mcr.microsoft.com/azure-messaging/servicebus-emulator:latest
+    environment:
+      ACCEPT_EULA: "Y"
+    ports:
+      - "${LOCAL_SERVICEBUS_PORT:-5672}:5672"
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    ports:
+      - "${LOCAL_API_PORT:-8000}:8000"
+    environment:
+      APP_ENV: local
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: remediai
+      POSTGRES_USER: remediai
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me_locally}
+      DATABASE_URL: postgresql+asyncpg://remediai:${POSTGRES_PASSWORD:-change_me_locally}@postgres:5432/remediai
+      REDIS_URL: redis://redis:6379/0
+      AZURE_SERVICEBUS_NAMESPACE: ${AZURE_SERVICEBUS_NAMESPACE:-localhost}
+      AZURE_OPENAI_ENDPOINT: ${AZURE_OPENAI_ENDPOINT:-}
+      AZURE_OPENAI_DEPLOYMENT: ${AZURE_OPENAI_DEPLOYMENT:-gpt-4o}
+      AZURE_DEVOPS_ORG_URL: ${AZURE_DEVOPS_ORG_URL:-}
+      AZURE_DEVOPS_PROJECT: ${AZURE_DEVOPS_PROJECT:-}
+      AZURE_DEVOPS_PAT: ${AZURE_DEVOPS_PAT:-}
+      AZURE_SEARCH_ENDPOINT: ${AZURE_SEARCH_ENDPOINT:-}
+      AZURE_SEARCH_API_KEY: ${AZURE_SEARCH_API_KEY:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  worker:
+    build:
+      context: .
+      dockerfile: apps/worker/Dockerfile
+    environment:
+      APP_ENV: local
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: remediai
+      POSTGRES_USER: remediai
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me_locally}
+      DATABASE_URL: postgresql+asyncpg://remediai:${POSTGRES_PASSWORD:-change_me_locally}@postgres:5432/remediai
+      REDIS_URL: redis://redis:6379/0
+      AZURE_SERVICEBUS_NAMESPACE: ${AZURE_SERVICEBUS_NAMESPACE:-localhost}
+      AZURE_OPENAI_ENDPOINT: ${AZURE_OPENAI_ENDPOINT:-}
+      AZURE_OPENAI_DEPLOYMENT: ${AZURE_OPENAI_DEPLOYMENT:-gpt-4o}
+      AZURE_DEVOPS_ORG_URL: ${AZURE_DEVOPS_ORG_URL:-}
+      AZURE_DEVOPS_PROJECT: ${AZURE_DEVOPS_PROJECT:-}
+      AZURE_DEVOPS_PAT: ${AZURE_DEVOPS_PAT:-}
+      AZURE_SEARCH_ENDPOINT: ${AZURE_SEARCH_ENDPOINT:-}
+      AZURE_SEARCH_API_KEY: ${AZURE_SEARCH_API_KEY:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      servicebus-emulator:
+        condition: service_started
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: apps/dashboard/Dockerfile
+    ports:
+      - "${LOCAL_DASHBOARD_PORT:-3000}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

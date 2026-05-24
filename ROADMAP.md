@@ -111,7 +111,7 @@ organised below into milestones and parallel development tracks.
 
 **Goal:** Platform is production-ready on AKS.
 
-- [ ] Full-stack local Docker Compose (all services) → **Phase 20**
+- [x] Full-stack local Docker Compose (all services) → **Phase 20**
 - [ ] CI pipeline: Azure DevOps Pipelines YAML → **Phase 21**
 - [ ] Structured logging + OpenTelemetry distributed tracing → **Phase 22**
 - [ ] Azure infrastructure provisioned via Terraform + AKS + Helm → **Phase 23**

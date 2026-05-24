@@ -62,12 +62,22 @@ cd apps/dashboard
 npm install
 ```
 
-### Local dependencies
+### Local full stack
 
-Start PostgreSQL, Redis, and the Service Bus emulator:
+Start the full stack (PostgreSQL, Redis, Service Bus emulator, API, worker, dashboard):
 
 ```bash
-docker compose -f docker-compose.dev.yml up -d
+cp -n .env.local.example .env.local || true
+make local-up
+```
+
+Useful local stack commands:
+
+```bash
+make local-logs
+make local-migrate
+make local-smoke
+make local-down
 ```
 
 ### Environment variables

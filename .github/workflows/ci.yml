@@ -4,9 +4,6 @@ on:
   pull_request:
     branches:
       - main
-  push:
-    branches:
-      - main
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -166,7 +163,7 @@ jobs:
   local-smoke:
     name: Local compose smoke
     needs: frontend
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -190,7 +187,7 @@ jobs:
   docker-build:
     name: Docker build
     needs: local-smoke
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

@@ -103,6 +103,6 @@ local-smoke:
 ci: lint typecheck check-prompts test
 
 install-hooks:
-	poetry run pre-commit install
+	poetry run pre-commit install --hook-type pre-commit --hook-type pre-push
 
 ci-local: lint typecheck security-scan check-prompts test ui-build

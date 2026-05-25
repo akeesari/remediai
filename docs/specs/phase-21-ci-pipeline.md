@@ -2,19 +2,13 @@
 
 ## Goal
 
-Define and implement CI pipeline configuration for both Azure DevOps Pipelines
-and GitHub Actions to support automated PR validation and main-branch CI.
-Every pull request must pass lint, typecheck, security scan, and tests before
-merge is permitted.
+Define and implement CI pipeline configuration for both Azure DevOps Pipelines and GitHub Actions so validation happens exactly once per event: GitHub Actions runs PR validation, Azure DevOps runs main-branch CI, and local pre-commit hooks catch lint and format issues before code is pushed.
 
 ---
 
 ## Dependencies
 
-Phase 20 (Local Full-Stack Docker Compose) must be complete before this
-phase.  The Dockerfiles at `apps/api/Dockerfile`, `apps/worker/Dockerfile`,
-and `apps/dashboard/Dockerfile` are created in Phase 20 and referenced by
-Stage 6 (Docker Build) of the main branch CI pipeline.
+Phase 20 (Local Full-Stack Docker Compose) must be complete before this phase. The Dockerfiles at `apps/api/Dockerfile`, `apps/worker/Dockerfile`, and `apps/dashboard/Dockerfile` are created in Phase 20 and referenced by Stage 6 (Docker Build) of the main branch CI pipeline.
 
 ---
 
@@ -22,9 +16,9 @@ Stage 6 (Docker Build) of the main branch CI pipeline.
 
 | Artifact | Description |
 |---|---|
-| `azure-pipelines.yml` | Main Azure DevOps pipeline: PR validation + main branch CI |
+| `azure-pipelines.yml` | Main Azure DevOps pipeline: main branch CI only |
 | `azure-pipelines-release.yml` | Azure DevOps release pipeline: build images, push to ACR, update Helm values |
-| `.github/workflows/ci.yml` | GitHub Actions CI workflow: PR validation + main branch CI |
+| `.github/workflows/ci.yml` | GitHub Actions CI workflow: PR validation only |
 | `.github/workflows/release.yml` | GitHub Actions release workflow: build images and push to GitHub Container Registry |
 | `.azure/templates/python-ci.yml` | Reusable step template: install, lint, typecheck, test |
 | `.azure/templates/frontend-ci.yml` | Reusable step template: npm install, tsc, build |
@@ -35,49 +29,46 @@ Stage 6 (Docker Build) of the main branch CI pipeline.
 
 ---
 
-## Pipeline Stages (Shared)
+## Pipeline Stages
 
-### PR Validation Pipeline (trigger: PR to `main`)
+### GitHub Actions PR Validation
 
-```
-Stage 1: Lint & Format
-  - ruff check .
-  - ruff format --check .
+Trigger: pull request to `main`.
 
-Stage 2: Type Check
-  - mypy apps/ packages/ --strict
+Stages run sequentially:
 
-Stage 3: Security Scan
-  - pip-audit (Python dependency CVE scan)
-  - npm audit --audit-level=moderate (frontend dependencies)
-  - detect-secrets scan --baseline .secrets.baseline
+1. Lint and format
+   - `ruff check .`
+   - `ruff format --check .`
+2. Type check
+   - `mypy apps/ packages/ --strict`
+3. Security scan
+   - `pip-audit`
+   - `npm audit --audit-level=moderate`
+   - `detect-secrets scan --baseline .secrets.baseline`
+4. Tests
+   - `python scripts/validate_prompt_contracts.py`
+   - `pytest tests/ -x -v --ignore=tests/e2e`
+5. Frontend build
+   - `cd apps/dashboard && npm install --legacy-peer-deps`
+   - `npm run build`
 
-Stage 4: Tests
-  - python scripts/validate_prompt_contracts.py
-  - pytest tests/ -x -v --ignore=tests/e2e (unit + integration + agent-evals)
+A failure in any stage blocks the PR.
 
-Stage 5: Frontend Build
-  - cd apps/dashboard && npm install --legacy-peer-deps
-  - npm run build
-```
+### Azure DevOps Main Branch CI
 
-Stages run sequentially.  A failure in any stage blocks the PR.
-
-### Main Branch CI (trigger: push to `main`)
+Trigger: push to `main`.
 
 Runs all PR validation stages, then additionally:
 
-```
-Stage 6: Docker Build
-  - Build API image: apps/api/Dockerfile
-  - Build Worker image: apps/worker/Dockerfile
-  - Build Dashboard image: apps/dashboard/Dockerfile
-
-Stage 7: Push to ACR
-  - Tag images with git SHA and `latest`
-  - Push to Azure Container Registry
-  - Update Helm chart image tags in deployment repo
-```
+6. Docker build
+   - Build API image: `apps/api/Dockerfile`
+   - Build Worker image: `apps/worker/Dockerfile`
+   - Build Dashboard image: `apps/dashboard/Dockerfile`
+7. Push to ACR
+   - Tag images with git SHA and `latest`
+   - Push to Azure Container Registry
+   - Update Helm chart image tags in deployment repo
 
 ---
 
@@ -92,9 +83,7 @@ trigger:
   paths:
     exclude: ['docs/**', '*.md']
 
-pr:
-  branches:
-    include: [main]
+pr: none
 
 pool:
   vmImage: ubuntu-latest
@@ -132,8 +121,6 @@ stages:
       - template: .azure/templates/frontend-ci.yml
 ```
 
-## GitHub Actions Workflow Structure
-
 ### `.github/workflows/ci.yml`
 
 ```yaml
@@ -141,8 +128,6 @@ name: CI
 
 on:
   pull_request:
-    branches: [main]
-  push:
     branches: [main]
 
 jobs:
@@ -272,8 +257,7 @@ steps:
 | Azure Container Registry | Release pipeline (Stage 7) | Push images |
 | Azure Resource Manager | Release pipeline | Update AKS Helm release (Phase 23) |
 
-Service connections are created in Azure DevOps Project Settings.  Names are
-referenced via pipeline variables: `ACR_SERVICE_CONNECTION`, `ARM_SERVICE_CONNECTION`.
+Service connections are created in Azure DevOps Project Settings. Names are referenced via pipeline variables: `ACR_SERVICE_CONNECTION`, `ARM_SERVICE_CONNECTION`.
 
 ## GitHub Package Permissions
 
@@ -282,17 +266,16 @@ referenced via pipeline variables: `ACR_SERVICE_CONNECTION`, `ARM_SERVICE_CONNEC
 | `packages: write` | GitHub release workflow | Push container images to GHCR |
 | `contents: read` | GitHub release workflow | Read source for image builds |
 
-The release workflow uses the repository-scoped `GITHUB_TOKEN` to push images
-to GHCR.
+The release workflow uses the repository-scoped `GITHUB_TOKEN` to push images to GHCR.
 
 ---
 
 ## Branch Policy Requirements
 
-Configure in Azure DevOps Repository Settings → Branch Policies → `main`:
+Configure in Azure DevOps Repository Settings -> Branch Policies -> `main`:
 
 - Require a minimum of 1 reviewer (excluding the PR author).
-- Require all pipeline stages to pass before merge.
+- Require all GitHub Actions PR validation checks to pass before merge.
 - Prohibit direct pushes to `main`.
 - Require up-to-date branches before merge.
 
@@ -307,15 +290,13 @@ For GitHub repositories, configure equivalent branch protection on `main` with:
 
 ## `detect-secrets` Baseline
 
-Run `detect-secrets scan > .secrets.baseline` once and commit the baseline
-file.  CI runs `detect-secrets scan --baseline .secrets.baseline` and fails
-if new secrets are found that are not in the baseline.
+Run `detect-secrets scan > .secrets.baseline` once and commit the baseline file. CI runs `detect-secrets scan --baseline .secrets.baseline` and fails if new secrets are found that are not in the baseline.
 
 ---
 
 ## Pre-Commit Hooks
 
-Install `pre-commit` (via Poetry dev dependencies) and configure it to run `ruff check`, `ruff format`, and `mypy --strict` on every `git commit`. This catches lint, format, and type errors locally before they ever reach CI.
+Install `pre-commit` (via Poetry dev dependencies) and configure it to run `ruff check`, `ruff format`, and `mypy --strict` on every `git commit` and `git push`. This catches lint, format, and type errors locally before they ever reach CI.
 
 ### `.pre-commit-config.yaml`
 
@@ -344,7 +325,7 @@ Developers install hooks once after cloning:
 
 ```bash
 make install-hooks
-# equivalent: poetry run pre-commit install
+# equivalent: poetry run pre-commit install --hook-type pre-commit --hook-type pre-push
 ```
 
 ---
@@ -353,7 +334,7 @@ make install-hooks
 
 ```makefile
 install-hooks:
-	poetry run pre-commit install
+	poetry run pre-commit install --hook-type pre-commit --hook-type pre-push
 
 ci-local: lint typecheck check-prompts test ui-build
 ```
@@ -362,19 +343,19 @@ ci-local: lint typecheck check-prompts test ui-build
 
 ## Acceptance Criteria
 
-- `azure-pipelines.yml` triggers on PR and main branch pushes.
-- `.github/workflows/ci.yml` triggers on PR and main branch pushes.
+- `azure-pipelines.yml` triggers on main branch pushes only.
+- `.github/workflows/ci.yml` triggers on pull requests to `main` only.
 - All 5 PR stages run and complete successfully on a clean branch.
 - A deliberate ruff error causes Stage 1 to fail and blocks merge.
 - A deliberate test failure causes Stage 4 to fail and blocks merge.
 - Test results are published to Azure DevOps Test Plans on each run.
-- GitHub Actions publishes pytest artifacts for failed and successful runs.
+- GitHub Actions publishes pytest artifacts for failed and successful PR runs.
 - `detect-secrets` scan fails when a test secret is introduced.
 - `make ci-local` replicates the pipeline checks locally.
-- `make install-hooks` installs the pre-commit hooks without error.
-- A commit containing a ruff violation is blocked locally by the pre-commit hook.
-- A commit containing an unformatted file is blocked locally by the pre-commit hook.
-- A commit introducing a mypy type error is blocked locally by the pre-commit hook.
+- `make install-hooks` installs both commit and push hooks without error.
+- A commit or push containing a ruff violation is blocked locally by the pre-commit hook.
+- A commit or push containing an unformatted file is blocked locally by the pre-commit hook.
+- A commit or push introducing a mypy type error is blocked locally by the pre-commit hook.
 
 ---
 

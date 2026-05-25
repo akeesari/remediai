@@ -8,9 +8,7 @@ trigger:
       - '*.md'
 
 pr:
-  branches:
-    include:
-      - main
+  none: true
 
 variables:
   PYTHON_VERSION: '3.12'

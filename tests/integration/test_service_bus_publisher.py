@@ -118,7 +118,9 @@ class TestServiceBusPublisher:
         mock_sender.__aenter__ = AsyncMock(return_value=mock_sender)
         mock_sender.__aexit__ = AsyncMock(return_value=None)
 
-        with patch("packages.integrations.service_bus.publisher.ServiceBusClient.from_connection_string") as mock_from_cs:
+        with patch(
+            "packages.integrations.service_bus.publisher.ServiceBusClient.from_connection_string"
+        ) as mock_from_cs:
             mock_client = MagicMock()
             mock_from_cs.return_value = mock_client
             mock_client.get_topic_sender = MagicMock(return_value=mock_sender)

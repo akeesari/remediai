@@ -18,6 +18,9 @@ spec:
         - name: worker
           image: "{{ .Values.global.imageRegistry }}{{ if .Values.global.imageRegistry }}/{{ end }}{{ .Values.worker.repository }}:{{ .Values.global.imageTag }}"
           imagePullPolicy: {{ .Values.worker.imagePullPolicy }}
+          envFrom:
+            - secretRef:
+                name: {{ .Values.global.secretName | default "remediai-secrets" }}
           env:
             - name: APP_ENV
               value: {{ .Values.global.appEnv | quote }}

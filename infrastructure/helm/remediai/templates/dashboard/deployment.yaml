@@ -18,9 +18,10 @@ spec:
         - name: dashboard
           image: "{{ .Values.global.imageRegistry }}{{ if .Values.global.imageRegistry }}/{{ end }}{{ .Values.dashboard.repository }}:{{ .Values.global.imageTag }}"
           imagePullPolicy: {{ .Values.dashboard.imagePullPolicy }}
+          envFrom:
+            - secretRef:
+                name: {{ .Values.global.secretName | default "remediai-secrets" }}
           env:
-            - name: API_HOST
-              value: {{ include "remediai.fullname" . }}-api
           ports:
             - containerPort: 80
           resources:

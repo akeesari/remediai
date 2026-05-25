@@ -41,9 +41,8 @@ currently runs as a fixed single-replica deployment (Phase 23).
 
 | Artifact | Description |
 |---|---|
-| `helm/remediai/templates/worker-agents/scaledobject.yaml` | KEDA `ScaledObject` for Agent Worker (Service Bus trigger) |
+| `helm/remediai/templates/worker-agents/scaledobject.yaml` | KEDA `ScaledObject` for Agent Worker (PostgreSQL trigger) |
 | `helm/remediai/templates/worker-ingestion/scaledjob.yaml` | KEDA `ScaledJob` for Ingestion Worker (cron trigger) |
-| `helm/remediai/templates/triggerauthentication.yaml` | `TriggerAuthentication` using Workload Identity |
 | Updated `helm/remediai/values.yaml` | KEDA scaling parameters |
 | `docs/runbooks/keda-scaling.md` | Runbook: tuning thresholds, disabling scaling |
 
@@ -58,7 +57,6 @@ currently runs as a fixed single-replica deployment (Phase 23).
 | `azure-devops-pat` | Agent Worker | ADO Personal Access Token |
 | `azure-search-api-key` | Agent Worker | Azure AI Search admin key (fallback) |
 | `applicationinsights-connection-string` | All services | App Insights connection string |
-| `servicebus-connection-string` | Ingestion Worker, Agent Worker | Service Bus connection string (fallback) |
 | `redis-connection-string` | API | Redis connection string |
 
 In production, Azure OpenAI, AI Search, and Service Bus are accessed via
@@ -75,7 +73,6 @@ AKS Pod
               └── Role Assignments:
                     Key Vault Secrets User
                     Monitoring Reader
-                    Service Bus Data Receiver/Sender
                     Cognitive Services OpenAI User
                     Search Index Data Reader
                     Storage Blob Data Contributor
@@ -150,20 +147,22 @@ spec:
   cooldownPeriod: 60
   pollingInterval: 15
   triggers:
-    - type: azure-servicebus
-      authenticationRef:
-        name: remediai-trigger-auth
+    - type: postgresql
       metadata:
-        namespace: remediai-servicebus
-        topicName: incident-events
-        subscriptionName: agent-worker-sub
-        messageCount: "5"
-        activationMessageCount: "1"
+        host: "${POSTGRES_HOST}"
+        port: "5432"
+        dbName: "remediai"
+        userName: "${POSTGRES_USER}"
+        passwordFromEnv: POSTGRES_PASSWORD
+        sslmode: require
+        query: "SELECT COUNT(*) FROM incidents WHERE status = 'new'"
+        targetQueryValue: "5"
+        activationTargetQueryValue: "1"
 ```
 
-**Scaling logic:** 1 replica per 5 pending messages; minimum 1 (no scale-to-zero
-— cold start would exceed the 3-minute SLA); maximum 10 respects Azure OpenAI
-rate limits.
+**Scaling logic:** 1 replica per 5 queued incidents in PostgreSQL (`status='new'`);
+minimum 1 (no scale-to-zero — cold start would exceed the 3-minute SLA);
+maximum 10 respects Azure OpenAI rate limits.
 
 ---
 
@@ -194,23 +193,6 @@ spec:
 
 ---
 
-## `TriggerAuthentication`
-
-```yaml
-apiVersion: keda.sh/v1alpha1
-kind: TriggerAuthentication
-metadata:
-  name: remediai-trigger-auth
-spec:
-  podIdentity:
-    provider: azure-workload
-    identityId: {{ .Values.workloadIdentity.clientId }}
-```
-
-Workload Identity eliminates Service Bus connection strings from the manifest.
-
----
-
 ## `values.yaml` Additions
 
 ```yaml
@@ -218,12 +200,11 @@ keda:
   agentWorker:
     minReplicas: 1
     maxReplicas: 10
-    messageCountPerReplica: 5
+    targetQueryValue: 5
+    activationTargetQueryValue: 1
     cooldownPeriod: 60
     pollingInterval: 15
-    serviceBusNamespace: ""
-    topicName: incident-events
-    subscriptionName: agent-worker-sub
+    query: "SELECT COUNT(*) FROM incidents WHERE status = 'new'"
   ingestionWorker:
     cronSchedule: "*/5 * * * *"
     timezone: UTC
@@ -256,10 +237,10 @@ keda:
 - `kubectl exec` shows expected environment variables populated from Key Vault.
 - `detect-secrets scan` finds no secrets in Terraform files.
 - `helm lint` passes with KEDA templates included.
-- Queue depth of 15 messages → 3 agent worker replicas (staging verification).
+- Queue depth of 15 `new` incidents → 3 agent worker replicas (staging verification).
 - Queue drained → replicas return to 1 within `cooldownPeriod`.
 - Ingestion worker runs once per 5-minute interval.
-- `TriggerAuthentication` uses Workload Identity — no connection strings in manifest.
+- `ScaledObject` uses PostgreSQL scaler query with no Service Bus trigger.
 
 ---
 

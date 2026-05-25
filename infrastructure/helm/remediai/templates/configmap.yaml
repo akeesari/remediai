@@ -7,6 +7,10 @@ metadata:
     {{- include "remediai.labels" . | nindent 4 }}
 data:
   POSTGRES_FQDN: {{ .Values.config.postgresFqdn | quote }}
+  POSTGRES_HOST: {{ (coalesce .Values.config.postgresHost .Values.config.postgresFqdn "") | quote }}
+  POSTGRES_PORT: {{ .Values.config.postgresPort | quote }}
+  POSTGRES_DB: {{ .Values.config.postgresDb | quote }}
+  POSTGRES_USER: {{ .Values.config.postgresUser | quote }}
   KEY_VAULT_URI: {{ .Values.config.keyVaultUri | quote }}
   AI_SEARCH_ENDPOINT: {{ .Values.config.aiSearchEndpoint | quote }}
   LOG_LEVEL: {{ .Values.config.logLevel | quote }}

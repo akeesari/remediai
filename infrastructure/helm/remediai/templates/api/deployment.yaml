@@ -37,6 +37,12 @@ spec:
           envFrom:
             - configMapRef:
                 name: {{ include "remediai.fullname" . }}-config
+            - secretRef:
+                name: {{ default (printf "%s-secrets" (include "remediai.fullname" .)) .Values.keyvault.secretName }}
+          volumeMounts:
+            - name: secrets-store-inline
+              mountPath: /mnt/secrets-store
+              readOnly: true
           resources:
             {{- toYaml .Values.api.resources | nindent 12 }}
           livenessProbe:
@@ -58,3 +64,10 @@ spec:
             readOnlyRootFilesystem: true
             capabilities:
               drop: ["ALL"]
+      volumes:
+        - name: secrets-store-inline
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: {{ include "remediai.fullname" . }}-secrets

@@ -6,11 +6,37 @@ global:
   imageTag: <git-sha>
   workloadIdentityClientId: <managed-identity-client-id>
 
+workloadIdentity:
+  clientId: <managed-identity-client-id>
+  tenantId: <tenant-id>
+
+keyvault:
+  name: <keyvault-name>
+  secretName: ""
+
 config:
   postgresFqdn: <postgres-fqdn>
+  postgresHost: <postgres-fqdn>
+  postgresPort: 5432
+  postgresDb: remediai
+  postgresUser: remediai
   keyVaultUri: <keyvault-uri>
   aiSearchEndpoint: <aisearch-endpoint>
   logLevel: "INFO"
+
+keda:
+  enabled: true
+  agentWorker:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 10
+    query: "SELECT COUNT(*) FROM incidents WHERE status = 'new'"
+    targetQueryValue: "5"
+    activationTargetQueryValue: "1"
+  ingestionWorker:
+    enabled: true
+    cronSchedule: "*/5 * * * *"
+    timezone: "UTC"
 
 dashboard:
   ingress:

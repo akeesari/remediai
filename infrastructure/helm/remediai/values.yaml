@@ -3,6 +3,20 @@ global:
   imageTag: latest
   workloadIdentityClientId: ""
 
+workloadIdentity:
+  clientId: ""
+  tenantId: ""
+
+keyvault:
+  name: ""
+  secretName: ""
+  objects:
+    postgresPassword: postgres-password
+    azureDevopsPat: azure-devops-pat
+    azureSearchApiKey: azure-search-api-key
+    applicationInsightsConnectionString: applicationinsights-connection-string
+    redisConnectionString: redis-connection-string
+
 api:
   image: remediai/api
   replicas: 2
@@ -34,6 +48,28 @@ dashboard:
 
 config:
   postgresFqdn: ""
+  postgresHost: ""
+  postgresPort: 5432
+  postgresDb: remediai
+  postgresUser: remediai
   keyVaultUri: ""
   aiSearchEndpoint: ""
   logLevel: "INFO"
+
+keda:
+  enabled: false
+  agentWorker:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 10
+    pollingInterval: 15
+    cooldownPeriod: 60
+    query: "SELECT COUNT(*) FROM incidents WHERE status = 'new'"
+    targetQueryValue: "5"
+    activationTargetQueryValue: "1"
+  ingestionWorker:
+    enabled: false
+    cronSchedule: "*/5 * * * *"
+    timezone: "UTC"
+    successfulJobsHistoryLimit: 3
+    failedJobsHistoryLimit: 5

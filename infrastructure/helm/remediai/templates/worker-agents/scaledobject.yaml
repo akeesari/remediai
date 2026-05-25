@@ -1,0 +1,29 @@
+{{- if and .Values.keda.enabled .Values.keda.agentWorker.enabled }}
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: {{ include "remediai.fullname" . }}-worker-agents
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "remediai.labels" . | nindent 4 }}
+    app.kubernetes.io/component: worker-agents
+spec:
+  scaleTargetRef:
+    name: {{ include "remediai.fullname" . }}-worker-agents
+  pollingInterval: {{ .Values.keda.agentWorker.pollingInterval }}
+  cooldownPeriod: {{ .Values.keda.agentWorker.cooldownPeriod }}
+  minReplicaCount: {{ .Values.keda.agentWorker.minReplicas }}
+  maxReplicaCount: {{ .Values.keda.agentWorker.maxReplicas }}
+  triggers:
+    - type: postgresql
+      metadata:
+        host: {{ (coalesce .Values.config.postgresHost .Values.config.postgresFqdn "") | quote }}
+        port: {{ .Values.config.postgresPort | quote }}
+        dbName: {{ .Values.config.postgresDb | quote }}
+        userName: {{ .Values.config.postgresUser | quote }}
+        passwordFromEnv: POSTGRES_PASSWORD
+        sslmode: require
+        query: {{ .Values.keda.agentWorker.query | quote }}
+        targetQueryValue: {{ .Values.keda.agentWorker.targetQueryValue | quote }}
+        activationTargetQueryValue: {{ .Values.keda.agentWorker.activationTargetQueryValue | quote }}
+{{- end }}

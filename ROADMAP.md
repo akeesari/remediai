@@ -115,7 +115,7 @@ organised below into milestones and parallel development tracks.
 - [x] CI pipelines: Azure DevOps Pipelines + GitHub Actions → **Phase 21**
 - [ ] Structured logging + OpenTelemetry distributed tracing → **Phase 22**
 - [ ] Azure infrastructure provisioned via Terraform + AKS + Helm → **Phase 23**
-- [ ] Key Vault + Workload Identity + KEDA autoscaling → **Phase 24**
+- [ ] Key Vault + Workload Identity + KEDA autoscaling (PostgreSQL scaler wired in Helm; infra module rollout pending) → **Phase 24**
 - [ ] Azure Monitor alerts for pipeline failures + on-call runbook → **Phase 25**
 - [ ] Load and soak testing → **Phase 26**
 - [ ] Security review and penetration test → **Phase 26**

@@ -36,7 +36,7 @@ only the database layer is real.
 | `tests/e2e/test_incident_lifecycle.py` | Full lifecycle test — create, analyze, assert state transitions |
 | `tests/e2e/test_api_contract.py` | HTTP-level contract tests against the real FastAPI app + real DB |
 | `pyproject.toml` update | Add `test-e2e` pytest marker; add `asyncpg` test dependency |
-| `Makefile` update | Add `test-e2e` target: `pytest tests/e2e/ -v` |
+| `Makefile` update | Add `test-e2e` target: `$(PYTHON) -m pytest tests/e2e/ -v` |
 
 ---
 
@@ -45,6 +45,8 @@ only the database layer is real.
 - PostgreSQL started by Docker Compose (`docker-compose.dev.yml`).
 - `TEST_DATABASE_URL` environment variable points to the test database
   (separate from the dev database to avoid data pollution).
+- If the configured test database does not yet exist, the session fixture
+  creates it before running Alembic migrations.
 - Alembic migrations run once per test session via a session-scoped fixture.
 - Each test function runs inside a transaction that is rolled back on teardown
   (no persistent state between tests).
@@ -54,7 +56,7 @@ only the database layer is real.
 ## Fixtures (`tests/e2e/conftest.py`)
 
 ```python
-@pytest.fixture(scope="session")
+@pytest.fixture()
 async def db_engine() -> AsyncGenerator[AsyncEngine, None]:
     """Create engine, run migrations, yield, drop all."""
 

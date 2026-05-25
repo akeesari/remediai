@@ -24,7 +24,7 @@ runs Postgres and Redis) for full-stack local testing.
 | `apps/dashboard/nginx.conf` | Nginx config: serve static files, proxy `/api` to the API container |
 | `docker-compose.local.yml` | Full-stack compose: all 3 apps + Postgres + Redis + Service Bus emulator |
 | `.env.example` | Example env file for local stack and local service overrides |
-| `Makefile` update | `local-up`, `local-down`, `local-logs` targets |
+| `Makefile` update | `local-up`, `local-down`, `local-logs`, `local-bridge-e2e`, `local-validate-all` targets |
 
 ---
 
@@ -253,6 +253,21 @@ local-logs:
 
 local-migrate:
     docker compose -f docker-compose.local.yml exec api alembic upgrade head
+
+local-bridge-e2e:
+  # Discover local container targets and enable all of them before running bridge tests.
+  $(PYTHON) - <<'PY'
+  # calls GET /api/v1/targets/discovered?environment=local then PUT /api/v1/targets
+  PY
+  $(PYTHON) -m pytest tests/e2e/test_local_log_bridge.py -v -m local_bridge --tb=short -x
+
+local-validate-all:
+  # Full local reliability gate in one command.
+  make local-up
+  make local-migrate
+  make local-smoke
+  make local-bridge-e2e
+  make test-e2e
 ```
 
 ---

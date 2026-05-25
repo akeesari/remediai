@@ -8,6 +8,7 @@ on teardown so no data persists between tests.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 import uuid
@@ -15,9 +16,11 @@ from collections.abc import AsyncGenerator
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock
 
+import asyncpg
 import pytest
 from httpx import ASGITransport, AsyncClient
 from langchain_core.messages import AIMessage
+from sqlalchemy.engine import make_url
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -38,6 +41,38 @@ from packages.domain.models.agent_state import IncidentState
 _DEFAULT_TEST_DB_URL = (
     "postgresql+asyncpg://remediai:change_me_locally@localhost:5432/remediai_test"
 )
+
+
+def _ensure_test_database_exists(database_url: str) -> None:
+    """Create the target PostgreSQL database when it does not exist yet."""
+    parsed = make_url(database_url)
+    database_name = parsed.database
+    if not database_name:
+        raise ValueError("TEST_DATABASE_URL must include a database name")
+
+    admin_database = "postgres" if database_name != "postgres" else "template1"
+
+    async def _create_if_missing() -> None:
+        connection = await asyncpg.connect(
+            host=parsed.host or "localhost",
+            port=int(parsed.port or 5432),
+            user=parsed.username or "",
+            password=parsed.password,
+            database=admin_database,
+        )
+        try:
+            exists = await connection.fetchval(
+                "SELECT 1 FROM pg_database WHERE datname = $1",
+                database_name,
+            )
+            if not exists:
+                safe_name = database_name.replace('"', '""')
+                await connection.execute(f'CREATE DATABASE "{safe_name}"')
+        finally:
+            await connection.close()
+
+    asyncio.run(_create_if_missing())
+
 
 _RC_JSON = json.dumps(
     {
@@ -69,6 +104,11 @@ _FP_JSON = json.dumps(
 )
 
 
+def _to_json_compatible(value: object) -> object:
+    """Convert nested values (e.g. datetimes) into JSON-compatible structures."""
+    return json.loads(json.dumps(value, default=str))
+
+
 # ---------------------------------------------------------------------------
 # Database fixtures
 # ---------------------------------------------------------------------------
@@ -78,12 +118,13 @@ _FP_JSON = json.dumps(
 def run_migrations() -> None:
     """Run Alembic migrations against the test database (sync, session-scoped)."""
     test_db_url = os.environ.get("TEST_DATABASE_URL", _DEFAULT_TEST_DB_URL)
+    _ensure_test_database_exists(test_db_url)
     os.environ["DATABASE_URL"] = test_db_url
     cfg = AlembicConfig("alembic.ini")
     alembic_command.upgrade(cfg, "head")
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture()
 async def db_engine(run_migrations: None) -> AsyncGenerator[AsyncEngine, None]:
     test_db_url = os.environ.get("TEST_DATABASE_URL", _DEFAULT_TEST_DB_URL)
     engine = create_async_engine(test_db_url, echo=False, pool_pre_ping=True)
@@ -203,11 +244,11 @@ async def run_and_persist(
         id=uuid.uuid4(),
         incident_id=incident.id,
         root_cause=result.get("root_cause_summary"),
-        root_cause_json=result.get("root_cause_json"),
-        recommendations=list(result.get("recommendations") or []),
-        code_snippets=list(result.get("code_snippets") or []),
-        rag_results=list(result.get("rag_results") or []),
-        agent_trace=list(result.get("agent_trace") or []),
+        root_cause_json=_to_json_compatible(result.get("root_cause_json") or {}),
+        recommendations=list(_to_json_compatible(result.get("recommendations") or [])),
+        code_snippets=list(_to_json_compatible(result.get("code_snippets") or [])),
+        rag_results=list(_to_json_compatible(result.get("rag_results") or [])),
+        agent_trace=list(_to_json_compatible(result.get("agent_trace") or [])),
         created_at=datetime.now(UTC),
     )
     session.add(analysis)

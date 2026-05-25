@@ -1,6 +1,6 @@
-.PHONY: install dev stop api test test-unit test-agent-evals test-e2e lint format typecheck security-scan check-prompts ci ci-local install-hooks migrate migrate-down ui ui-install ui-build ui-dev index-populate local-up local-down local-logs local-migrate local-smoke
+.PHONY: install dev stop api test test-unit test-agent-evals test-e2e lint format typecheck security-scan check-prompts ci ci-local install-hooks migrate migrate-down ui ui-install ui-build ui-dev index-populate local-up local-down local-logs local-migrate local-smoke local-validate-all
 
-PYTHON ?= python3
+PYTHON ?= $(shell if [ -x .venv/bin/python ]; then echo .venv/bin/python; else echo python3; fi)
 
 install:
 	pip install poetry && poetry install
@@ -15,16 +15,16 @@ api:
 	uvicorn apps.api.main:app --reload --host 0.0.0.0 --port 8000
 
 test:
-	pytest tests/ -x -v --ignore=tests/e2e
+	$(PYTHON) -m pytest tests/ -x -v --ignore=tests/e2e
 
 test-unit:
-	pytest tests/unit/ -v
+	$(PYTHON) -m pytest tests/unit/ -v
 
 test-agent-evals:
-	pytest tests/agent-evals/ -v
+	$(PYTHON) -m pytest tests/agent-evals/ -v
 
 test-e2e:
-	pytest tests/e2e/ -v -m e2e
+	$(PYTHON) -m pytest tests/e2e/ -v -m e2e
 
 lint:
 	ruff check .
@@ -78,9 +78,23 @@ local-migrate:
 local-bridge-e2e:
 	@echo "Running local log bridge end-to-end tests against http://localhost:$${LOCAL_API_PORT:-8000}"
 	@echo "Prereqs: make local-up && make local-migrate"
-	pytest tests/e2e/test_local_log_bridge.py -v -m local_bridge \
+	@set -a; [ -f .env ] && . ./.env; set +a; \
+	api_port=$${LOCAL_API_PORT:-8000}; \
+	targets_payload=$$(curl -sSf "http://localhost:$$api_port/api/v1/targets/discovered?environment=local" | $(PYTHON) -c "import json,sys; items=json.load(sys.stdin); targets=[{'target_type': i['target_type'], 'target_key': i['target_key'], 'display_name': i['display_name'], 'enabled': True, 'metadata': i.get('metadata', {})} for i in items if i.get('target_type') == 'container']; print(json.dumps({'environment': 'local', 'targets': targets}))"); \
+	curl -sSf -X PUT "http://localhost:$$api_port/api/v1/targets" \
+		-H "Content-Type: application/json" \
+		-d "$$targets_payload" >/dev/null; \
+	echo "Ensured local monitoring target policy from discovered local containers"
+	$(PYTHON) -m pytest tests/e2e/test_local_log_bridge.py -v -m local_bridge \
 		--tb=short \
 		-x
+
+local-validate-all:
+	@$(MAKE) local-up
+	@$(MAKE) local-migrate
+	@$(MAKE) local-smoke
+	@$(MAKE) local-bridge-e2e
+	@$(MAKE) test-e2e
 
 local-bridge-restart:
 	docker compose -f docker-compose.local.yml --env-file .env restart log-bridge

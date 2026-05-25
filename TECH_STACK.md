@@ -65,6 +65,7 @@ azure-keyvault-secrets = "^4.8"
 sqlalchemy = "^2.0"
 alembic = "^1.13"
 asyncpg = "^0.29"
+greenlet = "^3.1"
 
 # Cache
 redis = {extras = ["asyncio"], version = "^5.0"}

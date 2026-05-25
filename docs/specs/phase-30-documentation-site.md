@@ -173,7 +173,8 @@ Jobs:
       2. actions/setup-node@v4  (node-version: 20, cache: npm, cache-dependency-path: apps/docs/package-lock.json)
       3. npm ci  (working-directory: apps/docs)
       4. npm run build  (working-directory: apps/docs, NODE_ENV: production)
-      5. actions/upload-pages-artifact@v3  (path: apps/docs/build)
+      5. Verify generated docs are in sync (`git diff --exit-code` over `apps/docs/docs/_generated/`, synced wrappers, and `scripts/sync_docs_site.py`)
+      6. actions/upload-pages-artifact@v3  (path: apps/docs/build)
 
   deploy:
     needs: build
@@ -219,6 +220,8 @@ generated partials derived from the root source documents.
 | `ARCHITECTURE.md` | `apps/docs/docs/_generated/architecture-*.mdx` | `/docs/architecture/overview`, `/docs/architecture/data-flow` |
 | `TECH_STACK.md` | `apps/docs/docs/_generated/architecture-tech-stack.mdx` | `/docs/architecture/tech-stack` |
 | `SECURITY_GUARDRAILS.md` | `apps/docs/docs/_generated/security-*.mdx` | `/docs/security/principles`, `/docs/security/pii-scrubbing`, `/docs/security/identity`, `/docs/security/audit-log` |
+| `ROADMAP.md` | `apps/docs/docs/_generated/roadmap.mdx` | `/docs/roadmap` |
+| `CONTRIBUTING.md` | `apps/docs/docs/_generated/contributing-*.mdx` | `/docs/contributing/dev-environment`, `/docs/contributing/branch-conventions` |
 
 #### Sync mechanism
 
@@ -233,6 +236,12 @@ generated partials derived from the root source documents.
 2. Public docs wrappers may add navigation, admonitions, or page-local framing, but must not restate generated source sections manually.
 3. Generated partials include a machine-generated header comment and are overwritten on every sync.
 4. CI and local docs builds rely on the same sync step so a fresh checkout can regenerate the site without manual editing.
+
+#### Sync tests
+
+- Unit tests validate the sync helper behavior and run in the existing Python test suite.
+- Test location: `tests/unit/test_sync_docs_site.py`
+- Coverage focus: heading extraction boundaries, missing-heading failure path, generated output header, and link normalization.
 
 ---
 

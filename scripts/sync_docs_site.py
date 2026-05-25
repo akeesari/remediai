@@ -70,6 +70,29 @@ SYNC_TARGETS: tuple[SyncTarget, ...] = (
         output=GENERATED_DIR / "security-audit-log.mdx",
         sections=("Audit Trail",),
     ),
+    SyncTarget(
+        source=ROOT / "ROADMAP.md",
+        output=GENERATED_DIR / "roadmap.mdx",
+        sections=(
+            "Current Status",
+            "Milestones",
+            "Parallel Development Tracks",
+            "Remaining Phases — Spec Required Before Implementation",
+            "Is This a Complete Product?",
+            "Completed Phases",
+            "Release Versioning",
+        ),
+    ),
+    SyncTarget(
+        source=ROOT / "CONTRIBUTING.md",
+        output=GENERATED_DIR / "contributing-dev-environment.mdx",
+        sections=("Development Environment",),
+    ),
+    SyncTarget(
+        source=ROOT / "CONTRIBUTING.md",
+        output=GENERATED_DIR / "contributing-branch-conventions.mdx",
+        sections=("Branch Conventions", "Commit Messages", "Pull Request Process"),
+    ),
 )
 
 

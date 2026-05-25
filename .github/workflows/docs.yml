@@ -7,6 +7,12 @@ on:
     paths:
       - 'apps/docs/**'
       - 'docs/**'
+      - 'ARCHITECTURE.md'
+      - 'TECH_STACK.md'
+      - 'SECURITY_GUARDRAILS.md'
+      - 'ROADMAP.md'
+      - 'CONTRIBUTING.md'
+      - 'scripts/sync_docs_site.py'
       - '.github/workflows/docs.yml'
   workflow_dispatch:
 
@@ -45,6 +51,29 @@ jobs:
         run: npm run build
         env:
           NODE_ENV: production
+
+      - name: Verify generated docs are in sync
+        run: |
+          git update-index -q --refresh
+          if ! git diff --quiet -- \
+            apps/docs/docs/_generated \
+            apps/docs/docs/architecture \
+            apps/docs/docs/security \
+            apps/docs/docs/roadmap.md \
+            apps/docs/docs/contributing/dev-environment.md \
+            apps/docs/docs/contributing/branch-conventions.md \
+            scripts/sync_docs_site.py; then
+            echo "Generated docs are out of sync. Run: npm --prefix apps/docs run sync-content and commit the changes."
+            git --no-pager diff -- \
+              apps/docs/docs/_generated \
+              apps/docs/docs/architecture \
+              apps/docs/docs/security \
+              apps/docs/docs/roadmap.md \
+              apps/docs/docs/contributing/dev-environment.md \
+              apps/docs/docs/contributing/branch-conventions.md \
+              scripts/sync_docs_site.py
+            exit 1
+          fi
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

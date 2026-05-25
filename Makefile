@@ -1,4 +1,4 @@
-.PHONY: install dev stop api test test-unit test-agent-evals test-e2e lint format typecheck security-scan check-prompts ci ci-local migrate migrate-down ui ui-install ui-build ui-dev index-populate local-up local-down local-logs local-migrate local-smoke
+.PHONY: install dev stop api test test-unit test-agent-evals test-e2e lint format typecheck security-scan check-prompts ci ci-local install-hooks migrate migrate-down ui ui-install ui-build ui-dev index-populate local-up local-down local-logs local-migrate local-smoke
 
 PYTHON ?= python3
 
@@ -101,5 +101,8 @@ local-smoke:
 	echo "Local smoke checks passed"
 
 ci: lint typecheck check-prompts test
+
+install-hooks:
+	poetry run pre-commit install
 
 ci-local: lint typecheck security-scan check-prompts test ui-build

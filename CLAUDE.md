@@ -9,6 +9,22 @@ Phase specs live in `docs/specs/phase-NN-*.md` — read the spec before implemen
 
 ---
 
+## Spec-First Workflow — No Exceptions
+
+Before writing any implementation code:
+
+1. **Identify** the existing spec file in `docs/specs/` that covers the feature or change being requested. Every task maps to an existing phase — find it.
+2. **Update that spec** to reflect what will be built: add new deliverables, update acceptance criteria, note any new dependencies or out-of-scope items.
+3. **Then implement.** Spec update and implementation ship in the same response.
+
+Rules:
+- Never create a new spec file for a task that fits an existing phase.
+- Never implement before the relevant spec is updated.
+- If a task genuinely spans multiple phases, update all affected specs.
+- The spec update is not a summary of what you did — it is written *as if it always belonged there*, in spec voice (imperative, present tense, no past-tense narration).
+
+---
+
 ## Commit Rules — No Exceptions
 
 1. **Never** run `git add`, `git commit`, or `git push` without explicit user approval.

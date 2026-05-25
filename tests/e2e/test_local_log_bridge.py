@@ -60,9 +60,7 @@ def _check_prerequisites(client: httpx.Client) -> None:
         health = client.get(_api("/health"), timeout=5)
         health.raise_for_status()
     except Exception as exc:
-        pytest.skip(
-            f"Local stack not running at {_API_BASE} — run `make local-up` first. ({exc})"
-        )
+        pytest.skip(f"Local stack not running at {_API_BASE} — run `make local-up` first. ({exc})")
 
     try:
         logs = client.get(_api("/api/v1/local/logs"), params={"limit": 1}, timeout=5)
@@ -250,7 +248,8 @@ class TestFullBridgePipeline:
             if resp.status_code != 200:
                 return []
             return [
-                i for i in resp.json().get("items", [])
+                i
+                for i in resp.json().get("items", [])
                 if marker in i.get("exception_message", "")
                 and i.get("exception_type") == "ValueError"
             ]
@@ -321,9 +320,10 @@ class TestAgentPipeline:
         )
 
         detail = client.get(_api(f"/api/v1/incidents/{incident_id}")).json()
-        assert detail["status"] in ("analyzed", "bug_created"), (
-            f"Expected 'analyzed' or 'bug_created', got '{detail['status']}'"
-        )
+        assert detail["status"] in (
+            "analyzed",
+            "bug_created",
+        ), f"Expected 'analyzed' or 'bug_created', got '{detail['status']}'"
         assert detail.get("root_cause") is not None, "Pipeline should have written a root_cause"
         assert isinstance(detail.get("recommendations"), list)
         assert len(detail["recommendations"]) >= 1

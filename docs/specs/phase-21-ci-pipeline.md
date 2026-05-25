@@ -30,6 +30,8 @@ Stage 6 (Docker Build) of the main branch CI pipeline.
 | `.azure/templates/frontend-ci.yml` | Reusable step template: npm install, tsc, build |
 | `.azure/templates/security-scan.yml` | Reusable step template: pip-audit, npm audit, detect-secrets |
 | `Makefile` update | `ci-local` target: runs all checks locally in the same order as the pipeline |
+| `.pre-commit-config.yaml` | pre-commit hook config: runs `ruff check`, `ruff format`, and `mypy --strict` on every local commit |
+| `Makefile` `install-hooks` target | installs the pre-commit hooks into the local git repo |
 
 ---
 
@@ -311,9 +313,48 @@ if new secrets are found that are not in the baseline.
 
 ---
 
+## Pre-Commit Hooks
+
+Install `pre-commit` (via Poetry dev dependencies) and configure it to run `ruff check`, `ruff format`, and `mypy --strict` on every `git commit`. This catches lint, format, and type errors locally before they ever reach CI.
+
+### `.pre-commit-config.yaml`
+
+```yaml
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.11.12
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy strict
+        entry: poetry run mypy apps/ packages/ --strict
+        language: system
+        types: [python]
+        pass_filenames: false
+```
+
+The `mypy` hook uses `local` repo so it runs inside the project's own Poetry virtual environment, ensuring it sees all installed stubs and plugins (e.g. `sqlalchemy.ext.mypy.plugin`). The mypy `cache_dir` is set in `[tool.mypy]` to `/tmp/mypy_cache_remediai` to prevent cache files from being written into the working tree.
+
+Developers install hooks once after cloning:
+
+```bash
+make install-hooks
+# equivalent: poetry run pre-commit install
+```
+
+---
+
 ## Makefile Addition
 
 ```makefile
+install-hooks:
+	poetry run pre-commit install
+
 ci-local: lint typecheck check-prompts test ui-build
 ```
 
@@ -330,6 +371,10 @@ ci-local: lint typecheck check-prompts test ui-build
 - GitHub Actions publishes pytest artifacts for failed and successful runs.
 - `detect-secrets` scan fails when a test secret is introduced.
 - `make ci-local` replicates the pipeline checks locally.
+- `make install-hooks` installs the pre-commit hooks without error.
+- A commit containing a ruff violation is blocked locally by the pre-commit hook.
+- A commit containing an unformatted file is blocked locally by the pre-commit hook.
+- A commit introducing a mypy type error is blocked locally by the pre-commit hook.
 
 ---
 

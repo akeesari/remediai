@@ -4,6 +4,7 @@ When LOCAL_MODE=true the worker skips Azure Monitor polling and instead
 queries Postgres for incidents with status=new, then runs the agent pipeline
 on each.  This processes exceptions detected by the log-bridge service.
 """
+
 from __future__ import annotations
 
 import asyncio

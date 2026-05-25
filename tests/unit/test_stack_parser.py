@@ -97,8 +97,6 @@ class TestPythonFrameParsing:
         assert frames[0].is_user_code is True
 
     def test_mixed_dotnet_and_python_lines(self) -> None:
-        trace = (
-            "   at UserService.GetById(Int32 id)\n" '  File "src/helper.py", line 5, in helper_fn'
-        )
+        trace = '   at UserService.GetById(Int32 id)\n  File "src/helper.py", line 5, in helper_fn'
         frames = parse_stack_frames(trace)
         assert len(frames) == 2

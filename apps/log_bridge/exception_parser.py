@@ -1,4 +1,5 @@
 """Stateful parser that detects Python exceptions in a stream of log lines."""
+
 from __future__ import annotations
 
 import re
@@ -7,8 +8,7 @@ from dataclasses import dataclass, field
 _TRACEBACK_START = re.compile(r"Traceback \(most recent call last\):")
 # Matches lines like "ValueError: some message" or "app.errors.CustomError: msg"
 _EXCEPTION_LINE = re.compile(
-    r"^([A-Za-z_][A-Za-z0-9_.]*(?:Error|Exception|Warning|Fault|Failure|Exit))"
-    r":\s*(.+)$"
+    r"^([A-Za-z_][A-Za-z0-9_.]*(?:Error|Exception|Warning|Fault|Failure|Exit))" r":\s*(.+)$"
 )
 # Strip common Docker log prefixes: ISO timestamp + optional log level
 _STRIP_TS = re.compile(

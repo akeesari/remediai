@@ -4,6 +4,7 @@ Tails Docker container stdout for the configured services, detects Python
 exceptions, stores all log lines in Redis, and POSTs exceptions to the API
 so they enter the normal incident → agent pipeline flow.
 """
+
 from __future__ import annotations
 
 import json
@@ -55,7 +56,7 @@ class Bridge:
             for s in os.environ.get("BRIDGE_CONTAINERS", "api,worker,dashboard").split(",")
             if s.strip()
         ]
-        self._redis: redis.Redis[bytes] = redis.from_url(self._redis_url)  # type: ignore[assignment]
+        self._redis: redis.Redis = redis.from_url(self._redis_url)  # type: ignore[no-untyped-call]
         self._parsers: dict[str, ExceptionParser] = {s: ExceptionParser() for s in self._services}
         self._http = httpx.Client(timeout=10)
         self._tailers: list[ContainerLogTailer] = []
@@ -73,7 +74,9 @@ class Bridge:
 
         exc = self._parsers[service].feed(line)
         if exc:
-            incident_id = self._ingest_exception(service, exc.exception_type, exc.exception_message, exc.stack_trace)
+            incident_id = self._ingest_exception(
+                service, exc.exception_type, exc.exception_message, exc.stack_trace
+            )
             entry["is_exception"] = True
             entry["incident_id"] = incident_id
             entry["level"] = "ERROR"

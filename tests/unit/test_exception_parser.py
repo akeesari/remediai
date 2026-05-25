@@ -3,6 +3,7 @@
 These tests run without Docker or any live services — they verify the regex
 state machine that turns raw container log lines into DetectedExcepion objects.
 """
+
 from __future__ import annotations
 
 from apps.log_bridge.exception_parser import DetectedExcepion, ExceptionParser

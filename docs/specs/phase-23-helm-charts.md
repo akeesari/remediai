@@ -11,10 +11,16 @@ infrastructure.
 
 ## Background
 
-This phase assumes all Azure resources (AKS, ACR, PostgreSQL, Service Bus, Key
-Vault, AI Search, Blob Storage, etc.) are already provisioned and accessible.
-Docker images are pushed to ACR by CI (Phase 21). Helm charts reference those
-images without modifying Dockerfiles created in Phase 20.
+This phase assumes all Azure resources (AKS, ACR, PostgreSQL, Key Vault, AI
+Search, Blob Storage, etc.) are already provisioned and accessible. Docker images
+are pushed to ACR by CI (Phase 21). Helm charts reference those images without
+modifying Dockerfiles created in Phase 20.
+
+> **Note (post-Phase 31):** Azure Service Bus was removed as a runtime dependency
+> to enable cloud-agnostic distribution via Artifact Hub. The Helm chart requires
+> no Service Bus namespace. KEDA autoscaling (Phase 24) uses a PostgreSQL scaler
+> (`SELECT COUNT(*) FROM incidents WHERE status = 'new'`) instead of a Service Bus
+> queue depth trigger.
 
 ---
 
@@ -27,7 +33,6 @@ The following must be available before starting this phase:
 | AKS cluster | `kubectl` context configured and reachable |
 | ACR login server | e.g. `remediai.azurecr.io` |
 | PostgreSQL FQDN | e.g. `remediai-pg.postgres.database.azure.com` |
-| Service Bus namespace FQDN | e.g. `remediai-sb.servicebus.windows.net` |
 | Key Vault URI | e.g. `https://remediai-kv.vault.azure.net/` |
 | AI Search endpoint | e.g. `https://remediai-search.search.windows.net` |
 | Workload Identity client ID | Managed identity for AKS pods |
@@ -134,7 +139,6 @@ dashboard:
 
 config:
   postgresFqdn: ""
-  serviceBusNamespaceFqdn: ""
   keyVaultUri: ""
   aiSearchEndpoint: ""
 ```
@@ -151,7 +155,6 @@ global:
 
 config:
   postgresFqdn: <postgres-fqdn>
-  serviceBusNamespaceFqdn: <servicebus-fqdn>
   keyVaultUri: <keyvault-uri>
   aiSearchEndpoint: <aisearch-endpoint>
 
@@ -202,8 +205,8 @@ dashboard:
 ## Network Policies
 
 ```yaml
-# Agent Worker: deny all ingress; allow egress to PostgreSQL, Service Bus,
-#               AI Search, OpenAI, Key Vault only
+# Agent Worker: deny all ingress; allow egress to PostgreSQL, AI Search,
+#               OpenAI, Key Vault only (port 5432 + 443)
 # API:          allow ingress from Ingress Controller on port 8000;
 #               egress to PostgreSQL and Key Vault only
 # Dashboard:    allow ingress from Ingress Controller on port 80;
@@ -253,7 +256,7 @@ helm-uninstall:
    ```
 
 2. **Populate `values-prod.yaml`** from existing infrastructure outputs
-   (ACR login server, PostgreSQL FQDN, Service Bus FQDN, Key Vault URI, AI Search endpoint, managed identity client ID).
+   (ACR login server, PostgreSQL FQDN, Key Vault URI, AI Search endpoint, managed identity client ID).
 
 3. **Lint the chart**
    ```bash

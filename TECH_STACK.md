@@ -10,7 +10,7 @@
 | AI Platform         | Azure AI Foundry / Azure OpenAI GPT-4o  | Enterprise SLA, data residency, Managed Identity auth          |
 | RAG                 | Azure AI Search (hybrid)                | Integrated vector + keyword search; Azure-native               |
 | Log Source          | Application Insights / Azure Monitor KQL| Target platform for MVP                                        |
-| Message Queue       | Azure Service Bus (Standard/Premium)    | Dead-letter queues, sessions, Azure-native retry               |
+| Work Queue          | PostgreSQL `incidents.status` column    | No broker required; ACID guarantees prevent double-processing  |
 | Database            | PostgreSQL 16 (Azure Flexible Server)   | Reliable relational store; JSONB for flexible agent outputs    |
 | Cache               | Redis (Azure Cache for Redis)           | API response caching; deduplication state                      |
 | Storage             | Azure Blob Storage                      | Evidence bundles, prompt files, large agent artifacts          |
@@ -21,7 +21,7 @@
 | UI State            | React Query (TanStack Query)            | Server state management; cache + refetch                       |
 | Containerization    | Docker                                  | Consistent build and deploy artifacts                          |
 | Orchestration       | AKS (Azure Kubernetes Service)          | Production hosting; Workload Identity; KEDA scaling            |
-| Autoscaling         | KEDA                                    | Event-driven scaling off Service Bus queue depth               |
+| Autoscaling         | KEDA                                    | Event-driven scaling off PostgreSQL incident queue depth       |
 | Secrets             | Azure Key Vault                         | Central secret management; CSI driver mount to pods            |
 | Identity            | Managed Identity / Workload Identity    | No secret rotation; Azure-native zero-trust                    |
 | Migrations          | Alembic                                 | Versioned PostgreSQL schema migrations                         |
@@ -56,7 +56,6 @@ langchain-community = "^0.3"
 # Azure
 azure-identity = "^1.17"
 azure-monitor-query = "^1.3"
-azure-servicebus = "^7.12"
 azure-search-documents = "^11.6"
 azure-storage-blob = "^12.20"
 azure-keyvault-secrets = "^4.8"
@@ -120,9 +119,6 @@ services:
 
   redis:
     image: redis:7-alpine
-
-  servicebus-emulator:
-    image: mcr.microsoft.com/azure-messaging/servicebus-emulator:latest
 ```
 
 Azure services (OpenAI, AI Search, DevOps, Monitor) are accessed via real Azure credentials in dev. Use a dedicated non-production Azure subscription.

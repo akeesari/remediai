@@ -59,15 +59,13 @@ spec:
     - ports:
         - port: 5432   # PostgreSQL
           protocol: TCP
-        - port: 5671   # Service Bus AMQP
-          protocol: TCP
         - port: 443    # Key Vault / AI Search / OpenAI / Azure APIs (HTTPS)
           protocol: TCP
         - port: 53     # DNS
           protocol: UDP
 
 ---
-# Ingestion Worker: deny all ingress; egress to Service Bus and PostgreSQL only
+# Ingestion Worker: deny all ingress; egress to Azure Monitor and PostgreSQL only
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -86,8 +84,6 @@ spec:
   egress:
     - ports:
         - port: 5432   # PostgreSQL
-          protocol: TCP
-        - port: 5671   # Service Bus AMQP
           protocol: TCP
         - port: 443    # Azure Monitor / Key Vault (HTTPS)
           protocol: TCP

@@ -2,7 +2,7 @@
 
 ## Overview
 
-RemediAI is a cloud-native agentic platform running on Azure. It is composed of independently deployable services that communicate via Azure Service Bus and share state through PostgreSQL.
+RemediAI is a cloud-native agentic platform deployable on any Kubernetes cluster. Services share state through PostgreSQL; the incidents table `status` column serves as the coordination queue between the ingestion worker and the agent worker.
 
 ---
 
@@ -19,7 +19,6 @@ flowchart TD
     A["Application Workloads<br/>AKS / App Service / VMs"]:::azure
     B["Application Insights<br/>Azure Monitor"]:::azure
     C["Log Ingestion Service<br/>Python · AKS"]:::azure
-    D["Azure Service Bus<br/>incident-events"]:::azure
     E["Agent Worker<br/>Python + LangGraph"]:::ai
     F["Azure OpenAI GPT-4o"]:::ai
     G["Azure DevOps Repos"]:::azure
@@ -32,7 +31,8 @@ flowchart TD
     N["Azure Key Vault"]:::security
     O["Managed Identity<br/>Workload Identity"]:::security
 
-    A --> B --> C --> D --> E
+    A --> B --> C --> J
+    J -->|"status=new poll"| E
     E --> F & G & H & I & J & K
     J --> L --> M
     N --> C & E & L
@@ -47,19 +47,19 @@ flowchart TD
 
 ### Log Ingestion Service (`apps/worker/ingestion/`)
 
-Polls Azure Monitor / Application Insights using KQL on a configurable schedule. Deduplicates exceptions by fingerprint hash. Publishes new `IncidentEvent` messages to the `incident-events` Service Bus topic.
+Polls Azure Monitor / Application Insights using KQL on a configurable schedule. Deduplicates exceptions by fingerprint hash. Persists new `Incident` records to PostgreSQL with `status='new'`.
 
 - Runtime: Python
-- Trigger: Azure Monitor KQL schedule
-- Output: Service Bus message → `incident-events`
+- Trigger: Azure Monitor KQL schedule (CronJob)
+- Output: PostgreSQL `incidents` row with `status='new'`
 - Auth: Managed Identity → Key Vault
 
 ### Agent Worker (`apps/worker/agents/`)
 
-Subscribes to the `incident-events` Service Bus topic. Runs the LangGraph pipeline for each incident. Writes analysis results, work item records, and audit entries to PostgreSQL.
+Polls PostgreSQL for incidents with `status='new'`. Runs the LangGraph pipeline for each incident. Writes analysis results, work item records, and audit entries to PostgreSQL.
 
 - Runtime: Python + LangGraph
-- Trigger: Service Bus subscription
+- Trigger: PostgreSQL poll (`status='new'` rows)
 - Dependencies: Azure OpenAI, Azure DevOps REST, Azure AI Search, PostgreSQL
 - Auth: Managed Identity
 
@@ -127,12 +127,12 @@ flowchart LR
 
 ```text
 1. App Insights → KQL query → Log Ingestion Service
-2. Log Ingestion Service → fingerprint check → PostgreSQL (upsert)
-3. Log Ingestion Service → Service Bus → incident-events topic
-4. Agent Worker → Service Bus subscription → incident dequeued
-5. Agent Worker → LangGraph pipeline begins (Triage → ... → Bug Creation)
-6. Each agent step → writes to PostgreSQL (incident_analyses, audit_log)
-7. Bug Creation agent → Azure DevOps Boards REST API → work_items table
+2. Log Ingestion Service → fingerprint check → INSERT incidents (status='new')
+3. Agent Worker → polls PostgreSQL WHERE status='new'
+4. Agent Worker → UPDATE status='triaging' → LangGraph pipeline begins
+5. Each agent step → writes to PostgreSQL (incident_analyses, audit_log)
+6. Bug Creation agent → Azure DevOps Boards REST API → work_items table
+7. Agent Worker → UPDATE status='analyzed' (or 'analysis_failed')
 8. Backend API → reads PostgreSQL → serves dashboard and consumers
 9. React Dashboard → polls Backend API → renders incident list + detail
 ```
@@ -226,7 +226,7 @@ infrastructure/
 
 - Each service has its own Helm chart and AKS Deployment.
 - Secrets are mounted from Key Vault via the Azure Key Vault provider for Secrets Store CSI Driver.
-- Log Ingestion and Agent Worker scale via KEDA using Service Bus queue depth.
+- Log Ingestion and Agent Worker scale via KEDA using a PostgreSQL scaler (Phase 24).
 - Backend API scales via HPA on CPU/memory.
 - PostgreSQL is hosted on Azure Database for PostgreSQL — Flexible Server.
 

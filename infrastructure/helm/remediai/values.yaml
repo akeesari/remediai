@@ -34,7 +34,6 @@ dashboard:
 
 config:
   postgresFqdn: ""
-  serviceBusNamespaceFqdn: ""
   keyVaultUri: ""
   aiSearchEndpoint: ""
   logLevel: "INFO"

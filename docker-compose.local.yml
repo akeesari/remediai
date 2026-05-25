@@ -25,13 +25,6 @@ services:
       timeout: 3s
       retries: 5
 
-  servicebus-emulator:
-    image: mcr.microsoft.com/azure-messaging/servicebus-emulator:latest
-    environment:
-      ACCEPT_EULA: "Y"
-    ports:
-      - "${LOCAL_SERVICEBUS_PORT:-5672}:5672"
-
   api:
     build:
       context: .
@@ -48,7 +41,6 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me_locally}
       DATABASE_URL: postgresql+asyncpg://remediai:${POSTGRES_PASSWORD:-change_me_locally}@postgres:5432/remediai
       REDIS_URL: redis://redis:6379/0
-      AZURE_SERVICEBUS_NAMESPACE: ${AZURE_SERVICEBUS_NAMESPACE:-localhost}
       AZURE_OPENAI_ENDPOINT: ${AZURE_OPENAI_ENDPOINT:-}
       AZURE_OPENAI_DEPLOYMENT: ${AZURE_OPENAI_DEPLOYMENT:-gpt-4o}
       AZURE_DEVOPS_ORG_URL: ${AZURE_DEVOPS_ORG_URL:-}
@@ -81,7 +73,6 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me_locally}
       DATABASE_URL: postgresql+asyncpg://remediai:${POSTGRES_PASSWORD:-change_me_locally}@postgres:5432/remediai
       REDIS_URL: redis://redis:6379/0
-      AZURE_SERVICEBUS_NAMESPACE: ${AZURE_SERVICEBUS_NAMESPACE:-localhost}
       AZURE_OPENAI_ENDPOINT: ${AZURE_OPENAI_ENDPOINT:-}
       AZURE_OPENAI_DEPLOYMENT: ${AZURE_OPENAI_DEPLOYMENT:-gpt-4o}
       AZURE_DEVOPS_ORG_URL: ${AZURE_DEVOPS_ORG_URL:-}
@@ -94,8 +85,6 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      servicebus-emulator:
-        condition: service_started
 
   dashboard:
     build:

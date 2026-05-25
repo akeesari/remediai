@@ -26,15 +26,6 @@ class Settings(BaseSettings):
     azure_openai_deployment: str = "gpt-4o"
     azure_openai_api_version: str = "2024-08-01-preview"
 
-    # Azure Service Bus
-    azure_servicebus_namespace: str = ""
-    azure_servicebus_topic: str = "incident-events"
-    azure_servicebus_subscription: str = "agent-worker"
-
-    @property
-    def servicebus_fqdn(self) -> str:
-        return f"{self.azure_servicebus_namespace}.servicebus.windows.net"
-
     # Azure DevOps
     azure_devops_org_url: str = ""
     azure_devops_project: str = ""

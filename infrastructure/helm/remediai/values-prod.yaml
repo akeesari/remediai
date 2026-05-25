@@ -8,7 +8,6 @@ global:
 
 config:
   postgresFqdn: <postgres-fqdn>
-  serviceBusNamespaceFqdn: <servicebus-fqdn>
   keyVaultUri: <keyvault-uri>
   aiSearchEndpoint: <aisearch-endpoint>
   logLevel: "INFO"

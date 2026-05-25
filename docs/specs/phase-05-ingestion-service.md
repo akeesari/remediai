@@ -1,11 +1,17 @@
-# Phase 5 — Ingestion Service & Service Bus Publisher
+# Phase 5 — Ingestion Service
 
 ## Objective
 
 Wire the Azure Monitor connector (Phase 4) into a production-ready ingestion loop: a
-scheduled poller that fetches new exceptions, persists them, and publishes
-`IncidentEvent` messages to the Azure Service Bus `incident-events` topic so the Agent
-Worker can pick them up.
+scheduled poller that fetches new exceptions and persists them as `Incident` records in
+PostgreSQL. The Agent Worker polls PostgreSQL directly for new incidents; no message
+broker is required.
+
+> **Note (post-Phase 31):** The original design published `IncidentEvent` messages to
+> Azure Service Bus after persistence. That dependency was removed to enable cloud-agnostic
+> Helm chart distribution (Artifact Hub). PostgreSQL `status='new'` rows serve as the
+> work queue; the Service Bus publisher and the `IncidentEvent` model are no longer part
+> of this phase.
 
 ---
 
@@ -13,65 +19,29 @@ Worker can pick them up.
 
 | Path | Purpose |
 |------|---------|
-| `packages/domain/models/events.py` | `IncidentEvent` — the Service Bus message body model |
-| `packages/integrations/service_bus/__init__.py` | Re-exports `ServiceBusPublisher` |
-| `packages/integrations/service_bus/publisher.py` | `ServiceBusPublisher` — async topic sender with retry |
-| `apps/worker/ingestion/scheduler.py` | `IngestionScheduler` — orchestrates poll → persist → publish |
-| `apps/worker/main.py` | Async worker entry-point; runs the scheduler loop |
-| `tests/unit/test_incident_event.py` | Unit tests for `IncidentEvent` serialisation |
-| `tests/integration/test_service_bus_publisher.py` | Publisher tests with mock SB sender |
-| `tests/integration/test_ingestion_scheduler.py` | Scheduler tests with mocked connector + publisher |
+| `apps/worker/ingestion/scheduler.py` | `IngestionScheduler` — orchestrates poll → persist |
+| `apps/worker/main.py` | Async worker entry-point; runs the scheduler or poller loop |
+| `tests/integration/test_ingestion_scheduler.py` | Scheduler tests with mocked connector |
 
 ## Files to Modify
 
 | Path | Change |
 |------|--------|
-| `packages/domain/models/__init__.py` | Export `IncidentEvent` |
-| `packages/integrations/__init__.py` | Re-export `ServiceBusPublisher` |
-| `apps/api/core/config.py` | Add `servicebus_fqdn` computed property |
-| `ROADMAP.md` | Check off Service Bus publisher and ingestion service milestone items |
+| `apps/api/core/config.py` | Add `local_mode`, `ingestion_poll_interval_seconds`, `ingestion_lookback_minutes` settings |
+| `ROADMAP.md` | Check off ingestion service milestone item |
 
 ---
 
 ## Dependencies
 
 All already declared in `pyproject.toml`:
-- `azure-servicebus = "^7.12"` — `ServiceBusClient` (async)
 - `azure-identity = "^1.17"` — `DefaultAzureCredential`
-- `pydantic = "^2.7"` — `IncidentEvent` model + JSON serialisation
+- `pydantic = "^2.7"` — domain models + JSON serialisation
+- `sqlalchemy = "^2.0"` — async ORM for PostgreSQL
 
 ---
 
 ## Implementation Notes
-
-### IncidentEvent (Service Bus message body)
-
-```python
-class IncidentEvent(BaseModel):
-    incident_id: UUID
-    correlation_id: UUID
-    source: str
-    exception_type: str
-    exception_message: str
-    fingerprint: str
-    priority: str        # IncidentPriority value
-    status: str          # IncidentStatus value
-    published_at: datetime
-```
-
-The message body is `model_dump_json()`. Service Bus metadata:
-- `message_id`: `str(incident_id)` — deduplication key
-- `subject`: `"incident.new"`
-- Application properties: `source`, `priority` — enable subscription filters
-
-### ServiceBusPublisher
-
-- Wraps `azure.servicebus.aio.ServiceBusClient` with `DefaultAzureCredential`.
-- FQDN computed as `{namespace}.servicebus.windows.net`.
-- `publish_incident(event)` — sends a single `ServiceBusMessage`.
-- `publish_batch(events)` — sends a `ServiceBusMessageBatch` for throughput.
-- Async context manager (`async with ServiceBusPublisher(...) as pub:`).
-- `HttpResponseError` and `ServiceBusError` logged and re-raised.
 
 ### IngestionScheduler
 
@@ -79,7 +49,7 @@ Single-run method + infinite poll loop:
 
 ```python
 class IngestionScheduler:
-    async def run_once(self) -> list[IncidentEvent]
+    async def run_once(self) -> list[Incident]
     async def run_forever(self) -> None  # asyncio.sleep between runs
 ```
 
@@ -88,10 +58,11 @@ class IngestionScheduler:
 2. Create `AzureMonitorClient(workspace_id)`.
 3. Create `IngestionConnector(session, monitor_client)`.
 4. Call `connector.run(lookback_minutes)` → list of new `Incident` objects.
-5. Convert each to `IncidentEvent`.
-6. Publish batch via `ServiceBusPublisher`.
-7. Commit the DB session.
-8. Return the list of events.
+5. Commit the DB session.
+6. Return the list of new incidents.
+
+The Agent Worker (`LocalIncidentPoller`) polls PostgreSQL for rows where `status='new'`
+and processes them through the LangGraph pipeline. No inter-service messaging is needed.
 
 `run_forever` wraps `run_once` in a `try/except` so transient errors (network, Azure
 API) do not crash the worker. Errors are logged; the loop sleeps
@@ -121,19 +92,17 @@ poetry run python -m apps.worker.main
 
 ## Acceptance Criteria
 
-- [ ] `pytest tests/unit/test_incident_event.py -v` — all pass
-- [ ] `pytest tests/integration/test_service_bus_publisher.py -v` — all pass
 - [ ] `pytest tests/integration/test_ingestion_scheduler.py -v` — all pass
-- [ ] `ruff check packages/integrations/service_bus/ apps/worker/` — no errors
-- [ ] `mypy packages/integrations/service_bus/ apps/worker/ --strict` — 0 errors
-- [ ] `IncidentEvent.model_dump_json()` round-trips through `IncidentEvent.model_validate_json()`
-- [ ] Publisher sets `message_id` from `incident_id`
-- [ ] Scheduler commits session only after successful publish
+- [ ] `ruff check apps/worker/` — no errors
+- [ ] `mypy apps/worker/ --strict` — 0 errors
+- [ ] Scheduler commits session only after connector succeeds
+- [ ] Scheduler rolls back session on connector error
+- [ ] No `azure-servicebus` import anywhere in `apps/` or `packages/`
 
 ---
 
 ## Commit Message
 
 ```
-feat(worker): add Service Bus publisher, IngestionScheduler, and worker entry-point
+feat(worker): add IngestionScheduler and worker entry-point
 ```

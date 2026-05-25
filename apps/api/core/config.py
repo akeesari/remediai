@@ -70,6 +70,8 @@ class Settings(BaseSettings):
     local_incident_poll_interval_seconds: int = 10
     kubernetes_discovery_namespaces: str = ""
     kubernetes_discovery_workloads: str = ""
+    # Required for /api/v1/targets* in non-local mode.
+    target_api_token: str = "local-dev-target-token"
 
     @property
     def database_url(self) -> str:

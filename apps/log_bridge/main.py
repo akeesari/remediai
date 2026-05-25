@@ -20,6 +20,7 @@ import structlog
 
 from apps.log_bridge.exception_parser import ExceptionParser
 from apps.log_bridge.log_tailer import ContainerLogTailer
+from apps.log_bridge.target_filter import TargetFilter
 
 structlog.configure(
     processors=[
@@ -36,6 +37,7 @@ logger = structlog.get_logger()
 _REDIS_LOG_KEY = "local:logs"
 _REDIS_MAX_LINES = 1000
 _LEVEL_KEYWORDS = {"ERROR", "CRITICAL", "WARNING", "WARN"}
+_TARGET_REFRESH_SECONDS = 15
 
 
 def _detect_level(line: str) -> str:
@@ -59,7 +61,16 @@ class Bridge:
         self._redis: redis.Redis = redis.from_url(self._redis_url)  # type: ignore[no-untyped-call]
         self._parsers: dict[str, ExceptionParser] = {s: ExceptionParser() for s in self._services}
         self._http = httpx.Client(timeout=10)
+        self._target_filter = TargetFilter(api_url=self._api_url, client=self._http)
+        self._last_target_refresh = 0.0
         self._tailers: list[ContainerLogTailer] = []
+
+    def _refresh_targets_if_needed(self) -> None:
+        now = time.monotonic()
+        if now - self._last_target_refresh < _TARGET_REFRESH_SECONDS:
+            return
+        self._target_filter.refresh()
+        self._last_target_refresh = now
 
     def _handle_line(self, service: str, line: str) -> None:
         level = _detect_level(line)
@@ -74,12 +85,17 @@ class Bridge:
 
         exc = self._parsers[service].feed(line)
         if exc:
-            incident_id = self._ingest_exception(
-                service, exc.exception_type, exc.exception_message, exc.stack_trace
-            )
             entry["is_exception"] = True
-            entry["incident_id"] = incident_id
             entry["level"] = "ERROR"
+            self._refresh_targets_if_needed()
+
+            if self._target_filter.is_enabled(service):
+                incident_id = self._ingest_exception(
+                    service, exc.exception_type, exc.exception_message, exc.stack_trace
+                )
+                entry["incident_id"] = incident_id
+            else:
+                logger.info("bridge_ingest_skipped_target_not_enabled", container=service)
 
         self._redis.lpush(_REDIS_LOG_KEY, json.dumps(entry))
         self._redis.ltrim(_REDIS_LOG_KEY, 0, _REDIS_MAX_LINES - 1)

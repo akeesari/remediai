@@ -48,7 +48,8 @@ When `LOCAL_MODE=true`:
 | `apps/dashboard/src/App.tsx` | Add `/logs` route |
 | `apps/dashboard/src/components/Layout.tsx` | Add **Logs** nav link |
 | `packages/data_access/models/monitor_target_orm.py` | Persist selected local/Kubernetes monitoring targets |
-| `apps/api/routers/monitor_targets.py` | CRUD APIs for target selection policy |
+| `apps/api/routers/targets.py` | CRUD APIs for target selection policy |
+| `apps/log_bridge/target_filter.py` | Loads enabled local targets and gates ingestion |
 
 ---
 
@@ -102,7 +103,7 @@ running containers, but ingestion applies a persisted allowlist.
 
 1. Discovery is automatic; monitoring is opt-in.
 2. If no targets are enabled, bridge stores raw lines in Redis but does not
-   POST exception payloads to incident ingestion.
+  POST exception payloads to incident ingestion.
 3. Target selection changes are persisted in Postgres and applied without
    restarting the full stack.
 4. Default local policy is empty allowlist.
@@ -159,6 +160,9 @@ Response:
 {
   "updated": 1
 }
+
+Implementation note: policy APIs are unified under `/api/v1/targets*`; local
+scope calls use `environment=local`.
 ```
 
 ---

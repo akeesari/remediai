@@ -4,11 +4,11 @@ from datetime import UTC, datetime
 from typing import Literal, cast
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from sqlalchemy import Select, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from apps.api.core.config import get_settings
+from apps.api.core.config import Settings, get_settings
 from apps.api.schemas.targets import (
     DiscoveredTarget,
     MonitorTarget,
@@ -18,7 +18,29 @@ from apps.api.schemas.targets import (
 from packages.data_access.models.monitor_target_orm import MonitorTargetOrm
 from packages.data_access.session import get_db_session
 
-router = APIRouter(prefix="/api/v1/targets", tags=["targets"])
+
+def _require_targets_access(
+    x_remediai_admin_token: str | None = Header(default=None, alias="X-Remediai-Admin-Token"),
+) -> None:
+    settings: Settings = get_settings()
+    if settings.local_mode:
+        return
+
+    expected = settings.target_api_token.strip()
+    if not expected:
+        raise HTTPException(
+            status_code=503,
+            detail="Target API token is not configured for non-local mode.",
+        )
+    if x_remediai_admin_token != expected:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+
+router = APIRouter(
+    prefix="/api/v1/targets",
+    tags=["targets"],
+    dependencies=[Depends(_require_targets_access)],
+)
 
 
 @router.get("", response_model=list[MonitorTarget])

@@ -7,6 +7,9 @@ export function TargetsPage() {
   const queryClient = useQueryClient()
   const [environment, setEnvironment] = useState<TargetEnvironment>('local')
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set())
+  const [search, setSearch] = useState('')
+  const [typeFilter, setTypeFilter] = useState<'all' | 'container' | 'namespace' | 'workload'>('all')
+  const [toast, setToast] = useState<{ kind: 'success' | 'error'; text: string } | null>(null)
 
   const discoveredQuery = useQuery({
     queryKey: ['targets-discovered', environment],
@@ -42,8 +45,20 @@ export function TargetsPage() {
       }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['targets-persisted', environment] })
+      setToast({ kind: 'success', text: 'Saved target policy successfully.' })
+    },
+    onError: () => {
+      setToast({ kind: 'error', text: 'Failed to save target policy.' })
     },
   })
+
+  useEffect(() => {
+    if (!toast) {
+      return
+    }
+    const timer = window.setTimeout(() => setToast(null), 2500)
+    return () => window.clearTimeout(timer)
+  }, [toast])
 
   function toggleTarget(targetKey: string): void {
     setSelectedKeys((current) => {
@@ -58,6 +73,45 @@ export function TargetsPage() {
   }
 
   const selectedCount = useMemo(() => selectedKeys.size, [selectedKeys])
+  const filteredTargets = useMemo(() => {
+    const query = search.trim().toLowerCase()
+    return discovered.filter((target) => {
+      if (typeFilter !== 'all' && target.target_type !== typeFilter) {
+        return false
+      }
+      if (!query) {
+        return true
+      }
+      return (
+        target.display_name.toLowerCase().includes(query) ||
+        target.target_key.toLowerCase().includes(query)
+      )
+    })
+  }, [discovered, search, typeFilter])
+
+  function enableVisible(): void {
+    setSelectedKeys((current) => {
+      const next = new Set(current)
+      for (const target of filteredTargets) {
+        next.add(target.target_key)
+      }
+      return next
+    })
+  }
+
+  function disableVisible(): void {
+    setSelectedKeys((current) => {
+      const next = new Set(current)
+      for (const target of filteredTargets) {
+        next.delete(target.target_key)
+      }
+      return next
+    })
+  }
+
+  function resetSelection(): void {
+    setSelectedKeys(new Set())
+  }
 
   return (
     <div className="space-y-6">
@@ -84,6 +138,48 @@ export function TargetsPage() {
           <span className="text-xs text-gray-500">Selected: {selectedCount}</span>
         </div>
 
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search targets"
+            className="min-w-56 rounded border border-gray-300 px-3 py-1.5 text-sm"
+          />
+          {(['all', 'container', 'namespace', 'workload'] as const).map((kind) => (
+            <button
+              key={kind}
+              onClick={() => setTypeFilter(kind)}
+              className={`rounded-full px-3 py-1 text-xs ${
+                typeFilter === kind
+                  ? 'bg-indigo-600 text-white'
+                  : 'border border-gray-300 bg-white text-gray-700'
+              }`}
+            >
+              {kind}
+            </button>
+          ))}
+          <div className="ml-auto flex items-center gap-2">
+            <button
+              onClick={enableVisible}
+              className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-700"
+            >
+              Enable visible
+            </button>
+            <button
+              onClick={disableVisible}
+              className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-700"
+            >
+              Disable visible
+            </button>
+            <button
+              onClick={resetSelection}
+              className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-700"
+            >
+              Reset
+            </button>
+          </div>
+        </div>
+
         {(discoveredQuery.isLoading || persistedQuery.isLoading) && (
           <p className="py-8 text-center text-sm text-gray-500">Loading targets…</p>
         )}
@@ -92,15 +188,15 @@ export function TargetsPage() {
           <p className="py-8 text-center text-sm text-red-600">Failed to load targets.</p>
         )}
 
-        {!discoveredQuery.isLoading && !persistedQuery.isLoading && discovered.length === 0 && (
+        {!discoveredQuery.isLoading && !persistedQuery.isLoading && filteredTargets.length === 0 && (
           <p className="py-8 text-center text-sm text-gray-500">
             No targets discovered for {environment}.
           </p>
         )}
 
-        {!discoveredQuery.isLoading && discovered.length > 0 && (
+        {!discoveredQuery.isLoading && filteredTargets.length > 0 && (
           <div className="space-y-2">
-            {discovered.map((target) => (
+            {filteredTargets.map((target) => (
               <label
                 key={target.target_key}
                 className="flex items-center justify-between rounded border border-gray-200 px-3 py-2 text-sm"
@@ -131,11 +227,14 @@ export function TargetsPage() {
         >
           {saveMutation.isPending ? 'Saving…' : 'Save target policy'}
         </button>
-        {saveMutation.isSuccess && (
-          <span className="text-sm text-green-700">Saved target policy successfully.</span>
-        )}
-        {saveMutation.isError && (
-          <span className="text-sm text-red-600">Failed to save target policy.</span>
+        {toast && (
+          <span
+            className={`text-sm ${
+              toast.kind === 'success' ? 'text-green-700' : 'text-red-600'
+            }`}
+          >
+            {toast.text}
+          </span>
         )}
       </div>
     </div>

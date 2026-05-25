@@ -36,6 +36,14 @@ Initial implementation slice in this phase:
 - Keep local log bridge filtering as a follow-up sub-slice; APIs and policy
 	persistence ship first.
 
+Follow-up implementation slice in this phase:
+
+- Enforce persisted local target allowlist in `apps/log_bridge/main.py` before
+	posting exceptions to ingestion.
+- Add non-local authentication guard for `/api/v1/targets*` endpoints.
+- Add dashboard Targets UX controls: search, type filters, bulk enable/disable,
+	and transient success/error toasts.
+
 ---
 
 ## Data Model
@@ -90,6 +98,9 @@ unless explicit namespace/workload discovery configuration is provided.
 - New credential introduced? **Yes (Kubernetes discovery auth when cluster mode enabled)** — loaded through settings + secret management.
 - New HTTP endpoint introduced? **Yes** — target APIs require authentication in non-local environments.
 
+For the follow-up slice, non-local access is explicitly guarded with an
+operator-provided API token header; local mode remains open for developer flow.
+
 ---
 
 ## Acceptance Criteria
@@ -108,6 +119,15 @@ Initial slice acceptance criteria:
 	(`environment`, `target_type`, `target_key`).
 - Dashboard can discover targets, toggle enablement, and persist selection.
 - Unit tests cover router behavior for list/upsert/discovered flows.
+
+Follow-up slice acceptance criteria:
+
+- Local log bridge checks enabled `local/container` targets and skips ingestion
+	when a container is not enabled.
+- `/api/v1/targets*` returns unauthorized responses in non-local mode without
+	a valid operator token.
+- Targets dashboard supports filtering/search and bulk state changes before
+	saving.
 
 ---
 

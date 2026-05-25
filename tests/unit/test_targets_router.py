@@ -10,6 +10,7 @@ from uuid import uuid4
 import httpx
 import pytest
 
+from apps.api.core.config import get_settings
 from apps.api.main import app
 from packages.data_access.session import get_db_session
 
@@ -61,7 +62,14 @@ def _override(session: AsyncMock) -> None:
 
 @pytest.fixture(autouse=True)
 def clear_overrides() -> object:
+    settings = get_settings()
+    original_local_mode = settings.local_mode
+    original_token = settings.target_api_token
+    settings.local_mode = True
+    settings.target_api_token = "local-dev-target-token"
     yield
+    settings.local_mode = original_local_mode
+    settings.target_api_token = original_token
     app.dependency_overrides.pop(get_db_session, None)
 
 
@@ -164,3 +172,23 @@ class TestDiscoverTargets:
 
         assert resp.status_code == 200
         assert resp.json() == []
+
+
+class TestTargetsAuthGuard:
+    @pytest.mark.asyncio
+    async def test_non_local_requires_valid_admin_token(self) -> None:
+        settings = get_settings()
+        settings.local_mode = False
+        settings.target_api_token = "expected-token"
+
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            unauthorized = await client.get("/api/v1/targets/discovered?environment=local")
+            authorized = await client.get(
+                "/api/v1/targets/discovered?environment=local",
+                headers={"X-Remediai-Admin-Token": "expected-token"},
+            )
+
+        assert unauthorized.status_code == 401
+        assert authorized.status_code == 200

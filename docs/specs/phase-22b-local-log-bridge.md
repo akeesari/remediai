@@ -5,8 +5,8 @@
 Add a `LOCAL_MODE=true` development mode so engineers can test the full
 RemediAI pipeline locally — without any Azure Monitor / Application Insights
 dependency — by monitoring exceptions emitted to Docker container stdout and
-routing them through the same Service Bus → Agent Worker → dashboard flow
-that production uses.
+routing them through the same Postgres incident queue → Agent Worker →
+dashboard flow used by the current runtime.
 
 When `LOCAL_MODE=true`:
 - A new `log-bridge` container tails stdout from the `api`, `worker`, and
@@ -19,6 +19,8 @@ When `LOCAL_MODE=true`:
   Monitor) and runs the existing LangGraph agent pipeline.
 - A new **Logs** tab in the React dashboard shows live container logs with
   exception lines highlighted and a link to the created incident.
+- Local collection supports target allowlisting so only selected containers are
+  monitored and forwarded.
 
 ---
 
@@ -45,6 +47,8 @@ When `LOCAL_MODE=true`:
 | `apps/dashboard/src/types/localLogs.ts` | TypeScript types |
 | `apps/dashboard/src/App.tsx` | Add `/logs` route |
 | `apps/dashboard/src/components/Layout.tsx` | Add **Logs** nav link |
+| `packages/data_access/models/monitor_target_orm.py` | Persist selected local/Kubernetes monitoring targets |
+| `apps/api/routers/monitor_targets.py` | CRUD APIs for target selection policy |
 
 ---
 
@@ -85,6 +89,76 @@ GET /api/v1/local/logs
     │ reads Redis LRANGE local:logs 0 199
     ▼
 React dashboard → new Logs tab
+```
+
+---
+
+## Target Selection (Local and Future Kubernetes)
+
+Local mode must not monitor every container by default. The bridge discovers
+running containers, but ingestion applies a persisted allowlist.
+
+### Rules
+
+1. Discovery is automatic; monitoring is opt-in.
+2. If no targets are enabled, bridge stores raw lines in Redis but does not
+   POST exception payloads to incident ingestion.
+3. Target selection changes are persisted in Postgres and applied without
+   restarting the full stack.
+4. Default local policy is empty allowlist.
+
+### `monitor_targets` schema (Phase 22b scope)
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | UUID | PK |
+| `environment` | text | `local` or `kubernetes` |
+| `target_type` | text | `container` \| `namespace` \| `workload` |
+| `target_key` | text | Unique identity (`container_name`, `namespace/name`) |
+| `display_name` | text | Human-readable label |
+| `enabled` | boolean | Allowlist flag |
+| `metadata` | jsonb | labels, runtime hints |
+| `created_at` | timestamptz | audit |
+| `updated_at` | timestamptz | audit |
+
+---
+
+## Target APIs (Phase 22b local scope)
+
+### `GET /api/v1/local/targets/discovered`
+
+Returns currently discovered Docker containers (`api`, `worker`, `dashboard`,
+plus any other running services).
+
+### `GET /api/v1/local/targets`
+
+Returns persisted local target policy rows.
+
+### `PUT /api/v1/local/targets`
+
+Upserts local target policy in bulk.
+
+Request:
+
+```json
+{
+  "targets": [
+    {
+      "target_type": "container",
+      "target_key": "api",
+      "display_name": "api",
+      "enabled": true
+    }
+  ]
+}
+```
+
+Response:
+
+```json
+{
+  "updated": 1
+}
 ```
 
 ---
@@ -184,6 +258,10 @@ Response:
 - The log-bridge container does not start in production (`docker-compose.local.yml`
   is never used outside local dev).
 - `make local-bridge-e2e` passes all tests without manual intervention.
+- With an empty target allowlist, no incidents are created from bridge-detected
+  exceptions.
+- Enabling target `api` causes only `api` container exceptions to create
+  incidents; other containers are ignored for incident ingestion.
 
 ---
 

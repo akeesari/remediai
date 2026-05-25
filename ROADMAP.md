@@ -133,6 +133,17 @@ organised below into milestones and parallel development tracks.
 
 ---
 
+### Milestone 10 — Platform Portability + Fleet Targeting (Phases 32–33)
+
+**Goal:** Keep Azure/Foundry as the default profile while supporting
+cloud-agnostic deployments and explicit target selection across Docker and
+Kubernetes.
+
+- [x] Provider abstraction layer + deployment profiles (`azure-foundry`, `portable`) → **Phase 32**
+- [ ] Target registry + runtime discovery/selection for Docker and Kubernetes → **Phase 33**
+
+---
+
 ## Parallel Development Tracks
 
 Remaining work in Phases 20–26 is split into three independent tracks that can
@@ -197,13 +208,20 @@ code is written for that phase.
 | 28 | Node.js Exception Support | `docs/specs/phase-28-nodejs-support.md` |
 | 29 | Jira Work Item Integration | `docs/specs/phase-29-jira-integration.md` |
 
+### Platform Portability + Fleet Targeting
+
+| Phase | Title | Spec |
+|---|---|---|
+| 32 | Provider Abstraction + Deployment Profiles | `docs/specs/phase-32-provider-abstraction-profiles.md` |
+| 33 | Target Registry + Discovery/Selection | `docs/specs/phase-33-target-registry-discovery-selection.md` |
+
 ---
 
 ## Is This a Complete Product?
 
-At the end of Phase 26, RemediAI is a production-ready, fully deployed
-enterprise platform.  The 29-phase count (19 done + 10 remaining) is the
-ceiling — **no phases will be added** unless product requirements change.
+At the end of Phase 26, RemediAI is production-ready on the Azure reference
+stack. Phases 27–33 extend language support, portability, and fleet target
+management for broader distribution scenarios.
 
 | Capability | Covered by |
 |---|---|
@@ -222,6 +240,8 @@ ceiling — **no phases will be added** unless product requirements change.
 | Key Vault + Workload Identity + KEDA | Phase 24 |
 | Observability + alerting | Phase 25 |
 | Load + security validation | Phase 26 |
+| Provider abstraction + install profiles | Phase 32 |
+| Docker/Kubernetes target registry | Phase 33 |
 
 ---
 
@@ -248,6 +268,7 @@ ceiling — **no phases will be added** unless product requirements change.
 | 17 | AI Search Index Population + RAG Quality Hardening | `3a2e33c` |
 | 18 | Validation Agent — PR Diff Review | `63c0862` |
 | 19 | PR Agent + Human Approval Gate | `63c0862` |
+| 32 | Provider Abstraction + Deployment Profiles | `677d3af` |
 
 ---
 

@@ -22,6 +22,8 @@ Modern applications running on AKS, App Service, or Azure VMs generate exception
 - Creates Azure DevOps Bugs with full context
 - Generates draft Pull Requests after human approval
 - Tracks remediation progress in a React dashboard
+- Exposes integration health warnings and provider status in the dashboard
+- Supports explicit monitoring target selection for local and Kubernetes modes
 
 ---
 
@@ -76,7 +78,7 @@ flowchart TD
 9. Fix Planner Agent produces ranked remediation recommendations.
 10. Azure DevOps Bug is created with full analysis attached.
 11. (Phase 2) PR Agent creates a draft pull request after human approval.
-12. Dashboard shows status, metrics, and remediation progress.
+12. Dashboard shows status, metrics, integration warnings, and target policy.
 ```
 
 ---
@@ -101,7 +103,7 @@ flowchart TD
 | ------------------- | --------------------------------------- |
 | Backend API         | Python 3.12 + FastAPI                   |
 | Agent Orchestration | LangGraph                               |
-| AI Platform         | Azure AI Foundry / Azure OpenAI GPT-4o  |
+| AI Platform         | Azure AI Foundry / Azure OpenAI GPT-4o (default) + portable adapters |
 | RAG                 | Azure AI Search (hybrid)                |
 | Log Source          | Application Insights / Azure Monitor    |
 | Work Queue          | PostgreSQL `incidents.status` polling   |

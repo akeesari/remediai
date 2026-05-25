@@ -7,6 +7,10 @@ Helm charts deployable to AKS.  At the end of this phase a single
 `terraform apply` followed by `helm-deploy` brings up a fully operational
 RemediAI environment in production.
 
+This phase also defines chart profile boundaries used by public distribution:
+an Azure/Foundry default profile and a portable profile with no mandatory
+Azure AI Foundry dependency.
+
 These were originally separate phases (Terraform IaC and AKS/Helm) but are
 merged here because the Helm deploy is blocked on Terraform outputs, and
 splitting them would require a partial-infrastructure handoff with no
@@ -49,6 +53,8 @@ Phase 20 (Local Docker Compose) without modification.
 | `helm/remediai/Chart.yaml` | Parent Helm chart metadata |
 | `helm/remediai/values.yaml` | Default values (images, replicas, resources) |
 | `helm/remediai/values-prod.yaml` | Production overrides |
+| `helm/remediai/values-azure-foundry.yaml` | Azure-optimized profile (default) |
+| `helm/remediai/values-portable.yaml` | Cloud-agnostic profile (adapter-based) |
 | `helm/remediai/templates/api/` | API Deployment, Service, HPA |
 | `helm/remediai/templates/worker-agents/` | Agent Worker Deployment |
 | `helm/remediai/templates/worker-ingestion/` | Ingestion Worker CronJob |
@@ -234,6 +240,24 @@ redis:
 
 ---
 
+## Deployment Profiles
+
+| Profile | Default | Purpose | Required AI backend |
+|---|---|---|---|
+| `azure-foundry` | Yes | Azure-optimized production deployment | Azure AI Foundry / Azure OpenAI |
+| `portable` | No | Artifact Hub cloud-agnostic install baseline | Any compatible provider adapter |
+
+### Profile rules
+
+1. `values-azure-foundry.yaml` is the default documented path.
+2. `values-portable.yaml` must remain fully supported and tested for chart
+  installability without Azure-only dependencies.
+3. Profile selection is explicit at install time via `--values`.
+4. Application code paths read provider selection from configuration, not hard
+  coded cloud checks.
+
+---
+
 ## Kubernetes Resources
 
 ### API Deployment
@@ -347,3 +371,4 @@ helm-deploy:
 - KEDA ScaledObject definitions (Phase 24).
 - TLS certificate provisioning (cert-manager assumed managed externally).
 - Multi-region or disaster recovery configuration.
+- Provider adapter implementation details (Phase 32).

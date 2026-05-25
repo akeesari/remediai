@@ -46,17 +46,15 @@ def build_pipeline(
     ``state["approval_status"] == "approved"``.
     """
     if llm is None:
-        from langchain_openai import AzureChatOpenAI
-
         from apps.api.core.config import get_settings
+        from packages.integrations.providers.registry import (
+            create_chat_model,
+            ensure_valid_provider_config,
+        )
 
         s = settings or get_settings()
-        llm = AzureChatOpenAI(
-            azure_endpoint=s.azure_openai_endpoint,
-            azure_deployment=s.azure_openai_deployment,
-            api_version=s.azure_openai_api_version,
-            temperature=0,
-        )
+        ensure_valid_provider_config(s)
+        llm = create_chat_model(s)
 
     graph: StateGraph = StateGraph(IncidentState)
     graph.add_node("triage", make_triage_node(llm=llm))

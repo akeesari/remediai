@@ -11,6 +11,7 @@ from apps.api.routers.incidents import router as incidents_router
 from apps.api.routers.integrations import router as integrations_router
 from apps.api.routers.local_logs import router as local_logs_router
 from apps.api.routers.metrics import router as metrics_router
+from apps.api.routers.targets import router as targets_router
 
 settings = get_settings()
 configure_logging(settings.app_env, settings.log_level)
@@ -47,6 +48,7 @@ app.include_router(incidents_router)
 app.include_router(approvals_router)
 app.include_router(metrics_router)
 app.include_router(integrations_router)
+app.include_router(targets_router)
 
 if settings.local_mode:
     app.include_router(local_logs_router)

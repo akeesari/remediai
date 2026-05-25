@@ -5,6 +5,7 @@ import { IncidentList } from './pages/IncidentList'
 import { IncidentDetail } from './pages/IncidentDetail'
 import { LocalLogsPage } from './pages/LocalLogsPage'
 import { MetricsPage } from './pages/MetricsPage'
+import { TargetsPage } from './pages/TargetsPage'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -23,6 +24,7 @@ export function App() {
             <Route path="/incidents/:id" element={<IncidentDetail />} />
             <Route path="/metrics" element={<MetricsPage />} />
             <Route path="/logs" element={<LocalLogsPage />} />
+            <Route path="/targets" element={<TargetsPage />} />
           </Route>
         </Routes>
       </BrowserRouter>

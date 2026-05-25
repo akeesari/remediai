@@ -19,6 +19,9 @@ At the end of this phase:
    screenshots, changelog, and category — matching the quality bar of Loki and
    ArgoCD listings.
 
+Distribution defaults to the Azure/Foundry profile while preserving a
+first-class portable profile for non-Azure clusters.
+
 ---
 
 ## Background
@@ -188,6 +191,15 @@ dashboard:
   image: remediai-dashboard
 ```
 
+#### Profile values files (required)
+
+| File | Purpose |
+|---|---|
+| `helm/remediai/values-azure-foundry.yaml` | Default Artifact Hub installation profile |
+| `helm/remediai/values-portable.yaml` | Cloud-agnostic installation profile |
+
+Both files are versioned and published with the chart package.
+
 ---
 
 ### D3 — Artifact Hub Repository Metadata File
@@ -236,8 +248,18 @@ GitHub Pages.
 helm repo add remediai https://<org>.github.io/remediai/charts/
 helm repo update
 helm install remediai remediai/remediai --namespace remediai --create-namespace \
+  --values helm/remediai/values-azure-foundry.yaml \
   --set azureOpenAI.endpoint=<your-endpoint> \
   --set database.host=<your-postgres-host>
+```
+
+**Portable install command:**
+
+```bash
+helm install remediai remediai/remediai --namespace remediai --create-namespace \
+  --values helm/remediai/values-portable.yaml \
+  --set providers.llm=<provider-id> \
+  --set providers.vectorStore=<provider-id>
 ```
 
 ---

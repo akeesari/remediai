@@ -209,6 +209,30 @@ make check-prompts
 
 ---
 
+## Spec-Driven Source of Truth
+
+RemediAI uses phase specs in `docs/specs/` as the implementation source of
+truth.
+
+Rules:
+
+1. Update an existing phase spec when extending the same concern.
+2. Create a new phase spec only when no existing phase can reasonably own the
+	change.
+3. Do not implement behavior before the relevant spec is updated in the same
+	PR.
+4. Keep future specs 1-2 phases ahead; avoid speculative long-range specs.
+
+When docs disagree, the latest approved phase spec wins. After spec updates,
+sync summary docs:
+
+- `ROADMAP.md`
+- `ARCHITECTURE.md`
+- `README.md`
+- `TECH_STACK.md`
+
+---
+
 ## Coding Standards
 
 ### Python

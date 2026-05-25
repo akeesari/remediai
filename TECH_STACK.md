@@ -7,12 +7,13 @@
 | Backend API         | Python 3.12 + FastAPI                   | Async-native, Pydantic-first, strong Azure SDK support         |
 | Agent Worker        | Python 3.12                             | Consistent with API; rich AI/ML ecosystem                      |
 | Agent Orchestration | LangGraph                               | Stateful, graph-based agent workflows; native LangChain compat |
-| AI Platform         | Azure AI Foundry / Azure OpenAI GPT-4o  | Enterprise SLA, data residency, Managed Identity auth          |
+| AI Platform         | Azure AI Foundry / Azure OpenAI GPT-4.1 (default) + portable adapters | Azure-optimized by default while preserving cloud-agnostic deployment profiles |
 | RAG                 | Azure AI Search (hybrid)                | Integrated vector + keyword search; Azure-native               |
 | Log Source          | Application Insights / Azure Monitor KQL| Target platform for MVP                                        |
 | Work Queue          | PostgreSQL `incidents.status` column    | No broker required; ACID guarantees prevent double-processing  |
 | Database            | PostgreSQL 16 on AKS                    | Reliable relational store kept on the cluster network          |
 | Cache               | Redis 7 on AKS                          | API response caching and deduplication without an external cache tier |
+| Target Registry     | PostgreSQL `monitor_targets`            | Persisted allowlist for local container and Kubernetes target selection |
 | Storage             | Azure Blob Storage                      | Evidence bundles, prompt files, large agent artifacts          |
 | Source Control      | Azure DevOps Repos (Git)                | MVP target; code context and PR creation                       |
 | Work Items          | Azure DevOps Boards                     | Bug creation and work item tracking                            |

@@ -68,6 +68,8 @@ class Settings(BaseSettings):
     local_mode: bool = False
     local_log_bridge_containers: str = "api,worker,dashboard"
     local_incident_poll_interval_seconds: int = 10
+    kubernetes_discovery_namespaces: str = ""
+    kubernetes_discovery_workloads: str = ""
 
     @property
     def database_url(self) -> str:

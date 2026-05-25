@@ -7,6 +7,9 @@ secrets mounted via the Secrets Store CSI Driver, configure Workload Identity
 Federation for every AKS pod, and add KEDA autoscaling for the Agent Worker
 and Ingestion Worker.
 
+This phase preserves profile semantics introduced in Phase 23:
+`azure-foundry` remains default and `portable` remains supported.
+
 These were originally separate phases but are merged here because KEDA's
 `TriggerAuthentication` requires Workload Identity — neither is independently
 shippable without the other.
@@ -21,6 +24,10 @@ SECURITY_GUARDRAILS.md requires:
 
 ARCHITECTURE.md lists KEDA as the autoscaling mechanism.  The Agent Worker
 currently runs as a fixed single-replica deployment (Phase 23).
+
+Target selection policy (Phase 33) is expected to constrain monitored scope.
+KEDA settings must account for enabled target counts to avoid over-scaling from
+unbounded discovery.
 
 ---
 
@@ -213,7 +220,22 @@ keda:
   ingestionWorker:
     cronSchedule: "*/5 * * * *"
     timezone: UTC
+  guardrails:
+    maxEnabledTargets: 100
+    maxIncidentsPerTargetPerMinute: 60
+    noisyTargetAutoPause: true
 ```
+
+---
+
+## Target-Scope Scaling Guardrails
+
+1. KEDA scaling is based on queued incidents from enabled monitoring targets
+   only.
+2. If an individual target exceeds configured incident rate limits, that target
+   is auto-paused and an alert is emitted.
+3. Maximum enabled target count is configurable and enforced at API layer.
+4. Worker autoscaling remains bounded by provider rate limits and budget caps.
 
 ---
 
@@ -257,3 +279,4 @@ keda:
 - Prometheus-based scaling triggers.
 - cert-manager and TLS certificate issuance.
 - Key Vault firewall / IP allow-listing (handled at network layer).
+- Target registry API and UI contracts (Phase 33).

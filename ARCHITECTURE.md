@@ -4,6 +4,14 @@
 
 RemediAI is a cloud-native agentic platform deployable on any Kubernetes cluster. Services share state through PostgreSQL; the incidents table `status` column serves as the coordination queue between the ingestion worker and the agent worker.
 
+Phase 32 introduces provider profiles for runtime portability:
+
+- `azure-foundry` (default): Azure AI Foundry / Azure OpenAI optimized path.
+- `portable`: adapter-based profile for non-Azure Kubernetes deployments.
+
+Provider selection is configuration-driven and resolved through
+`packages/integrations/providers/registry.py`.
+
 ---
 
 ## Component Diagram
@@ -71,6 +79,12 @@ FastAPI application exposing REST endpoints for the dashboard and external consu
 - Trigger: HTTP
 - Dependencies: PostgreSQL, Redis (cache)
 - Auth: Azure AD / API key (configurable)
+
+Key dashboard-facing contracts include:
+
+- Incident list/detail/metrics endpoints
+- Integration health endpoint (`/api/v1/integrations/health`)
+- Target registry endpoints (`/api/v1/targets*`)
 
 ### Dashboard (`apps/dashboard/`)
 
@@ -191,6 +205,20 @@ CREATE TABLE audit_log (
     output_summary  TEXT,
     metadata        JSONB,
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Monitor Targets
+CREATE TABLE monitor_targets (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    environment     TEXT NOT NULL,
+    target_type     TEXT NOT NULL,
+    target_key      TEXT NOT NULL,
+    display_name    TEXT NOT NULL,
+    enabled         BOOLEAN NOT NULL DEFAULT false,
+    metadata        JSONB NOT NULL DEFAULT '{}',
+    created_at      TIMESTAMPTZ NOT NULL,
+    updated_at      TIMESTAMPTZ NOT NULL,
+    UNIQUE(environment, target_type, target_key)
 );
 ```
 

@@ -1,5 +1,11 @@
 from packages.data_access.base import Base
-from packages.data_access.models import AnalysisOrm, AuditLogOrm, IncidentOrm, WorkItemOrm
+from packages.data_access.models import (
+    AnalysisOrm,
+    AuditLogOrm,
+    IncidentOrm,
+    MonitorTargetOrm,
+    WorkItemOrm,
+)
 
 
 def test_incident_orm_table_name() -> None:
@@ -18,8 +24,12 @@ def test_audit_log_orm_table_name() -> None:
     assert AuditLogOrm.__tablename__ == "audit_log"
 
 
+def test_monitor_target_orm_table_name() -> None:
+    assert MonitorTargetOrm.__tablename__ == "monitor_targets"
+
+
 def test_all_orm_models_inherit_base() -> None:
-    for model in (IncidentOrm, AnalysisOrm, WorkItemOrm, AuditLogOrm):
+    for model in (IncidentOrm, AnalysisOrm, WorkItemOrm, AuditLogOrm, MonitorTargetOrm):
         assert issubclass(model, Base)
 
 

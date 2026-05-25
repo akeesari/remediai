@@ -18,7 +18,7 @@ Variables table at the end.
 
 | Item | Detail |
 |------|--------|
-| Generator | Docusaurus v3 (`@docusaurus/core@3.7.0`) |
+| Generator | Docusaurus v3 (`@docusaurus/core@3.10.1`) |
 | Theme | `@docusaurus/preset-classic` with custom CSS variables |
 | Location | `apps/docs/` in the monorepo |
 | Build output | Static HTML — artifact uploaded by GitHub Actions |
@@ -452,13 +452,82 @@ https://akeesari.github.io/remediai/blog/introducing-remediai
 
 ---
 
+### D14 — Local Docker Development
+
+The documentation site runs as a standalone Docker container so developers can
+preview the exact production build locally before pushing to GitHub Pages.
+
+#### Files
+
+| File | Purpose |
+|------|---------|
+| `apps/docs/Dockerfile` | Multi-stage build: Node 20 (build) → Nginx 1.27 Alpine (serve) |
+| `apps/docs/nginx.conf` | Nginx server block — serves build output at `/remediai/`, gzip enabled |
+
+#### Dockerfile design
+
+- **Build stage:** `node:20-alpine` — runs `npm ci` then `npm run build`
+- **Production stage:** `nginx:1.27-alpine` — copies `build/` to `/usr/share/nginx/html/remediai/`
+  so the container path matches the GitHub Pages `baseUrl: '/remediai/'`; no path rewriting needed.
+- **Context:** `context: .` (monorepo root), matching the pattern used by all other services.
+
+#### docker-compose.local.yml addition
+
+```yaml
+docs:
+  build:
+    context: .
+    dockerfile: apps/docs/Dockerfile
+  ports:
+    - "${LOCAL_DOCS_PORT:-3001}:80"
+```
+
+Default port: `3001` (does not conflict with the dashboard on `3000`).
+Override with `LOCAL_DOCS_PORT=<port>` in `.env.local`.
+
+#### Usage
+
+```bash
+# Build and start only the docs container
+docker compose -f docker-compose.local.yml up docs --build
+
+# Open in browser
+open http://localhost:3001/remediai/
+
+# Rebuild after content changes
+docker compose -f docker-compose.local.yml up docs --build --force-recreate
+
+# Start everything including docs
+docker compose -f docker-compose.local.yml up --build
+```
+
+#### Why the build runs inside Docker
+
+Running `npm run build` inside the container catches issues that a local build
+might miss: Node version differences and a clean `npm ci` (same as CI), not
+the developer's local `node_modules`. The `npm ci` step uses the committed
+`package-lock.json`, which is the same lock file the GitHub Actions CI uses.
+
+#### Acceptance criteria for this deliverable
+
+- `docker compose -f docker-compose.local.yml up docs --build` exits with code 0.
+- `curl -sI http://localhost:3001/remediai/` returns `HTTP/1.1 200 OK`.
+- `curl -sI http://localhost:3001/` returns `HTTP/1.1 301` redirecting to `/remediai/`.
+- Static assets (`/remediai/assets/js/*.js`, `/remediai/assets/css/*.css`) return 200.
+- Mermaid diagrams are visible on `http://localhost:3001/remediai/docs/architecture/overview`.
+
+---
+
 ## File Layout (complete)
 
 ```
 apps/docs/
+  Dockerfile                  Multi-stage build: Node 20 build → Nginx 1.27 Alpine serve
+  nginx.conf                  Nginx config: serves /remediai/, gzip, security headers
   docusaurus.config.ts        Site config, navbar, footer, plugins, SEO
   sidebars.ts                 Sidebar tree for /docs/*
   package.json                Dependencies and npm scripts
+  package-lock.json           Committed lockfile — required for CI npm cache
   tsconfig.json               TypeScript config (extends @tsconfig/docusaurus)
   babel.config.js             Babel preset for Docusaurus
   static/
@@ -594,9 +663,9 @@ docs/
 
 | Package | Version | Purpose |
 |---------|---------|---------|
-| `@docusaurus/core` | `3.7.0` | Core framework |
-| `@docusaurus/preset-classic` | `3.7.0` | Docs + blog + pages + sitemap |
-| `@docusaurus/theme-mermaid` | `3.7.0` | Mermaid diagram rendering |
+| `@docusaurus/core` | `3.10.1` | Core framework |
+| `@docusaurus/preset-classic` | `3.10.1` | Docs + blog + pages + sitemap |
+| `@docusaurus/theme-mermaid` | `3.10.1` | Mermaid diagram rendering |
 | `@easyops-cn/docusaurus-search-local` | `^0.44` | Offline full-text search |
 | `@mdx-js/react` | `^3.0` | MDX component support |
 | `clsx` | `^2` | Conditional classnames |
@@ -607,8 +676,8 @@ Dev:
 
 | Package | Version |
 |---------|---------|
-| `@docusaurus/module-type-aliases` | `3.7.0` |
-| `@docusaurus/types` | `3.7.0` |
+| `@docusaurus/module-type-aliases` | `3.10.1` |
+| `@docusaurus/types` | `3.10.1` |
 | `@tsconfig/docusaurus` | `^2.0` |
 | `typescript` | `~5.4.5` |
 

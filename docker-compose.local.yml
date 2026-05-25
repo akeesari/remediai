@@ -107,6 +107,13 @@ services:
       api:
         condition: service_healthy
 
+  docs:
+    build:
+      context: .
+      dockerfile: apps/docs/Dockerfile
+    ports:
+      - "${LOCAL_DOCS_PORT:-3001}:80"
+
   log-bridge:
     build:
       context: .

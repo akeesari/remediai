@@ -223,6 +223,10 @@ dist/
 .next/
 out/
 
+# Docusaurus
+.docusaurus/
+.cache-loader/
+
 # Terraform
 .terraform/
 .terraform.lock.hcl

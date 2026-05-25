@@ -83,6 +83,7 @@ RemediAI automates every step of this investigation so engineers focus on **fixi
 
 ## Next steps
 
-import DocCardList from '@theme/DocCardList';
-
-<DocCardList />
+- [Prerequisites](./getting-started/prereqs) — what you need before deploying RemediAI
+- [Installation](./getting-started/installation) — connect your Azure tenant and deploy RemediAI
+- [Architecture Overview](./architecture/overview) — component diagram and service breakdown
+- [Agent Pipeline](./agents/pipeline) — how the multi-agent workflow processes exceptions

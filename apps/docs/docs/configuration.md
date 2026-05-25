@@ -27,23 +27,10 @@ All RemediAI configuration is loaded via `pydantic-settings` from environment va
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `AZURE_APP_INSIGHTS_CONNECTION_STRING` | Yes | — | Application Insights connection string |
+| `AZURE_MONITOR_APP_INSIGHTS_RESOURCE_ID` | No | — | Application Insights resource ID for Azure Monitor lookups |
 | `AZURE_MONITOR_WORKSPACE_ID` | Yes | — | Log Analytics workspace resource ID |
-| `INGESTION_POLL_INTERVAL` | No | `60` | Poll interval in seconds |
-| `INGESTION_LOOKBACK_MINUTES` | No | `5` | Lookback window per poll cycle |
-| `INGESTION_BATCH_SIZE` | No | `100` | Max exceptions per poll |
-
----
-
-### Azure Service Bus
-
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `AZURE_SERVICE_BUS_NAMESPACE` | Yes | — | Service Bus namespace FQDN |
-| `AZURE_SERVICE_BUS_TOPIC` | No | `incident-events` | Topic name |
-| `AZURE_SERVICE_BUS_SUBSCRIPTION` | No | `agent-worker` | Subscription name |
-| `SERVICE_BUS_MAX_LOCK_DURATION` | No | `300` | Message lock duration in seconds |
-| `SERVICE_BUS_MAX_CONCURRENT` | No | `5` | Max concurrent message processing |
+| `INGESTION_POLL_INTERVAL_SECONDS` | No | `60` | Poll interval in seconds |
+| `INGESTION_LOOKBACK_MINUTES` | No | `10` | Lookback window per poll cycle |
 
 ---
 
@@ -52,7 +39,7 @@ All RemediAI configuration is loaded via `pydantic-settings` from environment va
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `AZURE_OPENAI_ENDPOINT` | Yes | — | OpenAI resource endpoint |
-| `AZURE_OPENAI_API_VERSION` | No | `2024-02-15-preview` | API version |
+| `AZURE_OPENAI_API_VERSION` | No | `2024-08-01-preview` | API version |
 | `AZURE_OPENAI_DEPLOYMENT` | No | `gpt-4o` | Model deployment name |
 | `AZURE_OPENAI_MAX_TOKENS` | No | `2048` | Max tokens per response |
 | `AZURE_OPENAI_TEMPERATURE` | No | `0.1` | Sampling temperature |
@@ -79,11 +66,9 @@ All RemediAI configuration is loaded via `pydantic-settings` from environment va
 |----------|----------|---------|-------------|
 | `AZURE_DEVOPS_ORG_URL` | Yes | — | Organisation URL |
 | `AZURE_DEVOPS_PROJECT` | Yes | — | Project name |
+| `AZURE_DEVOPS_REPOSITORY` | No | — | Repository name for code context and PRs |
+| `AZURE_DEVOPS_BRANCH` | No | `main` | Default branch |
 | `AZURE_DEVOPS_PAT` | Yes | — | PAT (from Key Vault at runtime) |
-| `AZURE_DEVOPS_REPO_NAME` | Yes | — | Repository name for code context + PR |
-| `AZURE_DEVOPS_DEFAULT_BRANCH` | No | `main` | Branch for PR base |
-| `AZURE_DEVOPS_REVIEWER_GROUP` | No | — | ADO group added as PR reviewers |
-| `AZURE_DEVOPS_CODE_ROOT` | No | — | Namespace prefix to filter stack frames |
 
 ---
 
@@ -91,12 +76,11 @@ All RemediAI configuration is loaded via `pydantic-settings` from environment va
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `DATABASE_URL` | Yes | — | SQLAlchemy async DSN |
-| `DB_POOL_SIZE` | No | `10` | Connection pool size |
-| `DB_MAX_OVERFLOW` | No | `20` | Max overflow connections |
-| `DB_POOL_TIMEOUT` | No | `30` | Connection acquire timeout (seconds) |
-
-Example: `postgresql+asyncpg://remediai:password@localhost:5432/remediai`
+| `POSTGRES_HOST` | No | `localhost` | PostgreSQL hostname |
+| `POSTGRES_PORT` | No | `5432` | PostgreSQL port |
+| `POSTGRES_DB` | No | `remediai` | Database name |
+| `POSTGRES_USER` | No | `remediai` | Database user |
+| `POSTGRES_PASSWORD` | Yes | — | Database password |
 
 ---
 
@@ -105,8 +89,9 @@ Example: `postgresql+asyncpg://remediai:password@localhost:5432/remediai`
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `REDIS_URL` | Yes | — | Redis connection URL |
-| `REDIS_CACHE_TTL` | No | `300` | Default cache TTL in seconds |
-| `REDIS_DEDUP_TTL` | No | `3600` | Deduplication state TTL in seconds |
+| `LOCAL_MODE` | No | `false` | Enables local-only log bridge endpoints and poller |
+| `LOCAL_LOG_BRIDGE_CONTAINERS` | No | `api,worker,dashboard` | Containers watched by the local log bridge |
+| `LOCAL_INCIDENT_POLL_INTERVAL_SECONDS` | No | `10` | Local poll interval for new incidents |
 
 ---
 

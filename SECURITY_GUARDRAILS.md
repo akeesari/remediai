@@ -20,12 +20,11 @@ All platform services authenticate to Azure services using Managed Identity boun
 | Service              | Identity Role                                      |
 | -------------------- | -------------------------------------------------- |
 | Log Ingestion        | Monitoring Reader on Application Insights resource |
-| Agent Worker         | Azure Service Bus Data Receiver                    |
 | Agent Worker         | Cognitive Services OpenAI User                     |
 | Agent Worker         | Search Index Data Reader                           |
 | Agent Worker         | Azure DevOps (PAT via Key Vault)                   |
 | Agent Worker         | Storage Blob Data Contributor (evidence only)      |
-| Backend API          | PostgreSQL login (secret via Key Vault)            |
+| Backend API          | Key Vault Secrets User                             |
 
 ### Azure DevOps Service Connection
 
@@ -81,7 +80,8 @@ All processing and storage occurs within the configured Azure region. No cross-r
 
 - All inter-service communication within AKS uses Kubernetes Network Policies.
 - AKS cluster is private (private API server endpoint).
-- Azure Service Bus, Key Vault, PostgreSQL, and Storage accessed via Private Endpoints.
+- Key Vault, Azure AI Search, Blob Storage, and other Azure PaaS dependencies are accessed via Private Endpoints.
+- PostgreSQL and Redis run as internal AKS services and are not exposed publicly.
 - No public endpoints on internal services.
 - Ingress to the React dashboard and FastAPI via Azure Application Gateway with WAF (OWASP 3.2 ruleset).
 - TLS 1.2+ enforced on all endpoints. TLS 1.0/1.1 disabled.

@@ -85,7 +85,7 @@ Fill in your non-production Azure resource values. See [Configuration Reference]
 ## Start local dependencies
 
 ```bash
-make local-up         # Starts PostgreSQL, Redis, Service Bus emulator
+make local-up         # Starts PostgreSQL, Redis, API, worker, dashboard, docs, and log bridge
 make local-migrate    # Runs Alembic migrations
 make local-smoke      # Verifies all connections
 ```

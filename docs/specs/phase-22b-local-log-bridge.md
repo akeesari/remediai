@@ -38,7 +38,7 @@ When `LOCAL_MODE=true`:
 | `apps/worker/agents/local_poller.py` | Polls Postgres for new incidents; runs agent pipeline |
 | `apps/worker/main.py` | Branch on `local_mode` — use poller instead of scheduler |
 | `docker-compose.local.yml` | Add `log-bridge` service with docker-socket mount |
-| `.env.local` | Document `LOCAL_MODE=true` |
+| `.env` | Document `LOCAL_MODE=true` |
 | `Makefile` | Add `local-bridge-restart` target |
 | `apps/dashboard/src/pages/LocalLogsPage.tsx` | Live log viewer with exception highlights |
 | `apps/dashboard/src/api/localLogs.ts` | API client for log lines |

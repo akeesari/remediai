@@ -58,7 +58,7 @@ Human approval gate, PR Agent, Validation Agent, draft PR workflow.
 | 20 | Local Full-Stack Docker Compose | ✅ Complete |
 | 21 | CI Pipelines (GitHub Actions + Azure DevOps) | ✅ Complete |
 | 22 | Structured Logging + OpenTelemetry Tracing | In progress |
-| 23 | Terraform IaC + AKS Deployment + Helm | Planned |
+| 23 | Terraform IaC + AKS Deployment + Helm (including PostgreSQL + Redis on AKS) | Planned |
 | 24 | Key Vault + Workload Identity + KEDA | Planned |
 | 25 | Azure Monitor Alerts + Runbook | Planned |
 | 26 | Load Testing + Security Review | Planned |
@@ -140,7 +140,7 @@ Phase 26: Load + Security Testing
 
 At the end of Phase 26, RemediAI will be:
 
-- Fully deployed on AKS with Helm charts
+- Fully deployed on AKS with Helm charts and in-cluster PostgreSQL and Redis
 - Provisioned via Terraform
 - Using Key Vault + Workload Identity — zero stored credentials
 - Horizontally scalable via KEDA and HPA

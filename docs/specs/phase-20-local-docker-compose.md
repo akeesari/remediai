@@ -23,7 +23,7 @@ runs Postgres and Redis) for full-stack local testing.
 | `apps/dashboard/Dockerfile` | Node build stage + Nginx serve stage for the React SPA |
 | `apps/dashboard/nginx.conf` | Nginx config: serve static files, proxy `/api` to the API container |
 | `docker-compose.local.yml` | Full-stack compose: all 3 apps + Postgres + Redis + Service Bus emulator |
-| `.env.local.example` | Example env file for local stack (no real Azure credentials required) |
+| `.env.example` | Example env file for local stack and local service overrides |
 | `Makefile` update | `local-up`, `local-down`, `local-logs` targets |
 
 ---
@@ -214,7 +214,7 @@ volumes:
 
 ---
 
-## `.env.local.example`
+## `.env.example`
 
 ```dotenv
 # Postgres — no change required for local
@@ -242,8 +242,8 @@ AZURE_SERVICEBUS_NAMESPACE=localhost
 
 ```makefile
 local-up:
-    cp -n .env.local.example .env.local || true
-    docker compose -f docker-compose.local.yml --env-file .env.local up --build -d
+  cp -n .env.example .env || true
+  docker compose -f docker-compose.local.yml --env-file .env up --build -d
 
 local-down:
     docker compose -f docker-compose.local.yml down
@@ -260,8 +260,8 @@ local-migrate:
 ## First-Run Workflow
 
 ```
-1. cp .env.local.example .env.local
-2. Fill in AZURE_OPENAI_ENDPOINT and AZURE_DEVOPS_PAT in .env.local
+1. cp .env.example .env
+2. Fill in AZURE_OPENAI_ENDPOINT and AZURE_DEVOPS_PAT in .env
 3. make local-up          # builds images and starts all containers (~2 min first run)
 4. make local-migrate     # runs Alembic migrations against the local Postgres
 5. Open http://localhost:3000  → React dashboard loads
@@ -274,7 +274,7 @@ local-migrate:
 ## Acceptance Criteria
 
 - `docker compose -f docker-compose.local.yml config` validates without errors.
-- `make local-up` starts all 5 services with no manual steps beyond `.env.local`.
+- `make local-up` starts all 5 services with no manual steps beyond `.env`.
 - `http://localhost:3000` opens the React dashboard in a browser.
 - `http://localhost:8000/health` returns `{"status": "ok"}`.
 - `http://localhost:8000/docs` renders the FastAPI OpenAPI UI.
@@ -292,5 +292,5 @@ local-migrate:
 - TLS/HTTPS locally (plain HTTP is sufficient for local dev).
 - Production Helm chart values (Phase 23).
 - Running the full agent pipeline with real Azure services (requires real
-  credentials in `.env.local`; the stack starts and is browser-testable
+  credentials in `.env`; the stack starts and is browser-testable
   without them).

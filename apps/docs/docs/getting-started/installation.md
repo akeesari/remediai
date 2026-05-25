@@ -34,14 +34,9 @@ AZURE_TENANT_ID=<your-tenant-id>
 AZURE_CLIENT_ID=<managed-identity-or-app-registration-client-id>
 AZURE_CLIENT_SECRET=<client-secret-if-using-app-registration>
 
-# Application Insights
-AZURE_APP_INSIGHTS_CONNECTION_STRING=InstrumentationKey=...
+# Application Insights / Azure Monitor
 AZURE_MONITOR_WORKSPACE_ID=<workspace-resource-id>
-
-# Service Bus
-AZURE_SERVICE_BUS_NAMESPACE=<namespace>.servicebus.windows.net
-AZURE_SERVICE_BUS_TOPIC=incident-events
-AZURE_SERVICE_BUS_SUBSCRIPTION=agent-worker
+AZURE_MONITOR_APP_INSIGHTS_RESOURCE_ID=/subscriptions/<sub>/resourceGroups/<rg>/providers/microsoft.insights/components/<app-insights>
 
 # Azure OpenAI
 AZURE_OPENAI_ENDPOINT=https://<resource>.openai.azure.com/
@@ -55,19 +50,24 @@ AZURE_SEARCH_INDEX=remediai-rag
 # Azure DevOps
 AZURE_DEVOPS_ORG_URL=https://dev.azure.com/<org>
 AZURE_DEVOPS_PROJECT=<project>
+AZURE_DEVOPS_REPOSITORY=<repo>
 AZURE_DEVOPS_PAT=<your-pat-from-key-vault>
 
 # Azure Key Vault
 AZURE_KEYVAULT_URL=https://<vault>.vault.azure.net
 
 # PostgreSQL
-DATABASE_URL=postgresql+asyncpg://remediai:change_me_locally@localhost:5432/remediai
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
+POSTGRES_DB=remediai
+POSTGRES_USER=remediai
+POSTGRES_PASSWORD=change_me_locally
 
 # Redis
 REDIS_URL=redis://localhost:6379
 
 # Polling interval (seconds)
-INGESTION_POLL_INTERVAL=60
+INGESTION_POLL_INTERVAL_SECONDS=60
 ```
 
 :::danger Never commit `.env`
@@ -89,13 +89,13 @@ poetry install
 
 ## 4. Start local dependencies
 
-PostgreSQL, Redis, and the Service Bus emulator run in Docker:
+PostgreSQL and Redis run in Docker for local development:
 
 ```bash
 make local-up
 ```
 
-This runs `docker-compose -f docker-compose.local.yml up -d`. To view logs:
+This runs `docker compose -f docker-compose.local.yml --env-file .env up -d`. To view logs:
 
 ```bash
 make local-logs

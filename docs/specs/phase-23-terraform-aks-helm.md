@@ -34,7 +34,6 @@ Phase 20 (Local Docker Compose) without modification.
 | `infrastructure/terraform/terraform.tfvars.example` | Example variable values |
 | `infrastructure/terraform/modules/aks/` | AKS cluster + node pools |
 | `infrastructure/terraform/modules/acr/` | Azure Container Registry |
-| `infrastructure/terraform/modules/postgresql/` | Azure Database for PostgreSQL Flexible Server |
 | `infrastructure/terraform/modules/servicebus/` | Service Bus namespace + topic + subscription |
 | `infrastructure/terraform/modules/keyvault/` | Key Vault + access policies |
 | `infrastructure/terraform/modules/aisearch/` | Azure AI Search service + index |
@@ -54,6 +53,8 @@ Phase 20 (Local Docker Compose) without modification.
 | `helm/remediai/templates/worker-agents/` | Agent Worker Deployment |
 | `helm/remediai/templates/worker-ingestion/` | Ingestion Worker CronJob |
 | `helm/remediai/templates/dashboard/` | Dashboard Deployment + Service + Ingress |
+| `helm/remediai/templates/postgresql/` | In-cluster PostgreSQL StatefulSet, Service, PVC |
+| `helm/remediai/templates/redis/` | In-cluster Redis Deployment/StatefulSet, Service, PVC |
 | `helm/remediai/templates/configmap.yaml` | Non-secret configuration |
 | `helm/remediai/templates/serviceaccount.yaml` | ServiceAccount with Workload Identity annotation |
 | `helm/remediai/templates/networkpolicy.yaml` | NetworkPolicy: ingress/egress rules per service |
@@ -68,8 +69,6 @@ Phase 20 (Local Docker Compose) without modification.
 | AKS cluster | Standard_D4s_v3 × 2 system nodes | Workload Identity + OIDC issuer enabled |
 | AKS node pool (agent workers) | Standard_D4s_v3 × 1–4 | Autoscales via KEDA (Phase 24) |
 | Azure Container Registry | Basic/Standard | Admin disabled; AcrPull granted to AKS identity |
-| PostgreSQL Flexible Server | Standard_D2s_v3, 32 GB | Private endpoint; no public access |
-| Redis Cache | C1/C2 | Private endpoint |
 | Service Bus namespace | Standard | Topic `incident-events` + subscription `agent-worker` |
 | Key Vault | Standard | Soft-delete + purge protection enabled |
 | Azure AI Search | Basic/Standard S1 | Semantic search enabled |
@@ -77,7 +76,14 @@ Phase 20 (Local Docker Compose) without modification.
 | Log Analytics workspace | PerGB2018 | 90-day retention |
 | Application Insights | workspace-based | Linked to Log Analytics |
 | VNet + subnets | /16 VNet, /24 per service | |
-| Private endpoints | PostgreSQL, Redis, Key Vault, Service Bus, Storage | |
+| Private endpoints | Key Vault, Service Bus, Storage | |
+
+### AKS-resident stateful services
+
+| Workload | Backing storage | Notes |
+|---|---|---|
+| PostgreSQL 16 | Azure Disk-backed PVC | Single-writer StatefulSet for MVP; database traffic stays inside the cluster |
+| Redis 7 | Azure Disk-backed PVC | Cache runs inside AKS and is exposed only through an internal ClusterIP service |
 
 ---
 
@@ -103,7 +109,6 @@ terraform {
 module "network"    { source = "./modules/network"    ... }
 module "acr"        { source = "./modules/acr"        ... }
 module "aks"        { source = "./modules/aks"        ... }
-module "postgresql" { source = "./modules/postgresql" ... }
 module "servicebus" { source = "./modules/servicebus" ... }
 module "keyvault"   { source = "./modules/keyvault"   ... }
 module "aisearch"   { source = "./modules/aisearch"   ... }
@@ -119,7 +124,8 @@ variable "prefix"         { type = string default = "remediai" }
 variable "environment"    { type = string default = "dev" }
 variable "aks_node_count" { type = number default = 2 }
 variable "aks_vm_size"    { type = string default = "Standard_D4s_v3" }
-variable "postgres_sku"   { type = string default = "Standard_D2s_v3" }
+variable "postgres_storage_size_gib" { type = number default = 128 }
+variable "redis_storage_size_gib"    { type = number default = 32 }
 ```
 
 ### Key Outputs
@@ -128,7 +134,6 @@ variable "postgres_sku"   { type = string default = "Standard_D2s_v3" }
 output "aks_cluster_name"           { value = module.aks.cluster_name }
 output "acr_login_server"           { value = module.acr.login_server }
 output "keyvault_uri"               { value = module.keyvault.vault_uri }
-output "postgres_fqdn"              { value = module.postgresql.fqdn }
 output "servicebus_namespace_fqdn"  { value = module.servicebus.namespace_fqdn }
 output "aisearch_endpoint"          { value = module.aisearch.endpoint }
 output "log_analytics_workspace_id" { value = module.monitoring.workspace_id }
@@ -172,6 +177,14 @@ helm/remediai/
       deployment.yaml
       service.yaml
       ingress.yaml
+    postgresql/
+      statefulset.yaml
+      service.yaml
+      pvc.yaml
+    redis/
+      statefulset.yaml
+      service.yaml
+      pvc.yaml
 ```
 
 ### Key `values.yaml` Sections
@@ -205,6 +218,18 @@ dashboard:
     enabled: true
     host: remediai.example.com
     tlsSecretName: remediai-tls
+
+postgresql:
+  enabled: true
+  image: postgres:16
+  storageSize: 128Gi
+  serviceName: remediai-postgresql
+
+redis:
+  enabled: true
+  image: redis:7-alpine
+  storageSize: 32Gi
+  serviceName: remediai-redis
 ```
 
 ---
@@ -222,6 +247,18 @@ dashboard:
 - No HPA — KEDA controls scaling in Phase 24.
 - `terminationGracePeriodSeconds: 120`.
 
+### PostgreSQL StatefulSet
+
+- Single replica for MVP with a dedicated PVC.
+- Internal-only `ClusterIP` service (`remediai-postgresql`).
+- Credentials sourced from Key Vault mounted into the application pods in Phase 24.
+
+### Redis StatefulSet
+
+- Single replica for MVP with append-only persistence enabled.
+- Internal-only `ClusterIP` service (`remediai-redis`).
+- Password sourced from Key Vault in Phase 24.
+
 ### Ingestion Worker CronJob
 
 - `concurrencyPolicy: Forbid`.
@@ -237,8 +274,8 @@ dashboard:
 ## Network Policies
 
 ```yaml
-# Agent Worker: deny all ingress; allow egress to PostgreSQL, Service Bus, ADO, AI Search, OpenAI only
-# API:          allow ingress from Ingress Controller on port 8000; egress to PostgreSQL only
+# Agent Worker: deny all ingress; allow egress to in-cluster PostgreSQL, in-cluster Redis, Service Bus, ADO, AI Search, OpenAI only
+# API:          allow ingress from Ingress Controller on port 8000; egress to in-cluster PostgreSQL and Redis only
 # Dashboard:    allow ingress from Ingress Controller on port 80; no backend egress
 ```
 

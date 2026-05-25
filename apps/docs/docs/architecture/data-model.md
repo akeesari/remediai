@@ -5,7 +5,7 @@ title: Data Model
 
 # Data Model
 
-RemediAI uses PostgreSQL 16 as its primary data store. All tables are created and managed via Alembic migrations.
+RemediAI uses PostgreSQL 16 as its primary data store. In production it runs inside AKS as a stateful workload with persistent volumes; all tables are created and managed via Alembic migrations.
 
 ---
 

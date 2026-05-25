@@ -62,14 +62,14 @@ stages:
         steps:
           - checkout: self
 
-          - script: cp .env.local.example .env.local
+          - script: cp .env.example .env
             displayName: Prepare local env
 
-          - script: docker compose -f docker-compose.local.yml --env-file .env.local config
+          - script: docker compose -f docker-compose.local.yml --env-file .env config
             displayName: Validate compose configuration
 
           - script: |
-              docker compose -f docker-compose.local.yml --env-file .env.local up -d --build
+              docker compose -f docker-compose.local.yml --env-file .env up -d --build
               make local-smoke
             displayName: Bring up stack and run smoke checks
 

@@ -65,9 +65,7 @@ def _check_prerequisites(client: httpx.Client) -> None:
     try:
         logs = client.get(_api("/api/v1/local/logs"), params={"limit": 1}, timeout=5)
         if logs.status_code == 404:
-            pytest.skip(
-                "LOCAL_MODE is not enabled — set LOCAL_MODE=true in .env.local and restart."
-            )
+            pytest.skip("LOCAL_MODE is not enabled — set LOCAL_MODE=true in .env and restart.")
         logs.raise_for_status()
     except httpx.HTTPStatusError as exc:
         pytest.skip(f"LOCAL_MODE endpoint not available: {exc}")

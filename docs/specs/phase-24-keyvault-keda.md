@@ -52,12 +52,12 @@ currently runs as a fixed single-replica deployment (Phase 23).
 
 | Secret Name | Consumed by | Description |
 |---|---|---|
-| `postgres-connection-string` | API, Agent Worker | PostgreSQL connection string |
+| `postgres-password` | API, Agent Worker | Password for the in-cluster PostgreSQL service |
+| `redis-password` | API | Password for the in-cluster Redis service |
 | `azure-openai-api-key` | Agent Worker | Azure OpenAI API key (fallback for non-MI) |
 | `azure-devops-pat` | Agent Worker | ADO Personal Access Token |
 | `azure-search-api-key` | Agent Worker | Azure AI Search admin key (fallback) |
 | `applicationinsights-connection-string` | All services | App Insights connection string |
-| `redis-connection-string` | API | Redis connection string |
 
 In production, Azure OpenAI, AI Search, and Service Bus are accessed via
 Managed Identity — the API keys are stored as fallbacks for non-MI environments.
@@ -115,17 +115,22 @@ spec:
     objects: |
       array:
         - |
-          objectName: postgres-connection-string
+          objectName: postgres-password
           objectType: secret
         - |
           objectName: applicationinsights-connection-string
+          objectType: secret
+        - |
+          objectName: redis-password
           objectType: secret
   secretObjects:
     - secretName: remediai-api-secrets
       type: Opaque
       data:
-        - objectName: postgres-connection-string
-          key: DATABASE_URL
+        - objectName: postgres-password
+          key: POSTGRES_PASSWORD
+        - objectName: redis-password
+          key: REDIS_PASSWORD
         - objectName: applicationinsights-connection-string
           key: APPLICATIONINSIGHTS_CONNECTION_STRING
 ```
@@ -237,6 +242,7 @@ keda:
 - `kubectl exec` shows expected environment variables populated from Key Vault.
 - `detect-secrets scan` finds no secrets in Terraform files.
 - `helm lint` passes with KEDA templates included.
+- API and worker resolve PostgreSQL and Redis through in-cluster DNS names rather than Azure managed service endpoints.
 - Queue depth of 15 `new` incidents → 3 agent worker replicas (staging verification).
 - Queue drained → replicas return to 1 within `cooldownPeriod`.
 - Ingestion worker runs once per 5-minute interval.

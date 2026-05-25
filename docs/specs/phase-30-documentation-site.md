@@ -24,6 +24,7 @@ Variables table at the end.
 | Build output | Static HTML — artifact uploaded by GitHub Actions |
 | Node version | 20 LTS |
 | TypeScript | Strict, via `@tsconfig/docusaurus` |
+| Content sync | Generated partials from root source docs before `start` and `build` |
 
 ---
 
@@ -206,6 +207,32 @@ Migrate existing Markdown to Docusaurus pages. Phase specs are **not** published
 | `docs/specs/` | **Not published** — internal only |
 | `docs/prompts/` | **Not published** — internal only |
 | `docs/runbooks/` | **Not published** — internal only |
+
+### D9a — Source-to-Site Content Sync
+
+Architecture and security pages must not be hand-maintained duplicates when the
+same content already exists in the repository root. The docs site consumes
+generated partials derived from the root source documents.
+
+| Source doc | Generated partials | Public pages |
+|------------|--------------------|--------------|
+| `ARCHITECTURE.md` | `apps/docs/docs/_generated/architecture-*.mdx` | `/docs/architecture/overview`, `/docs/architecture/data-flow` |
+| `TECH_STACK.md` | `apps/docs/docs/_generated/architecture-tech-stack.mdx` | `/docs/architecture/tech-stack` |
+| `SECURITY_GUARDRAILS.md` | `apps/docs/docs/_generated/security-*.mdx` | `/docs/security/principles`, `/docs/security/pii-scrubbing`, `/docs/security/identity`, `/docs/security/audit-log` |
+
+#### Sync mechanism
+
+- Script: `scripts/sync_docs_site.py`
+- Triggered by: `npm run sync-content`, and automatically before `npm run start` and `npm run build` in `apps/docs/package.json`
+- Output: deterministic generated MDX partials committed in `apps/docs/docs/_generated/`
+- Wrappers: public docs pages keep only frontmatter, small page-specific framing, and imports of generated partials
+
+#### Rules
+
+1. Root docs remain the source of truth for architecture and security.
+2. Public docs wrappers may add navigation, admonitions, or page-local framing, but must not restate generated source sections manually.
+3. Generated partials include a machine-generated header comment and are overwritten on every sync.
+4. CI and local docs builds rely on the same sync step so a fresh checkout can regenerate the site without manual editing.
 
 ---
 
@@ -483,7 +510,7 @@ docs:
 ```
 
 Default port: `3001` (does not conflict with the dashboard on `3000`).
-Override with `LOCAL_DOCS_PORT=<port>` in `.env.local`.
+Override with `LOCAL_DOCS_PORT=<port>` in `.env`.
 
 #### Usage
 

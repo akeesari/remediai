@@ -207,13 +207,10 @@ infrastructure/
       aks/
       servicebus/
       keyvault/
-      postgresql/
       aisearch/
       storage/
   helm/
-    remedia-api/
-    remedia-worker/
-    remedia-dashboard/
+        remediai/
   k8s/
     namespaces/
     serviceaccounts/
@@ -225,10 +222,11 @@ infrastructure/
 ## Deployment Model
 
 - Each service has its own Helm chart and AKS Deployment.
+- PostgreSQL and Redis run inside AKS as stateful workloads with persistent volumes.
 - Secrets are mounted from Key Vault via the Azure Key Vault provider for Secrets Store CSI Driver.
 - Log Ingestion and Agent Worker scale via KEDA using a PostgreSQL scaler (Phase 24).
 - Backend API scales via HPA on CPU/memory.
-- PostgreSQL is hosted on Azure Database for PostgreSQL — Flexible Server.
+- Database and cache traffic stay on the cluster network behind internal services.
 
 ---
 

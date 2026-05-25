@@ -30,16 +30,14 @@ You need a **non-production** Azure subscription with the following resources pr
 |----------|---------|
 | Azure Application Insights | Log source — where your .NET app writes exceptions |
 | Azure Monitor Workspace | KQL query target |
-| Azure Service Bus (Standard or Premium) | Incident event queue (`incident-events` topic) |
 | Azure OpenAI | GPT-4o model deployment for agent reasoning |
 | Azure AI Search (Basic tier or above) | RAG index for runbooks, docs, and prior fixes |
 | Azure DevOps organisation | Repos for code context; Boards for Bug creation |
 | Azure Key Vault | Secret storage for all credentials |
-| PostgreSQL (Azure Flexible Server, or local Docker) | Incident and audit persistence |
-| Redis (Azure Cache, or local Docker) | API response caching |
+| PostgreSQL and Redis storage for AKS | Persistent backing storage for the in-cluster database and cache |
 
 :::tip Local development
-For local development, PostgreSQL and Redis run in Docker. You still need real Azure credentials for Application Insights, OpenAI, AI Search, DevOps, and Key Vault — use a dedicated **non-production** subscription.
+For local development, PostgreSQL and Redis run in Docker. In AKS, both run inside the cluster as stateful workloads. You still need real Azure credentials for Application Insights, OpenAI, AI Search, DevOps, and Key Vault — use a dedicated **non-production** subscription.
 :::
 
 ---

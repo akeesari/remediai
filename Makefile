@@ -63,8 +63,8 @@ index-populate:
 	$(PYTHON) scripts/populate_search_index.py --source all
 
 local-up:
-	cp -n .env.local.example .env.local || true
-	docker compose -f docker-compose.local.yml --env-file .env.local up --build -d
+	cp -n .env.example .env || true
+	docker compose -f docker-compose.local.yml --env-file .env up --build -d
 
 local-down:
 	docker compose -f docker-compose.local.yml down
@@ -83,13 +83,13 @@ local-bridge-e2e:
 		-x
 
 local-bridge-restart:
-	docker compose -f docker-compose.local.yml --env-file .env.local restart log-bridge
+	docker compose -f docker-compose.local.yml --env-file .env restart log-bridge
 
 local-bridge-logs:
 	docker compose -f docker-compose.local.yml logs -f log-bridge
 
 local-smoke:
-	@set -a; [ -f .env.local ] && . ./.env.local; set +a; \
+	@set -a; [ -f .env ] && . ./.env; set +a; \
 	api_port=$${LOCAL_API_PORT:-8000}; \
 	dashboard_port=$${LOCAL_DASHBOARD_PORT:-3000}; \
 	echo "Checking API health on $$api_port"; \

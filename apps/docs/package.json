@@ -3,16 +3,17 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
+    "sync-content": "python3 ../../scripts/sync_docs_site.py",
     "docusaurus": "docusaurus",
-    "start": "docusaurus start",
-    "build": "docusaurus build",
+    "start": "npm run sync-content && docusaurus start",
+    "build": "npm run sync-content && docusaurus build",
     "swizzle": "docusaurus swizzle",
     "deploy": "docusaurus deploy",
     "clear": "docusaurus clear",
-    "serve": "docusaurus serve",
+    "serve": "npm run sync-content && docusaurus serve",
     "write-translations": "docusaurus write-translations",
     "write-heading-ids": "docusaurus write-heading-ids",
-    "typecheck": "tsc"
+    "typecheck": "npm run sync-content && tsc"
   },
   "dependencies": {
     "@docusaurus/core": "3.10.1",

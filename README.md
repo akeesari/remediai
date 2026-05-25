@@ -38,7 +38,6 @@ flowchart TD
     A["Application Workloads<br/>AKS / App Service / VMs"]:::azure
     B["Application Insights<br/>Azure Monitor"]:::azure
     C["Log Ingestion Service<br/>Python · AKS"]:::azure
-    D["Azure Service Bus<br/>incident-events"]:::azure
     E["Agent Worker<br/>Python + LangGraph"]:::ai
     F["Azure OpenAI GPT-4o"]:::ai
     G["Azure DevOps Repos"]:::azure
@@ -51,7 +50,8 @@ flowchart TD
     N["Azure Key Vault"]:::security
     O["Managed Identity<br/>Workload Identity"]:::security
 
-    A --> B --> C --> D --> E
+    A --> B --> C --> J
+    J -->|"status=new poll"| E
     E --> F & G & H & I & J & K
     J --> L --> M
     N --> C & E & L
@@ -67,8 +67,8 @@ flowchart TD
 ```
 1. Exception appears in Application Insights.
 2. Log ingestion service queries Azure Monitor using KQL.
-3. Incident event is published to Azure Service Bus.
-4. LangGraph worker picks up the incident.
+3. Incident is written to PostgreSQL with `status='new'`.
+4. LangGraph worker polls PostgreSQL and picks up the incident.
 5. Triage Agent assigns priority and groups related incidents.
 6. Root Cause Agent analyzes the exception and stack trace.
 7. Code Context Agent retrieves relevant source files.
@@ -104,9 +104,9 @@ flowchart TD
 | AI Platform         | Azure AI Foundry / Azure OpenAI GPT-4o  |
 | RAG                 | Azure AI Search (hybrid)                |
 | Log Source          | Application Insights / Azure Monitor    |
-| Message Queue       | Azure Service Bus                       |
-| Database            | PostgreSQL 16 (Azure Flexible Server)   |
-| Cache               | Redis (Azure Cache for Redis)           |
+| Work Queue          | PostgreSQL `incidents.status` polling   |
+| Database            | PostgreSQL 16 on AKS                    |
+| Cache               | Redis 7 on AKS                          |
 | UI                  | React 18 + TypeScript                   |
 | Hosting             | AKS (Azure Kubernetes Service)          |
 | Secrets             | Azure Key Vault + Managed Identity      |
@@ -214,6 +214,8 @@ See [SECURITY_GUARDRAILS.md](SECURITY_GUARDRAILS.md) for the full security desig
 | [TECH_STACK.md](TECH_STACK.md)                  | Full stack with rationale and dependencies    |
 | [SECURITY_GUARDRAILS.md](SECURITY_GUARDRAILS.md)| Security design, identity, PII, compliance    |
 | [ROADMAP.md](ROADMAP.md)                        | Milestones and release versioning             |
+
+The top-level Markdown files remain the internal source-of-truth for architecture, security, and planning. The Docusaurus site in `apps/docs/` publishes a curated version of that material rather than replacing it.
 
 ---
 

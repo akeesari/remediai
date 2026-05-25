@@ -64,10 +64,10 @@ npm install
 
 ### Local full stack
 
-Start the full stack (PostgreSQL, Redis, Service Bus emulator, API, worker, dashboard):
+Start the full stack (PostgreSQL, Redis, API, worker, dashboard, docs, and the local log bridge):
 
 ```bash
-cp -n .env.local.example .env.local || true
+cp -n .env.example .env || true
 make local-up
 ```
 
@@ -82,7 +82,7 @@ make local-down
 
 ### Environment variables
 
-Copy `.env.example` to `.env` and fill in values for your non-production Azure resources. Never commit `.env`.
+Copy `.env.example` to `.env` and fill in values for your non-production Azure resources and local port overrides. Never commit `.env`.
 
 ### Run the API
 

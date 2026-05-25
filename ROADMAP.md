@@ -114,7 +114,7 @@ organised below into milestones and parallel development tracks.
 - [x] Full-stack local Docker Compose (all services) → **Phase 20**
 - [x] CI pipelines: Azure DevOps Pipelines + GitHub Actions → **Phase 21**
 - [ ] Structured logging + OpenTelemetry distributed tracing → **Phase 22**
-- [ ] Azure infrastructure provisioned via Terraform + AKS + Helm → **Phase 23**
+- [ ] Azure infrastructure provisioned via Terraform + AKS + Helm, including in-cluster PostgreSQL and Redis → **Phase 23**
 - [ ] Key Vault + Workload Identity + KEDA autoscaling (PostgreSQL scaler wired in Helm; infra module rollout pending) → **Phase 24**
 - [ ] Azure Monitor alerts for pipeline failures + on-call runbook → **Phase 25**
 - [ ] Load and soak testing → **Phase 26**

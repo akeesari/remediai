@@ -11,7 +11,7 @@ RemediAI ingests exception data from Application Insights via Azure Monitor KQL 
 
 ## How it works
 
-The Log Ingestion Service runs a scheduled KQL query against the Application Insights instance linked to your Azure Monitor Workspace. It retrieves exceptions logged in the `exceptions` table, deduplicates them by fingerprint, and publishes new incidents to Azure Service Bus.
+The Log Ingestion Service runs a scheduled KQL query against the Application Insights instance linked to your Azure Monitor Workspace. It retrieves exceptions logged in the `exceptions` table, deduplicates them by fingerprint, and persists new incidents to PostgreSQL with `status='new'`.
 
 ---
 

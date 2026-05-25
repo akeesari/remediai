@@ -30,8 +30,8 @@ RemediAI automates every step of this investigation so engineers focus on **fixi
 ```
 1.  Exception appears in Application Insights.
 2.  KQL query ingests and deduplicates it.
-3.  Incident published to Azure Service Bus.
-4.  LangGraph worker picks up the incident.
+3.  Incident persisted to PostgreSQL with `status='new'`.
+4.  LangGraph worker polls PostgreSQL and picks up the incident.
 5.  Triage Agent assigns priority and groups related incidents.
 6.  Root Cause Agent analyzes the stack trace.
 7.  Code Context Agent retrieves relevant source files.

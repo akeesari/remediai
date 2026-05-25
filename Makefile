@@ -66,6 +66,15 @@ local-up:
 	cp -n .env.local.example .env.local || true
 	docker compose -f docker-compose.local.yml --env-file .env.local up --build -d
 
+helm-lint:
+	helm lint infrastructure/helm/remediai
+
+helm-dry-run:
+	helm upgrade --install remediai infrastructure/helm/remediai --dry-run --values infrastructure/helm/remediai/values.yaml
+
+helm-deploy:
+	helm upgrade --install remediai infrastructure/helm/remediai --values infrastructure/helm/remediai/values.yaml
+
 local-down:
 	docker compose -f docker-compose.local.yml down
 

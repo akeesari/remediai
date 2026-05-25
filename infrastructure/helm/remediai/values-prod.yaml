@@ -1,19 +1,43 @@
-# Production overrides — populate from existing Azure infrastructure before deploying.
-# Do NOT commit real values. This file is .gitignored.
-
 global:
-  registry: <acr-login-server>          # e.g. remediai.azurecr.io
-  imageTag: <git-sha>
-  workloadIdentityClientId: <managed-identity-client-id>
-
-config:
-  postgresFqdn: <postgres-fqdn>
-  serviceBusNamespaceFqdn: <servicebus-fqdn>
-  keyVaultUri: <keyvault-uri>
-  aiSearchEndpoint: <aisearch-endpoint>
+  imageRegistry: "<your-registry>"
+  imageTag: "latest"
+  appEnv: "production"
   logLevel: "INFO"
 
+api:
+  repository: remediai/api
+  replicas: 2
+  env:
+    databaseUrl: ""
+    redisUrl: ""
+    azureServiceBusNamespace: ""
+    azureServiceBusConnectionString: ""
+    azureOpenAiEndpoint: ""
+    azureOpenAiDeployment: "gpt-4o"
+    azureSearchEndpoint: ""
+    azureSearchApiKey: ""
+    azureDevOpsOrgUrl: ""
+    azureDevOpsProject: ""
+    azureDevOpsPat: ""
+    azureMonitorWorkspaceId: ""
+
+worker:
+  repository: remediai/worker
+  replicas: 1
+  env:
+    databaseUrl: ""
+    redisUrl: ""
+    azureServiceBusNamespace: ""
+    azureServiceBusConnectionString: ""
+    azureOpenAiEndpoint: ""
+    azureOpenAiDeployment: "gpt-4o"
+    azureSearchEndpoint: ""
+    azureSearchApiKey: ""
+    azureDevOpsOrgUrl: ""
+    azureDevOpsProject: ""
+    azureDevOpsPat: ""
+    azureMonitorWorkspaceId: ""
+
 dashboard:
-  ingress:
-    host: <actual-dns-name>
-    tlsSecretName: remediai-tls
+  repository: remediai/dashboard
+  replicas: 1

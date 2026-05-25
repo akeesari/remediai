@@ -1,40 +1,57 @@
 global:
-  registry: remediai.azurecr.io
-  imageTag: latest
-  workloadIdentityClientId: ""
+  imageRegistry: ""
+  imageTag: "latest"
+  appEnv: "production"
+  logLevel: "INFO"
 
 api:
-  image: remediai/api
-  replicas: 2
-  resources:
-    requests:
-      cpu: 250m
-      memory: 256Mi
-    limits:
-      cpu: 500m
-      memory: 512Mi
-  port: 8000
-
-workerAgents:
-  image: remediai/worker
+  repository: remediai/api
+  imagePullPolicy: IfNotPresent
   replicas: 1
+  port: 8000
+  resources: {}
+  env:
+    databaseUrl: ""
+    redisUrl: ""
+    azureServiceBusNamespace: ""
+    azureServiceBusConnectionString: ""
+    azureOpenAiEndpoint: ""
+    azureOpenAiDeployment: "gpt-4o"
+    azureSearchEndpoint: ""
+    azureSearchApiKey: ""
+    azureDevOpsOrgUrl: ""
+    azureDevOpsProject: ""
+    azureDevOpsPat: ""
+    azureMonitorWorkspaceId: ""
 
-workerIngestion:
-  image: remediai/worker
-  schedule: "*/5 * * * *"
+worker:
+  repository: remediai/worker
+  imagePullPolicy: IfNotPresent
+  replicas: 1
+  resources: {}
+  env:
+    databaseUrl: ""
+    redisUrl: ""
+    azureServiceBusNamespace: ""
+    azureServiceBusConnectionString: ""
+    azureOpenAiEndpoint: ""
+    azureOpenAiDeployment: "gpt-4o"
+    azureSearchEndpoint: ""
+    azureSearchApiKey: ""
+    azureDevOpsOrgUrl: ""
+    azureDevOpsProject: ""
+    azureDevOpsPat: ""
+    azureMonitorWorkspaceId: ""
 
 dashboard:
-  image: remediai/dashboard
+  repository: remediai/dashboard
+  imagePullPolicy: IfNotPresent
   replicas: 1
-  port: 80
-  ingress:
-    enabled: true
-    host: remediai.example.com
-    tlsSecretName: remediai-tls
+  service:
+    type: ClusterIP
+    port: 80
+  resources: {}
 
-config:
-  postgresFqdn: ""
-  serviceBusNamespaceFqdn: ""
-  keyVaultUri: ""
-  aiSearchEndpoint: ""
-  logLevel: "INFO"
+service:
+  type: ClusterIP
+  port: 8000

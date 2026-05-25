@@ -16,7 +16,7 @@ def _make_incident(**kwargs: object) -> Incident:
         "exception_type": "System.NullReferenceException",
         "exception_message": "Object reference not set.",
     }
-    defaults.update(kwargs)
+    defaults.update(kwargs)  # type: ignore[arg-type]
     return Incident(**defaults)  # type: ignore[arg-type]
 
 
@@ -113,6 +113,27 @@ class TestIngestionSchedulerRunOnce:
         assert events == []
         MockPublisher.assert_not_called()
         mock_session.commit.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_no_monitor_workspace_id_skips_ingestion(self) -> None:
+        from apps.worker.ingestion.scheduler import IngestionScheduler
+
+        mock_session = AsyncMock()
+        mock_session.__aenter__ = AsyncMock(return_value=mock_session)
+        mock_session.__aexit__ = AsyncMock(return_value=None)
+        mock_session.commit = AsyncMock()
+        mock_session.rollback = AsyncMock()
+
+        mock_factory = MagicMock(return_value=mock_session)
+        scheduler = IngestionScheduler(
+            settings=_make_settings(azure_monitor_workspace_id=""),
+            session_factory=mock_factory,
+        )
+        events = await scheduler.run_once()
+
+        assert events == []
+        mock_session.commit.assert_not_awaited()
+        mock_session.rollback.assert_not_awaited()
 
     @pytest.mark.asyncio
     async def test_connector_error_rolls_back_session(self) -> None:

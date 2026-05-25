@@ -24,16 +24,20 @@ class ServiceBusPublisher:
         self,
         namespace: str,
         topic: str,
+        connection_string: str = "",
         credential: AsyncTokenCredential | None = None,
     ) -> None:
         from typing import cast
 
         self._topic = topic
-        fqdn = f"{namespace}.servicebus.windows.net"
-        _cred: AsyncTokenCredential = credential or cast(
-            AsyncTokenCredential, DefaultAzureCredential()
-        )
-        self._client = ServiceBusClient(fully_qualified_namespace=fqdn, credential=_cred)
+        if connection_string:
+            self._client = ServiceBusClient.from_connection_string(connection_string)
+        else:
+            fqdn = f"{namespace}.servicebus.windows.net"
+            _cred: AsyncTokenCredential = credential or cast(
+                AsyncTokenCredential, DefaultAzureCredential()
+            )
+            self._client = ServiceBusClient(fully_qualified_namespace=fqdn, credential=_cred)
 
     async def publish_incident(self, event: IncidentEvent) -> None:
         """Send a single IncidentEvent as a Service Bus message."""

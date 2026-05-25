@@ -1,0 +1,49 @@
+stages:
+  - build
+  - push
+  - deploy
+
+variables:
+  ACR_LOGIN_SERVER: aitenant.azurecr.io
+  IMAGE_TAG: $CI_COMMIT_SHORT_SHA
+
+build_api:
+  stage: build
+  image: docker:24.0.5
+  services:
+    - docker:24.0.5-dind
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+  script:
+    - docker build -f apps/api/Dockerfile -t $ACR_LOGIN_SERVER/remediai-api:$IMAGE_TAG .
+    - docker build -f apps/worker/Dockerfile -t $ACR_LOGIN_SERVER/remediai-worker:$IMAGE_TAG .
+    - docker build -f apps/dashboard/Dockerfile -t $ACR_LOGIN_SERVER/remediai-dashboard:$IMAGE_TAG .
+  only:
+    - main
+
+push_images:
+  stage: push
+  image: docker:24.0.5
+  services:
+    - docker:24.0.5-dind
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+  script:
+    - echo "$ACR_PASSWORD" | docker login $ACR_LOGIN_SERVER -u "$ACR_USERNAME" --password-stdin
+    - docker push $ACR_LOGIN_SERVER/remediai-api:$IMAGE_TAG
+    - docker push $ACR_LOGIN_SERVER/remediai-worker:$IMAGE_TAG
+    - docker push $ACR_LOGIN_SERVER/remediai-dashboard:$IMAGE_TAG
+  only:
+    - main
+
+deploy:
+  stage: deploy
+  image: mcr.microsoft.com/azure-cli
+  script:
+    - az login --service-principal -u "$AZURE_CLIENT_ID" -p "$AZURE_CLIENT_SECRET" --tenant "$AZURE_TENANT_ID"
+    - az aks get-credentials --resource-group "$AKS_RESOURCE_GROUP" --name "$AKS_CLUSTER_NAME" --overwrite-existing
+    - helm upgrade --install remediai infrastructure/helm/remediai --namespace ai --create-namespace --set global.imageRegistry=$ACR_LOGIN_SERVER --set global.imageTag=$IMAGE_TAG
+  only:
+    - main

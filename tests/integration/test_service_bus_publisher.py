@@ -45,7 +45,7 @@ class TestBuildMessage:
     def test_application_properties_contain_source_priority_fingerprint(self) -> None:
         event = _make_event(source="OrderSvc", priority="critical", fingerprint="fp42")
         msg = _build_message(event)
-        props = msg.application_properties
+        props = msg.application_properties or {}
         assert props["source"] == "OrderSvc"
         assert props["priority"] == "critical"
         assert props["fingerprint"] == "fp42"
@@ -104,6 +104,34 @@ class TestServiceBusPublisher:
             await pub.publish_batch(events)
 
         assert mock_batch.add_message.call_count == 2
+        mock_sender.send_messages.assert_awaited_once_with(mock_batch)
+
+    @pytest.mark.asyncio
+    async def test_publish_batch_uses_connection_string(self) -> None:
+        events = [_make_event()]
+
+        mock_sender = AsyncMock()
+        mock_batch = MagicMock()
+        mock_batch.add_message = MagicMock()
+        mock_sender.create_message_batch = AsyncMock(return_value=mock_batch)
+        mock_sender.send_messages = AsyncMock()
+        mock_sender.__aenter__ = AsyncMock(return_value=mock_sender)
+        mock_sender.__aexit__ = AsyncMock(return_value=None)
+
+        with patch("packages.integrations.service_bus.publisher.ServiceBusClient.from_connection_string") as mock_from_cs:
+            mock_client = MagicMock()
+            mock_from_cs.return_value = mock_client
+            mock_client.get_topic_sender = MagicMock(return_value=mock_sender)
+
+            pub = ServiceBusPublisher(
+                namespace="test-ns",
+                topic="incident-events",
+                connection_string="Endpoint=sb://localhost:5672/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=localkey",
+            )
+            await pub.publish_batch(events)
+
+        mock_from_cs.assert_called_once()
+        assert mock_batch.add_message.call_count == 1
         mock_sender.send_messages.assert_awaited_once_with(mock_batch)
 
     @pytest.mark.asyncio

@@ -1,127 +1,20 @@
-{{- $fullname := include "remediai.fullname" . -}}
-{{- $ns := .Release.Namespace -}}
-{{- $labels := include "remediai.labels" . -}}
-
----
-# API: allow ingress from ingress controller; egress to PostgreSQL and Key Vault only
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: {{ $fullname }}-api
-  namespace: {{ $ns }}
-  labels:
-    {{- $labels | nindent 4 }}
+  name: {{ include "remediai.fullname" . }}-allow-same-namespace
 spec:
-  podSelector:
-    matchLabels:
-      app.kubernetes.io/component: api
+  podSelector: {}
   policyTypes:
     - Ingress
     - Egress
   ingress:
     - from:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: ingress-nginx
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: kube-system
+        - podSelector: {}
+  egress:
+    - to:
+        - podSelector: {}
       ports:
-        - port: {{ .Values.api.port }}
-          protocol: TCP
-  egress:
-    - ports:
-        - port: 5432   # PostgreSQL
-          protocol: TCP
-        - port: 443    # Key Vault / Azure APIs (HTTPS)
-          protocol: TCP
-        - port: 53     # DNS
-          protocol: UDP
-
----
-# Agent Worker: deny all ingress; egress to required Azure services only
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: {{ $fullname }}-worker-agents
-  namespace: {{ $ns }}
-  labels:
-    {{- $labels | nindent 4 }}
-spec:
-  podSelector:
-    matchLabels:
-      app.kubernetes.io/component: worker-agents
-  policyTypes:
-    - Ingress
-    - Egress
-  ingress: []
-  egress:
-    - ports:
-        - port: 5432   # PostgreSQL
-          protocol: TCP
-        - port: 5671   # Service Bus AMQP
-          protocol: TCP
-        - port: 443    # Key Vault / AI Search / OpenAI / Azure APIs (HTTPS)
-          protocol: TCP
-        - port: 53     # DNS
-          protocol: UDP
-
----
-# Ingestion Worker: deny all ingress; egress to Service Bus and PostgreSQL only
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: {{ $fullname }}-worker-ingestion
-  namespace: {{ $ns }}
-  labels:
-    {{- $labels | nindent 4 }}
-spec:
-  podSelector:
-    matchLabels:
-      app.kubernetes.io/component: worker-ingestion
-  policyTypes:
-    - Ingress
-    - Egress
-  ingress: []
-  egress:
-    - ports:
-        - port: 5432   # PostgreSQL
-          protocol: TCP
-        - port: 5671   # Service Bus AMQP
-          protocol: TCP
-        - port: 443    # Azure Monitor / Key Vault (HTTPS)
-          protocol: TCP
-        - port: 53     # DNS
-          protocol: UDP
-
----
-# Dashboard: allow ingress from ingress controller; no backend egress
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: {{ $fullname }}-dashboard
-  namespace: {{ $ns }}
-  labels:
-    {{- $labels | nindent 4 }}
-spec:
-  podSelector:
-    matchLabels:
-      app.kubernetes.io/component: dashboard
-  policyTypes:
-    - Ingress
-    - Egress
-  ingress:
-    - from:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: ingress-nginx
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: kube-system
-      ports:
-        - port: {{ .Values.dashboard.port }}
-          protocol: TCP
-  egress:
-    - ports:
-        - port: 53
-          protocol: UDP
+        - protocol: TCP
+          port: 443
+        - protocol: TCP
+          port: 80

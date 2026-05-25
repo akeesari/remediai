@@ -1,6 +1,6 @@
 apiVersion: v2
 name: remediai
-description: RemediAI — AI-powered incident triage and remediation platform
+description: RemediAI Helm chart for Kubernetes deployment
 type: application
 version: 0.1.0
 appVersion: "0.1.0"

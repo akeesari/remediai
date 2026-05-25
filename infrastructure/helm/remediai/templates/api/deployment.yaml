@@ -2,59 +2,52 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "remediai.fullname" . }}-api
-  namespace: {{ .Release.Namespace }}
-  labels:
-    {{- include "remediai.labels" . | nindent 4 }}
-    app.kubernetes.io/component: api
 spec:
   replicas: {{ .Values.api.replicas }}
   selector:
     matchLabels:
       app.kubernetes.io/name: {{ include "remediai.name" . }}
-      app.kubernetes.io/instance: {{ .Release.Name }}
       app.kubernetes.io/component: api
   template:
     metadata:
       labels:
         app.kubernetes.io/name: {{ include "remediai.name" . }}
-        app.kubernetes.io/instance: {{ .Release.Name }}
         app.kubernetes.io/component: api
-        azure.workload.identity/use: "true"
     spec:
-      serviceAccountName: {{ include "remediai.fullname" . }}
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        fsGroup: 1000
       containers:
         - name: api
-          image: {{ include "remediai.image" (dict "Values" .Values "image" .Values.api.image) }}
-          imagePullPolicy: IfNotPresent
+          image: "{{ .Values.global.imageRegistry }}{{ if .Values.global.imageRegistry }}/{{ end }}{{ .Values.api.repository }}:{{ .Values.global.imageTag }}"
+          imagePullPolicy: {{ .Values.api.imagePullPolicy }}
           ports:
-            - name: http
-              containerPort: {{ .Values.api.port }}
-              protocol: TCP
-          envFrom:
-            - configMapRef:
-                name: {{ include "remediai.fullname" . }}-config
+            - containerPort: {{ .Values.api.port }}
+          env:
+            - name: APP_ENV
+              value: {{ .Values.global.appEnv | quote }}
+            - name: LOG_LEVEL
+              value: {{ .Values.global.logLevel | quote }}
+            - name: DATABASE_URL
+              value: {{ .Values.api.env.databaseUrl | quote }}
+            - name: REDIS_URL
+              value: {{ .Values.api.env.redisUrl | quote }}
+            - name: AZURE_SERVICEBUS_NAMESPACE
+              value: {{ .Values.api.env.azureServiceBusNamespace | quote }}
+            - name: AZURE_SERVICEBUS_CONNECTION_STRING
+              value: {{ .Values.api.env.azureServiceBusConnectionString | quote }}
+            - name: AZURE_OPENAI_ENDPOINT
+              value: {{ .Values.api.env.azureOpenAiEndpoint | quote }}
+            - name: AZURE_OPENAI_DEPLOYMENT
+              value: {{ .Values.api.env.azureOpenAiDeployment | quote }}
+            - name: AZURE_SEARCH_ENDPOINT
+              value: {{ .Values.api.env.azureSearchEndpoint | quote }}
+            - name: AZURE_SEARCH_API_KEY
+              value: {{ .Values.api.env.azureSearchApiKey | quote }}
+            - name: AZURE_DEVOPS_ORG_URL
+              value: {{ .Values.api.env.azureDevOpsOrgUrl | quote }}
+            - name: AZURE_DEVOPS_PROJECT
+              value: {{ .Values.api.env.azureDevOpsProject | quote }}
+            - name: AZURE_DEVOPS_PAT
+              value: {{ .Values.api.env.azureDevOpsPat | quote }}
+            - name: AZURE_MONITOR_WORKSPACE_ID
+              value: {{ .Values.api.env.azureMonitorWorkspaceId | quote }}
           resources:
-            {{- toYaml .Values.api.resources | nindent 12 }}
-          livenessProbe:
-            httpGet:
-              path: /health
-              port: http
-            initialDelaySeconds: 10
-            periodSeconds: 10
-            failureThreshold: 3
-          readinessProbe:
-            httpGet:
-              path: /health
-              port: http
-            initialDelaySeconds: 5
-            periodSeconds: 5
-            failureThreshold: 2
-          securityContext:
-            allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: true
-            capabilities:
-              drop: ["ALL"]
+{{ toYaml .Values.api.resources | indent 12 }}

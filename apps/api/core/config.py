@@ -28,6 +28,7 @@ class Settings(BaseSettings):
 
     # Azure Service Bus
     azure_servicebus_namespace: str = ""
+    azure_servicebus_connection_string: str = ""
     azure_servicebus_topic: str = "incident-events"
     azure_servicebus_subscription: str = "agent-worker"
 

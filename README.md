@@ -81,6 +81,49 @@ flowchart TD
 
 ---
 
+## Run Locally
+
+1. Copy local environment files:
+
+```bash
+cp .env.example .env
+cp .env.local.example .env.local
+```
+
+2. Edit `.env` / `.env.local` as needed. For local startup without Azure credentials, keep Azure fields blank. To publish to a local Service Bus emulator, set `AZURE_SERVICEBUS_CONNECTION_STRING` to your emulator connection string.
+
+3. Start the local stack:
+
+```bash
+make local-up
+```
+
+4. If you want to verify or re-run migrations:
+
+```bash
+make local-migrate
+```
+
+5. Smoke check the local stack:
+
+```bash
+make local-smoke
+```
+
+If you prefer raw Docker Compose:
+
+```bash
+docker compose -f docker-compose.local.yml --env-file .env.local up --build
+```
+
+### Local service behavior
+
+- `http://localhost:8000/health` — API health
+- `http://localhost:3000` — dashboard UI
+- The worker will start and log ingestion activity; it is configured to skip Azure Monitor ingestion if `AZURE_MONITOR_WORKSPACE_ID` is not set.
+
+---
+
 ## MVP Scope
 
 | In Scope                              | Out of Scope                        |
@@ -186,6 +229,66 @@ Tracks A, B, C, and D can be staffed in parallel. Phase 28 (load + security
 testing) is the final gate that requires all tracks to be complete.
 
 See [ROADMAP.md](ROADMAP.md) for the full dependency graph, milestone detail, and release versioning.
+
+---
+
+## Build, Push, and Deploy to AKS
+
+This repository can build three container images and deploy them to an AKS namespace.
+
+### Build and push to Azure Container Registry
+
+Set your registry and credentials in environment variables or GitHub/GitLab secrets.
+
+```bash
+export ACR_LOGIN_SERVER=aitenant.azurecr.io
+export ACR_IMAGE_TAG=latest
+export ACR_USERNAME=<service-principal-or-acr-username>
+export ACR_PASSWORD=<service-principal-or-acr-password>
+
+docker login $ACR_LOGIN_SERVER -u $ACR_USERNAME -p $ACR_PASSWORD
+
+docker build -f apps/api/Dockerfile -t $ACR_LOGIN_SERVER/remediai-api:$ACR_IMAGE_TAG .
+docker push $ACR_LOGIN_SERVER/remediai-api:$ACR_IMAGE_TAG
+
+docker build -f apps/worker/Dockerfile -t $ACR_LOGIN_SERVER/remediai-worker:$ACR_IMAGE_TAG .
+docker push $ACR_LOGIN_SERVER/remediai-worker:$ACR_IMAGE_TAG
+
+docker build -f apps/dashboard/Dockerfile -t $ACR_LOGIN_SERVER/remediai-dashboard:$ACR_IMAGE_TAG .
+docker push $ACR_LOGIN_SERVER/remediai-dashboard:$ACR_IMAGE_TAG
+```
+
+### Deploy to AKS namespace `ai`
+
+Use Helm to deploy into the `ai` namespace after building and pushing images.
+
+```bash
+kubectl create namespace ai --dry-run=client -o yaml | kubectl apply -f -
+helm upgrade --install remediai infrastructure/helm/remediai \
+  --namespace ai --create-namespace \
+  --set global.imageRegistry=$ACR_LOGIN_SERVER \
+  --set global.imageTag=$ACR_IMAGE_TAG
+```
+
+If your cluster uses Azure credentials, run:
+
+```bash
+az login --service-principal -u "$AZURE_CLIENT_ID" -p "$AZURE_CLIENT_SECRET" --tenant "$AZURE_TENANT_ID"
+az aks get-credentials --resource-group "$AKS_RESOURCE_GROUP" --name "$AKS_CLUSTER_NAME" --overwrite-existing
+```
+
+### Pipeline support
+
+There is already a GitHub Actions workflow for GHCR in `.github/workflows/release.yml`.
+
+This repository also now includes two pipeline skeletons:
+
+- `.github/workflows/azure-acr-release.yml` — build and push to ACR, then deploy to AKS namespace `ai`.
+- `.gitlab-ci.yml` — build, push, and deploy skeleton for GitLab CI.
+
+Use these pipelines if you want automated image build/push and AKS deploy on every merge or tag.
+
+> For production, keep secrets in GitHub/GitLab secret storage rather than in `.env`.
 
 ---
 

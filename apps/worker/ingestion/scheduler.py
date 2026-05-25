@@ -41,6 +41,10 @@ class IngestionScheduler:
 
         async with self._session_factory() as session:
             try:
+                if not s.azure_monitor_workspace_id:
+                    logger.info("ingestion_skipped_no_monitor_config")
+                    return []
+
                 async with AzureMonitorClient(workspace_id=s.azure_monitor_workspace_id) as monitor:
                     connector = IngestionConnector(session=session, monitor_client=monitor)
                     new_incidents = await connector.run(
@@ -49,11 +53,20 @@ class IngestionScheduler:
 
                 if new_incidents:
                     events = [_to_event(inc) for inc in new_incidents]
-                    async with ServiceBusPublisher(
-                        namespace=s.azure_servicebus_namespace,
-                        topic=s.azure_servicebus_topic,
-                    ) as publisher:
-                        await publisher.publish_batch(events)
+                    if s.azure_servicebus_connection_string or (
+                        s.azure_servicebus_namespace and s.azure_servicebus_namespace != "localhost"
+                    ):
+                        async with ServiceBusPublisher(
+                            namespace=s.azure_servicebus_namespace,
+                            topic=s.azure_servicebus_topic,
+                            connection_string=s.azure_servicebus_connection_string,
+                        ) as publisher:
+                            await publisher.publish_batch(events)
+                    else:
+                        logger.warning(
+                            "servicebus_publish_skipped",
+                            reason="missing_connection_string_or_external_namespace",
+                        )
 
                 await session.commit()
             except Exception:

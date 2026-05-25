@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "remediai.fullname" . }}-worker
+spec:
+  replicas: {{ .Values.worker.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "remediai.name" . }}
+      app.kubernetes.io/component: worker
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "remediai.name" . }}
+        app.kubernetes.io/component: worker
+    spec:
+      containers:
+        - name: worker
+          image: "{{ .Values.global.imageRegistry }}{{ if .Values.global.imageRegistry }}/{{ end }}{{ .Values.worker.repository }}:{{ .Values.global.imageTag }}"
+          imagePullPolicy: {{ .Values.worker.imagePullPolicy }}
+          env:
+            - name: APP_ENV
+              value: {{ .Values.global.appEnv | quote }}
+            - name: LOG_LEVEL
+              value: {{ .Values.global.logLevel | quote }}
+            - name: DATABASE_URL
+              value: {{ .Values.worker.env.databaseUrl | quote }}
+            - name: REDIS_URL
+              value: {{ .Values.worker.env.redisUrl | quote }}
+            - name: AZURE_SERVICEBUS_NAMESPACE
+              value: {{ .Values.worker.env.azureServiceBusNamespace | quote }}
+            - name: AZURE_SERVICEBUS_CONNECTION_STRING
+              value: {{ .Values.worker.env.azureServiceBusConnectionString | quote }}
+            - name: AZURE_OPENAI_ENDPOINT
+              value: {{ .Values.worker.env.azureOpenAiEndpoint | quote }}
+            - name: AZURE_OPENAI_DEPLOYMENT
+              value: {{ .Values.worker.env.azureOpenAiDeployment | quote }}
+            - name: AZURE_SEARCH_ENDPOINT
+              value: {{ .Values.worker.env.azureSearchEndpoint | quote }}
+            - name: AZURE_SEARCH_API_KEY
+              value: {{ .Values.worker.env.azureSearchApiKey | quote }}
+            - name: AZURE_DEVOPS_ORG_URL
+              value: {{ .Values.worker.env.azureDevOpsOrgUrl | quote }}
+            - name: AZURE_DEVOPS_PROJECT
+              value: {{ .Values.worker.env.azureDevOpsProject | quote }}
+            - name: AZURE_DEVOPS_PAT
+              value: {{ .Values.worker.env.azureDevOpsPat | quote }}
+            - name: AZURE_MONITOR_WORKSPACE_ID
+              value: {{ .Values.worker.env.azureMonitorWorkspaceId | quote }}
+          resources:
+{{ toYaml .Values.worker.resources | indent 12 }}

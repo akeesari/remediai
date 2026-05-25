@@ -2,58 +2,23 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "remediai.fullname" . }}-dashboard
-  namespace: {{ .Release.Namespace }}
-  labels:
-    {{- include "remediai.labels" . | nindent 4 }}
-    app.kubernetes.io/component: dashboard
 spec:
   replicas: {{ .Values.dashboard.replicas }}
   selector:
     matchLabels:
       app.kubernetes.io/name: {{ include "remediai.name" . }}
-      app.kubernetes.io/instance: {{ .Release.Name }}
       app.kubernetes.io/component: dashboard
   template:
     metadata:
       labels:
         app.kubernetes.io/name: {{ include "remediai.name" . }}
-        app.kubernetes.io/instance: {{ .Release.Name }}
         app.kubernetes.io/component: dashboard
     spec:
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 101
-        fsGroup: 101
       containers:
         - name: dashboard
-          image: {{ include "remediai.image" (dict "Values" .Values "image" .Values.dashboard.image) }}
-          imagePullPolicy: IfNotPresent
+          image: "{{ .Values.global.imageRegistry }}{{ if .Values.global.imageRegistry }}/{{ end }}{{ .Values.dashboard.repository }}:{{ .Values.global.imageTag }}"
+          imagePullPolicy: {{ .Values.dashboard.imagePullPolicy }}
           ports:
-            - name: http
-              containerPort: {{ .Values.dashboard.port }}
-              protocol: TCP
+            - containerPort: 80
           resources:
-            requests:
-              cpu: 100m
-              memory: 128Mi
-            limits:
-              cpu: 250m
-              memory: 256Mi
-          livenessProbe:
-            httpGet:
-              path: /
-              port: http
-            initialDelaySeconds: 5
-            periodSeconds: 10
-            failureThreshold: 3
-          readinessProbe:
-            httpGet:
-              path: /
-              port: http
-            initialDelaySeconds: 3
-            periodSeconds: 5
-            failureThreshold: 2
-          securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop: ["ALL"]
+{{ toYaml .Values.dashboard.resources | indent 12 }}

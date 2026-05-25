@@ -174,3 +174,28 @@ diff --git a/src/Service.cs b/src/Service.cs
     assert "validation_report" in result
     assert result["validation_report"]["llm_assessment"]
     assert any(entry["agent_name"] == "validation_agent" for entry in result["agent_trace"])
+
+
+@pytest.mark.asyncio
+async def test_missing_scm_reader_skips_cleanly() -> None:
+    node = make_validation_agent_node(
+        llm=_FakeLLM(
+            {
+                "risk_level": "low",
+                "confidence": 0.9,
+                "llm_assessment": "Looks good.",
+                "reviewer_notes": "None.",
+                "concerns": [],
+            }
+        ),
+        settings=SimpleNamespace(scm_provider_id="none"),
+    )
+
+    result = await node(_base_state())
+
+    assert result["errors"] == []
+    assert "validation_report" not in result
+    assert any(
+        entry["output_summary"] == "skipped - scm integration not configured"
+        for entry in result["agent_trace"]
+    )

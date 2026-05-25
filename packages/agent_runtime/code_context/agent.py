@@ -47,35 +47,38 @@ def make_code_context_node(
         error: str | None = None
         snippets: list[CodeSnippet] = []
 
-        try:
-            commit_sha = await client.get_latest_commit_sha()
-            frames = parse_stack_frames(stack_trace)
-            path_prefix: str = (
-                getattr(settings, "ado_source_path_prefix", "") if settings is not None else ""
-            )
-            qualifying = filter_frames(frames, path_prefix=path_prefix)
-
-            for frame in qualifying[:_MAX_SNIPPETS]:
-                content = await client.get_file_content(frame.file_path)  # type: ignore[arg-type]
-                if content is None:
-                    log.debug("code_context_file_not_found", path=frame.file_path)
-                    continue
-                snippet = _build_snippet(
-                    content=content,
-                    file_path=frame.file_path,  # type: ignore[arg-type]
-                    line_number=frame.line_number,  # type: ignore[arg-type]
-                    repo=client.repository,
-                    commit_sha=commit_sha,
+        if client is None:
+            log.info("code_context_skipped", reason="scm_not_configured")
+        else:
+            try:
+                commit_sha = await client.get_latest_commit_sha()
+                frames = parse_stack_frames(stack_trace)
+                path_prefix: str = (
+                    getattr(settings, "ado_source_path_prefix", "") if settings is not None else ""
                 )
-                snippets.append(snippet)
+                qualifying = filter_frames(frames, path_prefix=path_prefix)
 
-            log.info("code_context_complete", snippets_fetched=len(snippets))
-        except Exception as exc:
-            log.error("code_context_failed", error=str(exc))
-            error = str(exc)
-        finally:
-            if ado_client is None and hasattr(client, "aclose"):
-                await client.aclose()
+                for frame in qualifying[:_MAX_SNIPPETS]:
+                    content = await client.get_file_content(frame.file_path)  # type: ignore[arg-type]
+                    if content is None:
+                        log.debug("code_context_file_not_found", path=frame.file_path)
+                        continue
+                    snippet = _build_snippet(
+                        content=content,
+                        file_path=frame.file_path,  # type: ignore[arg-type]
+                        line_number=frame.line_number,  # type: ignore[arg-type]
+                        repo=client.repository,
+                        commit_sha=commit_sha,
+                    )
+                    snippets.append(snippet)
+
+                log.info("code_context_complete", snippets_fetched=len(snippets))
+            except Exception as exc:
+                log.error("code_context_failed", error=str(exc))
+                error = str(exc)
+            finally:
+                if ado_client is None and hasattr(client, "aclose"):
+                    await client.aclose()
 
         latency_ms = int(time.monotonic() * 1000) - start_ms
         trace_entry = AgentTraceEntry(
@@ -104,13 +107,19 @@ def make_code_context_node(
 async def _resolve_client(
     ado_client: ADOClientProtocol | None,
     settings: Any,
-) -> ADOClientProtocol:
+) -> ADOClientProtocol | None:
     if ado_client is not None:
         return ado_client
     from apps.api.core.config import get_settings
     from packages.integrations.azure_devops.client import AzureDevOpsClient
+    from packages.integrations.providers.registry import resolve_scm_provider_id
 
     s = settings or get_settings()
+    provider_id = resolve_scm_provider_id(s)
+    if provider_id != "azure-devops":
+        return None
+    if not getattr(s, "azure_devops_org_url", ""):
+        return None
     return AzureDevOpsClient.from_settings(s)
 
 

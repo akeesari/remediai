@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -148,6 +149,17 @@ class TestCodeContextNodeHappyPath:
         state = _make_state(stack_trace="   at MyService.Init() in src/MyService.cs:line 3")
         result = await node(state)
         assert result["code_snippets"][0]["start_line"] == 1
+
+    @pytest.mark.asyncio
+    async def test_missing_scm_configuration_skips_without_error(self) -> None:
+        node = make_code_context_node(settings=SimpleNamespace(scm_provider_id="none"))
+
+        result = await node(_make_state())
+
+        assert result["code_snippets"] == []
+        assert result["errors"] == []
+        assert len(result["agent_trace"]) == 1
+        assert result["agent_trace"][0]["error"] is None
 
 
 class TestCodeContextNodeFailurePath:

@@ -8,6 +8,7 @@ from apps.api.core.config import get_settings
 from apps.api.core.logging import configure_logging, get_logger
 from apps.api.routers.approvals import router as approvals_router
 from apps.api.routers.incidents import router as incidents_router
+from apps.api.routers.integrations import router as integrations_router
 from apps.api.routers.local_logs import router as local_logs_router
 from apps.api.routers.metrics import router as metrics_router
 
@@ -45,6 +46,7 @@ async def correlation_id_middleware(request: Request, call_next: object) -> Resp
 app.include_router(incidents_router)
 app.include_router(approvals_router)
 app.include_router(metrics_router)
+app.include_router(integrations_router)
 
 if settings.local_mode:
     app.include_router(local_logs_router)

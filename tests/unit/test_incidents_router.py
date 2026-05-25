@@ -177,7 +177,7 @@ class TestListIncidents:
         assert resp.json()["items"][0]["has_analysis"] is False
 
     @pytest.mark.asyncio
-    async def test_ado_bug_url_from_work_item(self) -> None:
+    async def test_external_item_url_from_work_item(self) -> None:
         wi = MagicMock()
         wi.ado_item_url = "https://dev.azure.com/org/proj/_workitems/edit/42"
         inc = _orm_incident(work_items=[wi])
@@ -194,7 +194,7 @@ class TestListIncidents:
             transport=httpx.ASGITransport(app=app), base_url="http://test"
         ) as client:
             resp = await client.get("/api/v1/incidents")
-        assert "dev.azure.com" in resp.json()["items"][0]["ado_bug_url"]
+        assert "dev.azure.com" in resp.json()["items"][0]["external_item_url"]
 
     @pytest.mark.asyncio
     async def test_page_size_capped_at_100(self) -> None:

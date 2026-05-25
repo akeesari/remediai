@@ -106,6 +106,22 @@ def make_pr_agent_node(
         file_path: str = affected_files[0] if affected_files else ""
 
         writer = _resolve_writer(ado_writer, settings)
+        if writer is None:
+            log.info("pr_agent_skipped", reason="scm_not_configured")
+            latency_ms = int(time.monotonic() * 1000) - start_ms
+            trace_entry = AgentTraceEntry(
+                agent_name=AGENT_NAME,
+                prompt_version=None,
+                input_summary=f"rank={approved_rank}, file={file_path}",
+                output_summary="skipped - scm integration not configured",
+                latency_ms=latency_ms,
+                error=None,
+            )
+            return {
+                "agent_trace": existing_trace + [trace_entry.model_dump()],
+                "errors": existing_errors,
+            }
+
         resolved_llm = _resolve_llm(llm, settings)
         error: str | None = None
         output: PRAgentOutput | None = None
@@ -209,30 +225,34 @@ def make_pr_agent_node(
 
 def _resolve_writer(
     ado_writer: ADOReposWriterProtocol | None, settings: Any
-) -> ADOReposWriterProtocol:
+) -> ADOReposWriterProtocol | None:
     if ado_writer is not None:
         return ado_writer
     from apps.api.core.config import get_settings
     from packages.integrations.azure_devops.repos_writer import ADOReposWriter
+    from packages.integrations.providers.registry import resolve_scm_provider_id
 
     s = settings or get_settings()
+    provider_id = resolve_scm_provider_id(s)
+    if provider_id != "azure-devops":
+        return None
+    if not getattr(s, "azure_devops_org_url", ""):
+        return None
     return ADOReposWriter.from_settings(s)
 
 
 def _resolve_llm(llm: BaseChatModel | None, settings: Any) -> BaseChatModel:
     if llm is not None:
         return llm
-    from langchain_openai import AzureChatOpenAI
-
     from apps.api.core.config import get_settings
+    from packages.integrations.providers.registry import (
+        create_chat_model,
+        ensure_valid_provider_config,
+    )
 
     s = settings or get_settings()
-    return AzureChatOpenAI(
-        azure_endpoint=s.azure_openai_endpoint,
-        azure_deployment=s.azure_openai_deployment,
-        api_version=s.azure_openai_api_version,
-        temperature=0,
-    )
+    ensure_valid_provider_config(s)
+    return create_chat_model(s)
 
 
 def _find_snippet_content(state: IncidentState, file_path: str) -> str:

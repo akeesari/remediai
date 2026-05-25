@@ -1,5 +1,4 @@
-from packages.integrations.azure_monitor.client import AzureMonitorClient
-from packages.integrations.providers import (
+from packages.integrations.providers.registry import (
     create_chat_model,
     ensure_valid_provider_config,
     integration_warnings,
@@ -11,7 +10,6 @@ from packages.integrations.providers import (
 )
 
 __all__ = [
-    "AzureMonitorClient",
     "create_chat_model",
     "ensure_valid_provider_config",
     "integration_warnings",

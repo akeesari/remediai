@@ -14,7 +14,7 @@ export interface IncidentListItem {
   created_at: string
   updated_at: string
   has_analysis: boolean
-  ado_bug_url: string | null
+  external_item_url: string | null
 }
 
 export interface AgentTraceEntry {

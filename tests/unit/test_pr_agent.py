@@ -178,3 +178,23 @@ async def test_patch_too_large_sets_error() -> None:
     assert any("exceeds the 500-line limit" in e for e in result["errors"])
     assert result["pr_url"]
     assert writer.push_calls == []
+
+
+@pytest.mark.asyncio
+async def test_missing_scm_writer_skips_cleanly() -> None:
+    llm = _FakeLLM(
+        {
+            "patched_content": "unchanged",
+            "files_changed": ["src/PaymentService.cs"],
+        }
+    )
+    node = make_pr_agent_node(llm=llm, settings=SimpleNamespace(scm_provider_id="none"))
+
+    result = await node(_base_state())
+
+    assert result["errors"] == []
+    assert "pr_url" not in result
+    assert any(
+        entry["output_summary"] == "skipped - scm integration not configured"
+        for entry in result["agent_trace"]
+    )

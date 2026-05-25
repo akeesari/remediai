@@ -52,6 +52,21 @@ def make_validation_agent_node(
         existing_errors: list[str] = list(state.get("errors", []))
 
         reader = _resolve_reader(pr_reader, settings)
+        if reader is None:
+            latency_ms = int(time.monotonic() * 1000) - start_ms
+            trace_entry = AgentTraceEntry(
+                agent_name=AGENT_NAME,
+                prompt_version=None,
+                input_summary=f"pr_url={pr_url}",
+                output_summary="skipped - scm integration not configured",
+                latency_ms=latency_ms,
+                error=None,
+            )
+            return {
+                "agent_trace": existing_trace + [trace_entry.model_dump()],
+                "errors": existing_errors,
+            }
+
         resolved_llm = _resolve_llm(llm, settings)
         error: str | None = None
         report: ValidationReport | None = None
@@ -115,31 +130,36 @@ def make_validation_agent_node(
     return validation_agent_node
 
 
-def _resolve_reader(pr_reader: ADOPrReaderProtocol | None, settings: Any) -> ADOPrReaderProtocol:
+def _resolve_reader(
+    pr_reader: ADOPrReaderProtocol | None, settings: Any
+) -> ADOPrReaderProtocol | None:
     if pr_reader is not None:
         return pr_reader
     from apps.api.core.config import get_settings
     from packages.integrations.azure_devops.pr_reader import ADOPrReader
+    from packages.integrations.providers.registry import resolve_scm_provider_id
 
     s = settings or get_settings()
+    provider_id = resolve_scm_provider_id(s)
+    if provider_id != "azure-devops":
+        return None
+    if not getattr(s, "azure_devops_org_url", ""):
+        return None
     return ADOPrReader.from_settings(s)
 
 
 def _resolve_llm(llm: BaseChatModel | None, settings: Any) -> BaseChatModel:
     if llm is not None:
         return llm
-
-    from langchain_openai import AzureChatOpenAI
-
     from apps.api.core.config import get_settings
+    from packages.integrations.providers.registry import (
+        create_chat_model,
+        ensure_valid_provider_config,
+    )
 
     s = settings or get_settings()
-    return AzureChatOpenAI(
-        azure_endpoint=s.azure_openai_endpoint,
-        azure_deployment=s.azure_openai_deployment,
-        api_version=s.azure_openai_api_version,
-        temperature=0,
-    )
+    ensure_valid_provider_config(s)
+    return create_chat_model(s)
 
 
 def _extract_pr_id(pr_url: str) -> int:

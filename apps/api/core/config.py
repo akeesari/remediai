@@ -23,8 +23,21 @@ class Settings(BaseSettings):
 
     # Azure OpenAI
     azure_openai_endpoint: str = ""
-    azure_openai_deployment: str = "gpt-4o"
+    azure_openai_deployment: str = "gpt-4.1"
     azure_openai_api_version: str = "2024-08-01-preview"
+
+    # Provider profile (Phase 32)
+    remediai_profile: str = "azure-foundry"
+    llm_provider_id: str = "azure-openai"
+    retrieval_provider_id: str = "azure-ai-search"
+    scm_provider_id: str = "auto"
+    ticket_provider_id: str = "none"
+
+    # Portable OpenAI-compatible provider credentials.
+    # In production these values must be sourced via secret management.
+    portable_openai_base_url: str = ""
+    portable_openai_api_key: str = ""
+    portable_openai_model: str = "gpt-4.1-mini"
 
     # Azure DevOps
     azure_devops_org_url: str = ""

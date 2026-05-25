@@ -93,7 +93,11 @@ def make_bug_creator_node(
             agent_name=AGENT_NAME,
             prompt_version=None,
             input_summary=f"exception_type={exception_type}",
-            output_summary=f"bug_id={result.bug_id if result else None}",
+            output_summary=(
+                f"bug_id={result.bug_id}"
+                if result
+                else "skipped - ticketing integration not configured"
+            ),
             latency_ms=latency_ms,
             error=error,
         )
@@ -121,8 +125,12 @@ def _resolve_client(
         return boards_client
     from apps.api.core.config import get_settings
     from packages.integrations.azure_devops.boards_client import AzureDevOpsBoardsClient
+    from packages.integrations.providers.registry import resolve_ticket_provider_id
 
     s = settings or get_settings()
+    provider_id = resolve_ticket_provider_id(s)
+    if provider_id != "azure-devops-boards":
+        return None
     if not getattr(s, "azure_devops_org_url", ""):
         return None
     return AzureDevOpsBoardsClient.from_settings(s)

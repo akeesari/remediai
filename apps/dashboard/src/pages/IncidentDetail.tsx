@@ -61,7 +61,7 @@ export function IncidentDetail() {
 
       {/* Work items */}
       {data.work_items.length > 0 && (
-        <Section title="Azure DevOps">
+        <Section title="External Work Items">
           <div className="flex flex-wrap gap-2">
             {data.work_items.map((wi) => (
               <a

@@ -80,7 +80,7 @@ export function IncidentList() {
                   <th className="px-4 py-3">Priority</th>
                   <th className="px-4 py-3">Status</th>
                   <th className="px-4 py-3">Created</th>
-                  <th className="px-4 py-3">Bug</th>
+                  <th className="px-4 py-3">External Item</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -113,9 +113,9 @@ export function IncidentList() {
                       {new Date(inc.created_at).toLocaleString()}
                     </td>
                     <td className="px-4 py-3">
-                      {inc.ado_bug_url ? (
+                      {inc.external_item_url ? (
                         <a
-                          href={inc.ado_bug_url}
+                          href={inc.external_item_url}
                           target="_blank"
                           rel="noreferrer"
                           onClick={(e) => e.stopPropagation()}

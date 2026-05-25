@@ -76,7 +76,7 @@ async def list_incidents(
             created_at=inc.created_at,
             updated_at=inc.updated_at,
             has_analysis=inc.id in analyzed_ids,
-            ado_bug_url=inc.work_items[0].ado_item_url if inc.work_items else None,
+            external_item_url=inc.work_items[0].ado_item_url if inc.work_items else None,
         )
         for inc in incidents
     ]

@@ -50,7 +50,7 @@ class IncidentListItem(BaseModel):
     created_at: datetime
     updated_at: datetime
     has_analysis: bool
-    ado_bug_url: str | None = None
+    external_item_url: str | None = None
 
 
 class IncidentDetail(BaseModel):

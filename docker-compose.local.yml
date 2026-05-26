@@ -6,7 +6,7 @@ services:
       POSTGRES_USER: remediai
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me_locally}
     ports:
-      - "${LOCAL_POSTGRES_PORT:-5432}:5432"
+      - "${PG_HOST_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -18,7 +18,7 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "${LOCAL_REDIS_PORT:-6379}:6379"
+      - "${REDIS_HOST_PORT:-6379}:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -30,19 +30,19 @@ services:
       context: .
       dockerfile: apps/api/Dockerfile
     ports:
-      - "${LOCAL_API_PORT:-8000}:8000"
+      - "${API_HOST_PORT:-8000}:8000"
     environment:
       APP_ENV: local
       LOCAL_MODE: ${LOCAL_MODE:-true}
-      POSTGRES_HOST: postgres
-      POSTGRES_PORT: 5432
-      POSTGRES_DB: remediai
-      POSTGRES_USER: remediai
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me_locally}
       DATABASE_URL: postgresql+asyncpg://remediai:${POSTGRES_PASSWORD:-change_me_locally}@postgres:5432/remediai
       REDIS_URL: redis://redis:6379/0
+      REMEDIAI_PROFILE: ${REMEDIAI_PROFILE:-}
+      LLM_PROVIDER_ID: ${LLM_PROVIDER_ID:-}
+      RETRIEVAL_PROVIDER_ID: ${RETRIEVAL_PROVIDER_ID:-}
+      SCM_PROVIDER_ID: ${SCM_PROVIDER_ID:-}
+      TICKET_PROVIDER_ID: ${TICKET_PROVIDER_ID:-}
       AZURE_OPENAI_ENDPOINT: ${AZURE_OPENAI_ENDPOINT:-}
-      AZURE_OPENAI_DEPLOYMENT: ${AZURE_OPENAI_DEPLOYMENT:-gpt-4o}
+      AZURE_OPENAI_DEPLOYMENT: ${AZURE_OPENAI_DEPLOYMENT:-gpt-4.1}
       AZURE_DEVOPS_ORG_URL: ${AZURE_DEVOPS_ORG_URL:-}
       AZURE_DEVOPS_PROJECT: ${AZURE_DEVOPS_PROJECT:-}
       AZURE_DEVOPS_PAT: ${AZURE_DEVOPS_PAT:-}
@@ -66,15 +66,15 @@ services:
     environment:
       APP_ENV: local
       LOCAL_MODE: ${LOCAL_MODE:-true}
-      POSTGRES_HOST: postgres
-      POSTGRES_PORT: 5432
-      POSTGRES_DB: remediai
-      POSTGRES_USER: remediai
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me_locally}
       DATABASE_URL: postgresql+asyncpg://remediai:${POSTGRES_PASSWORD:-change_me_locally}@postgres:5432/remediai
       REDIS_URL: redis://redis:6379/0
+      REMEDIAI_PROFILE: ${REMEDIAI_PROFILE:-}
+      LLM_PROVIDER_ID: ${LLM_PROVIDER_ID:-}
+      RETRIEVAL_PROVIDER_ID: ${RETRIEVAL_PROVIDER_ID:-}
+      SCM_PROVIDER_ID: ${SCM_PROVIDER_ID:-}
+      TICKET_PROVIDER_ID: ${TICKET_PROVIDER_ID:-}
       AZURE_OPENAI_ENDPOINT: ${AZURE_OPENAI_ENDPOINT:-}
-      AZURE_OPENAI_DEPLOYMENT: ${AZURE_OPENAI_DEPLOYMENT:-gpt-4o}
+      AZURE_OPENAI_DEPLOYMENT: ${AZURE_OPENAI_DEPLOYMENT:-gpt-4.1}
       AZURE_DEVOPS_ORG_URL: ${AZURE_DEVOPS_ORG_URL:-}
       AZURE_DEVOPS_PROJECT: ${AZURE_DEVOPS_PROJECT:-}
       AZURE_DEVOPS_PAT: ${AZURE_DEVOPS_PAT:-}
@@ -91,7 +91,7 @@ services:
       context: .
       dockerfile: apps/dashboard/Dockerfile
     ports:
-      - "${LOCAL_DASHBOARD_PORT:-3000}:80"
+      - "${DASHBOARD_HOST_PORT:-3000}:80"
     depends_on:
       api:
         condition: service_healthy
@@ -101,7 +101,7 @@ services:
       context: .
       dockerfile: apps/docs/Dockerfile
     ports:
-      - "${LOCAL_DOCS_PORT:-3001}:80"
+      - "${DOCS_HOST_PORT:-3001}:80"
 
   log-bridge:
     build:

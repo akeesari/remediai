@@ -52,20 +52,23 @@ def make_rag_node(
         error: str | None = None
         rag_results: list[RAGResult] = []
 
-        try:
-            search_query = build_search_query(state)
-            raw_results = await client.search(
-                query=search_query.text,
-                top=search_query.top,
-                vector_text=search_query.vector_text,
-                filter_expr=search_query.filter_expr,
-            )
-            candidates = _map_results(raw_results)
-            rag_results = rerank(candidates, state)
-            log.info("rag_complete", results_returned=len(rag_results))
-        except Exception as exc:
-            log.error("rag_failed", error=str(exc))
-            error = str(exc)
+        if client is None:
+            log.info("rag_skipped", reason="search_not_configured")
+        else:
+            try:
+                search_query = build_search_query(state)
+                raw_results = await client.search(
+                    query=search_query.text,
+                    top=search_query.top,
+                    vector_text=search_query.vector_text,
+                    filter_expr=search_query.filter_expr,
+                )
+                candidates = _map_results(raw_results)
+                rag_results = rerank(candidates, state)
+                log.info("rag_complete", results_returned=len(rag_results))
+            except Exception as exc:
+                log.error("rag_failed", error=str(exc))
+                error = str(exc)
 
         latency_ms = int(time.monotonic() * 1000) - start_ms
         trace_entry = AgentTraceEntry(
@@ -94,13 +97,15 @@ def make_rag_node(
 def _resolve_client(
     search_client: SearchClientProtocol | None,
     settings: Any,
-) -> SearchClientProtocol:
+) -> SearchClientProtocol | None:
     if search_client is not None:
         return search_client
     from apps.api.core.config import get_settings
     from packages.integrations.azure_search.client import AzureSearchClient
 
     s = settings or get_settings()
+    if not getattr(s, "azure_search_endpoint", ""):
+        return None
     return AzureSearchClient.from_settings(s)
 
 

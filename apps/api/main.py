@@ -17,6 +17,8 @@ settings = get_settings()
 configure_logging(settings.app_env, settings.log_level)
 logger = get_logger(__name__)
 
+_CORRELATION_ID_HEADER = "X-Correlation-ID"
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
@@ -35,11 +37,11 @@ app = FastAPI(
 
 @app.middleware("http")
 async def correlation_id_middleware(request: Request, call_next: object) -> Response:
-    correlation_id = request.headers.get(settings.correlation_id_header, "")
+    correlation_id = request.headers.get(_CORRELATION_ID_HEADER, "")
     structlog.contextvars.bind_contextvars(correlation_id=correlation_id)
     response: Response = await call_next(request)  # type: ignore[operator]
     if correlation_id:
-        response.headers[settings.correlation_id_header] = correlation_id
+        response.headers[_CORRELATION_ID_HEADER] = correlation_id
     structlog.contextvars.clear_contextvars()
     return response
 

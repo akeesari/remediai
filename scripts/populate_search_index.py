@@ -35,7 +35,7 @@ def _build_search_upload_client(settings: object) -> object:
 
     api_key: str = getattr(settings, "azure_search_api_key", "")
     endpoint: str = getattr(settings, "azure_search_endpoint", "")
-    index_name: str = getattr(settings, "search_index_name", "remediai-incidents")
+    index_name: str = getattr(settings, "azure_search_incidents_index", "remediai-incidents")
 
     if api_key:
         credential = AzureKeyCredential(api_key)
@@ -159,7 +159,7 @@ async def main(source: str, embed: bool) -> int:
 
     settings = get_settings()
     endpoint: str = getattr(settings, "azure_search_endpoint", "")
-    index_name: str = getattr(settings, "search_index_name", "remediai-incidents")
+    index_name: str = getattr(settings, "azure_search_incidents_index", "remediai-incidents")
     api_key: str = getattr(settings, "azure_search_api_key", "")
 
     logger.info("index_ensure", index=index_name)

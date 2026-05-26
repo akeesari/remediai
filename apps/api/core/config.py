@@ -9,14 +9,9 @@ class Settings(BaseSettings):
     # Application
     app_env: str = "development"
     log_level: str = "INFO"
-    correlation_id_header: str = "X-Correlation-ID"
 
     # Database
-    postgres_host: str = "localhost"
-    postgres_port: int = 5432
-    postgres_db: str = "remediai"
-    postgres_user: str = "remediai"
-    postgres_password: str = "change_me_locally"
+    database_url: str = "postgresql+asyncpg://remediai:change_me_locally@localhost:5432/remediai"
 
     # Redis
     redis_url: str = "redis://localhost:6379/0"
@@ -33,8 +28,7 @@ class Settings(BaseSettings):
     scm_provider_id: str = "auto"
     ticket_provider_id: str = "none"
 
-    # Portable OpenAI-compatible provider credentials.
-    # In production these values must be sourced via secret management.
+    # Portable OpenAI-compatible provider
     portable_openai_base_url: str = ""
     portable_openai_api_key: str = ""
     portable_openai_model: str = "gpt-4.1-mini"
@@ -50,15 +44,13 @@ class Settings(BaseSettings):
     azure_search_endpoint: str = ""
     azure_search_index: str = "remediai-rag"
     azure_search_api_key: str = ""
-    search_index_name: str = "remediai-incidents"
+    azure_search_incidents_index: str = "remediai-incidents"
     openai_embedding_model: str = "text-embedding-3-small"
     openai_embedding_deployment: str = ""
-    ado_source_repo: str = ""
     ado_source_path_prefix: str = "src/"
 
     # Azure Monitor
     azure_monitor_workspace_id: str = ""
-    azure_monitor_app_insights_resource_id: str = ""
 
     # Ingestion
     ingestion_poll_interval_seconds: int = 60
@@ -66,19 +58,11 @@ class Settings(BaseSettings):
 
     # Local dev mode
     local_mode: bool = False
-    local_log_bridge_containers: str = "api,worker,dashboard"
+    bridge_containers: str = "api,worker,dashboard"
     local_incident_poll_interval_seconds: int = 10
     kubernetes_discovery_namespaces: str = ""
     kubernetes_discovery_workloads: str = ""
-    # Required for /api/v1/targets* in non-local mode.
     target_api_token: str = "local-dev-target-token"
-
-    @property
-    def database_url(self) -> str:
-        return (
-            f"postgresql+asyncpg://{self.postgres_user}:{self.postgres_password}"
-            f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
-        )
 
 
 @lru_cache

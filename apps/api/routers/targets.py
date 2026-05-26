@@ -130,7 +130,7 @@ async def discover_targets(
     settings = get_settings()
 
     if environment == "local":
-        return _discover_local_targets(settings.local_log_bridge_containers)
+        return _discover_local_targets(settings.bridge_containers)
 
     return _discover_kubernetes_targets(
         raw_namespaces=str(getattr(settings, "kubernetes_discovery_namespaces", "") or ""),

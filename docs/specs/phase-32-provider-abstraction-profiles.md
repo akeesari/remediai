@@ -48,8 +48,11 @@ Additional runtime resolution rules:
 	repository settings are present; otherwise SCM is treated as unconfigured.
 6. `TICKET_PROVIDER_ID=none` is a supported first-class mode and must not block
 	incident analysis or PR planning flows.
-7. When SCM or ticketing is unconfigured, agent nodes must skip gracefully with
-	traceable non-error outcomes instead of raising integration exceptions.
+7. `RETRIEVAL_PROVIDER_ID=none` is a supported first-class mode for local and
+	portable execution and must not block incident analysis.
+8. When SCM, ticketing, or retrieval is unconfigured, agent nodes must skip
+	gracefully with traceable non-error outcomes instead of raising integration
+	exceptions.
 
 ---
 
@@ -76,6 +79,7 @@ dashboard API auth posture for the current environment.
 - `SCM_PROVIDER_ID=auto` resolves deterministically and is test-covered.
 - `TICKET_PROVIDER_ID=none` keeps bug creation optional with no pipeline
 	regression.
+- `RETRIEVAL_PROVIDER_ID=none` keeps RAG optional with no pipeline regression.
 - Missing SCM/ticket configuration results in explicit warnings consumable by
 	API/UI layers.
 

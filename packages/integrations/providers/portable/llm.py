@@ -8,12 +8,12 @@ from pydantic import SecretStr
 
 def create_openai_compatible_chat_model(settings: object) -> BaseChatModel:
     """Create a portable OpenAI-compatible chat model."""
-    raw_api_key = getattr(settings, "portable_openai_api_key", "")
+    raw = getattr(settings, "portable_openai_api_key", None)
     api_key: SecretStr | None
-    if isinstance(raw_api_key, SecretStr):
-        api_key = raw_api_key
-    elif isinstance(raw_api_key, str) and raw_api_key:
-        api_key = SecretStr(raw_api_key)
+    if isinstance(raw, SecretStr):
+        api_key = raw if raw.get_secret_value() else None
+    elif isinstance(raw, str) and raw:
+        api_key = SecretStr(raw)
     else:
         api_key = None
 

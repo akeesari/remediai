@@ -2,8 +2,10 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 import structlog.contextvars
-from fastapi import FastAPI, Request, Response
+from fastapi import Depends, FastAPI, Request, Response
+from fastapi.middleware.cors import CORSMiddleware
 
+from apps.api.core.auth import require_auth
 from apps.api.core.config import get_settings
 from apps.api.core.logging import configure_logging, get_logger
 from apps.api.routers.approvals import router as approvals_router
@@ -18,6 +20,7 @@ configure_logging(settings.app_env, settings.log_level)
 logger = get_logger(__name__)
 
 _CORRELATION_ID_HEADER = "X-Correlation-ID"
+_prod = settings.app_env == "production"
 
 
 @asynccontextmanager
@@ -32,7 +35,21 @@ app = FastAPI(
     version="0.1.0",
     description="AI-powered exception analysis and remediation platform",
     lifespan=lifespan,
+    docs_url=None if _prod else "/docs",
+    redoc_url=None if _prod else "/redoc",
+    openapi_url=None if _prod else "/openapi.json",
 )
+
+
+_cors_origins = [o.strip() for o in settings.cors_origins.split(",") if o.strip()]
+if _cors_origins:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=_cors_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 
 @app.middleware("http")
@@ -46,14 +63,16 @@ async def correlation_id_middleware(request: Request, call_next: object) -> Resp
     return response
 
 
-app.include_router(incidents_router)
-app.include_router(approvals_router)
-app.include_router(metrics_router)
-app.include_router(integrations_router)
-app.include_router(targets_router)
+_auth = [Depends(require_auth)]
+
+app.include_router(incidents_router, dependencies=_auth)
+app.include_router(approvals_router, dependencies=_auth)
+app.include_router(metrics_router, dependencies=_auth)
+app.include_router(integrations_router, dependencies=_auth)
+app.include_router(targets_router, dependencies=_auth)
 
 if settings.local_mode:
-    app.include_router(local_logs_router)
+    app.include_router(local_logs_router, dependencies=_auth)
     logger.info("local_mode_enabled", endpoints=["/api/v1/local/ingest", "/api/v1/local/logs"])
 
 

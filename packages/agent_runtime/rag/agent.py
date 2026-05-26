@@ -100,7 +100,7 @@ def _resolve_client(
 ) -> SearchClientProtocol | None:
     if search_client is not None:
         return search_client
-    from apps.api.core.config import get_settings
+    from packages.config.settings import get_settings
     from packages.integrations.azure_search.client import AzureSearchClient
 
     s = settings or get_settings()

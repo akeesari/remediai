@@ -11,6 +11,7 @@ from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from packages.agent_runtime.prompt_registry import get_registry
+from packages.agent_runtime.utils import parse_llm_json_response
 from packages.agent_runtime.validation_agent.models import ValidationCheck, ValidationReport
 from packages.agent_runtime.validation_agent.static_checks import has_fail_checks, run_static_checks
 from packages.domain.models.agent_state import IncidentState
@@ -135,7 +136,7 @@ def _resolve_reader(
 ) -> ADOPrReaderProtocol | None:
     if pr_reader is not None:
         return pr_reader
-    from apps.api.core.config import get_settings
+    from packages.config.settings import get_settings
     from packages.integrations.azure_devops.pr_reader import ADOPrReader
     from packages.integrations.providers.registry import resolve_scm_provider_id
 
@@ -151,7 +152,7 @@ def _resolve_reader(
 def _resolve_llm(llm: BaseChatModel | None, settings: Any) -> BaseChatModel:
     if llm is not None:
         return llm
-    from apps.api.core.config import get_settings
+    from packages.config.settings import get_settings
     from packages.integrations.providers.registry import (
         create_chat_model,
         ensure_valid_provider_config,
@@ -200,15 +201,7 @@ async def _call_llm(
         ]
     )
 
-    content = str(response.content).strip()
-    if content.startswith("```"):
-        parts = content.split("```")
-        content = parts[1] if len(parts) > 1 else content
-        if content.startswith("json"):
-            content = content[4:]
-        content = content.strip()
-
-    return cast(dict[str, Any], json.loads(content))
+    return parse_llm_json_response(str(response.content))
 
 
 def _approved_recommendation_title(state: IncidentState) -> str:

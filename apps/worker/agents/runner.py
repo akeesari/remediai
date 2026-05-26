@@ -8,8 +8,8 @@ import structlog
 from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from apps.api.core.config import Settings, get_settings
 from packages.agent_runtime.pipeline import build_pipeline
+from packages.config.settings import Settings, get_settings
 from packages.data_access.models.audit_log_orm import AuditLogOrm
 from packages.data_access.models.incident_orm import IncidentOrm
 from packages.domain.models.agent_state import IncidentState

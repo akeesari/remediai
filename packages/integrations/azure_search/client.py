@@ -77,8 +77,14 @@ class AzureSearchClient:
 
     @classmethod
     def from_settings(cls, settings: Any) -> AzureSearchClient:
+        key_field = settings.azure_search_api_key
+        api_key = (
+            key_field.get_secret_value()
+            if hasattr(key_field, "get_secret_value")
+            else str(key_field)
+        )
         return cls(
             endpoint=settings.azure_search_endpoint,
             index_name=settings.azure_search_index,
-            api_key=settings.azure_search_api_key,
+            api_key=api_key,
         )

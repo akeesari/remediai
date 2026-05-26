@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import time
 from collections.abc import Awaitable, Callable
 from typing import Any
 
@@ -12,8 +11,8 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from packages.agent_runtime.root_cause.models import RootCauseJson, RootCauseOutput
 from packages.agent_runtime.root_cause.prompt import load_root_cause_prompt
 from packages.agent_runtime.root_cause.stack_parser import parse_stack_frames
+from packages.agent_runtime.utils import agent_trace_ctx, parse_llm_json_response
 from packages.domain.models.agent_state import IncidentState
-from packages.domain.models.audit import AgentTraceEntry
 from packages.integrations.pii_scrubber import scrub
 
 logger = structlog.get_logger()
@@ -39,7 +38,6 @@ def make_root_cause_node(
     """Return an async LangGraph node that performs root cause analysis."""
 
     async def root_cause_node(state: IncidentState) -> dict[str, Any]:
-        start_ms = int(time.monotonic() * 1000)
         exception_type: str = state.get("exception_type", "")
         exception_message: str = state.get("exception_message", "")
         stack_trace: str = state.get("stack_trace", "") or ""
@@ -51,40 +49,26 @@ def make_root_cause_node(
         frames = parse_stack_frames(stack_trace)
         top_frames = [f.method for f in frames]
 
-        error: str | None = None
-        try:
-            output = await _call_llm(llm, state, top_frames)
-            log.info(
-                "root_cause_complete",
-                component=output.root_cause_json.component,
-                confidence=output.root_cause_json.confidence,
+        with agent_trace_ctx(AGENT_NAME, state) as ctx:
+            try:
+                output = await _call_llm(llm, state, top_frames)
+                log.info(
+                    "root_cause_complete",
+                    component=output.root_cause_json.component,
+                    confidence=output.root_cause_json.confidence,
+                )
+            except Exception as exc:
+                log.error("root_cause_llm_failed", error=str(exc))
+                ctx.error = str(exc)
+                output = _DEFAULT_OUTPUT
+
+            return ctx.build(
+                prompt_version=PROMPT_VERSION,
+                input_summary=f"type={exception_type}, msg={scrub(exception_message)[:100]}, frames={len(top_frames)}",
+                output_summary=f"component={output.root_cause_json.component}, confidence={output.root_cause_json.confidence}",
+                root_cause_summary=output.root_cause_summary,
+                root_cause_json=output.root_cause_json.model_dump(),
             )
-        except Exception as exc:
-            log.error("root_cause_llm_failed", error=str(exc))
-            error = str(exc)
-            output = _DEFAULT_OUTPUT
-
-        latency_ms = int(time.monotonic() * 1000) - start_ms
-        trace_entry = AgentTraceEntry(
-            agent_name=AGENT_NAME,
-            prompt_version=PROMPT_VERSION,
-            input_summary=f"type={exception_type}, msg={scrub(exception_message)[:100]}, frames={len(top_frames)}",
-            output_summary=f"component={output.root_cause_json.component}, confidence={output.root_cause_json.confidence}",
-            latency_ms=latency_ms,
-            error=error,
-        )
-
-        existing_trace: list[dict[str, Any]] = list(state.get("agent_trace", []))
-        existing_errors: list[str] = list(state.get("errors", []))
-        if error:
-            existing_errors.append(f"{AGENT_NAME}: {error}")
-
-        return {
-            "root_cause_summary": output.root_cause_summary,
-            "root_cause_json": output.root_cause_json.model_dump(),
-            "agent_trace": existing_trace + [trace_entry.model_dump()],
-            "errors": existing_errors,
-        }
 
     return root_cause_node
 
@@ -112,13 +96,5 @@ async def _call_llm(
     messages = [SystemMessage(content=system_prompt), HumanMessage(content=user_content)]
     response = await llm.ainvoke(messages)
 
-    content = str(response.content).strip()
-    if content.startswith("```"):
-        parts = content.split("```")
-        content = parts[1] if len(parts) > 1 else content
-        if content.startswith("json"):
-            content = content[4:]
-        content = content.strip()
-
-    data: dict[str, Any] = json.loads(content)
+    data = parse_llm_json_response(str(response.content))
     return RootCauseOutput.model_validate(data)

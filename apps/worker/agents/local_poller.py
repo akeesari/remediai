@@ -15,8 +15,8 @@ import structlog
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from apps.api.core.config import Settings, get_settings
 from apps.worker.agents.runner import AgentPipelineRunner
+from packages.config.settings import Settings, get_settings
 from packages.data_access.models.incident_orm import IncidentOrm
 from packages.domain.models.incident import Incident, IncidentPriority, IncidentStatus
 

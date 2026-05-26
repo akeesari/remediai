@@ -26,7 +26,7 @@ Check off: `Repository structure scaffolded` and `Basic FastAPI app with health 
 ### Root config
 ```
 pyproject.toml
-docker-compose.dev.yml
+docker-compose.local.yml
 Makefile
 .python-version
 ```
@@ -291,7 +291,7 @@ Two tests:
 1. `GET /health` returns HTTP 200
 2. Response JSON contains `{"status": "ok"}`
 
-### `docker-compose.dev.yml`
+### `docker-compose.local.yml`
 
 ```yaml
 services:
@@ -334,10 +334,10 @@ install:
 	pip install poetry && poetry install
 
 dev:
-	docker compose -f docker-compose.dev.yml up -d
+	docker compose -f docker-compose.local.yml up -d
 
 stop:
-	docker compose -f docker-compose.dev.yml down
+	docker compose -f docker-compose.local.yml down
 
 api:
 	uvicorn apps.api.main:app --reload --host 0.0.0.0 --port 8000
@@ -373,13 +373,13 @@ ci: lint typecheck test
 Run all commands from the repo root. Every command must exit with code 0.
 
 - [ ] `poetry install` completes with no errors
-- [ ] `docker compose -f docker-compose.dev.yml config` validates successfully
+- [ ] `docker compose -f docker-compose.local.yml config` validates successfully
 - [ ] `python -c "from apps.api.main import app; print('OK')"` prints `OK`
 - [ ] `python -c "from apps.api.core.config import get_settings; print(get_settings().app_env)"` prints `development`
 - [ ] `pytest tests/unit/test_health.py -v` — both tests pass
 - [ ] `ruff check .` — exits 0, no violations
 - [ ] `mypy apps/api/ --strict` — exits 0, no errors
-- [ ] `docker compose -f docker-compose.dev.yml up -d && sleep 3 && docker compose -f docker-compose.dev.yml ps` — postgres and redis show as healthy
+- [ ] `docker compose -f docker-compose.local.yml up -d && sleep 3 && docker compose -f docker-compose.local.yml ps` — postgres and redis show as healthy
 - [ ] All directories below exist:
   ```
   apps/api/  apps/worker/  apps/dashboard/
@@ -399,7 +399,7 @@ Run all commands from the repo root. Every command must exit with code 0.
 feat(scaffold): initialise project structure and FastAPI application shell
 
 - pyproject.toml with all Python dependencies pinned (Poetry)
-- docker-compose.dev.yml: PostgreSQL 16 + Redis 7 with healthchecks
+- docker-compose.local.yml: PostgreSQL 16 + Redis 7 with healthchecks
 - FastAPI app: /health endpoint, correlation ID middleware, structlog JSON logging
 - pydantic-settings Settings with all env vars mapped from .env.example
 - pytest infrastructure: AsyncClient fixture, asyncio_mode=auto

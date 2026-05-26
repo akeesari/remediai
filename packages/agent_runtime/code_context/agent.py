@@ -110,7 +110,7 @@ async def _resolve_client(
 ) -> ADOClientProtocol | None:
     if ado_client is not None:
         return ado_client
-    from apps.api.core.config import get_settings
+    from packages.config.settings import get_settings
     from packages.integrations.azure_devops.client import AzureDevOpsClient
     from packages.integrations.providers.registry import resolve_scm_provider_id
 

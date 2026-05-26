@@ -12,6 +12,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from packages.agent_runtime.pr_agent.models import PRAgentOutput
 from packages.agent_runtime.pr_agent.patch_builder import PatchTooLargeError, build_patch
 from packages.agent_runtime.prompt_registry import get_registry
+from packages.agent_runtime.utils import parse_llm_json_response
 from packages.domain.models.agent_state import IncidentState
 from packages.domain.models.audit import AgentTraceEntry
 from packages.integrations.pii_scrubber import scrub
@@ -228,7 +229,7 @@ def _resolve_writer(
 ) -> ADOReposWriterProtocol | None:
     if ado_writer is not None:
         return ado_writer
-    from apps.api.core.config import get_settings
+    from packages.config.settings import get_settings
     from packages.integrations.azure_devops.repos_writer import ADOReposWriter
     from packages.integrations.providers.registry import resolve_scm_provider_id
 
@@ -244,7 +245,7 @@ def _resolve_writer(
 def _resolve_llm(llm: BaseChatModel | None, settings: Any) -> BaseChatModel:
     if llm is not None:
         return llm
-    from apps.api.core.config import get_settings
+    from packages.config.settings import get_settings
     from packages.integrations.providers.registry import (
         create_chat_model,
         ensure_valid_provider_config,
@@ -289,15 +290,7 @@ async def _call_llm(
     messages = [SystemMessage(content=system_prompt), HumanMessage(content=user_content)]
     response = await llm.ainvoke(messages)
 
-    content = str(response.content).strip()
-    if content.startswith("```"):
-        parts = content.split("```")
-        content = parts[1] if len(parts) > 1 else content
-        if content.startswith("json"):
-            content = content[4:]
-        content = content.strip()
-
-    data: dict[str, Any] = json.loads(content)
+    data = parse_llm_json_response(str(response.content))
     patched_content = str(data.get("patched_content", original_content))
     files_changed: list[str] = list(data.get("files_changed", [file_path] if file_path else []))
     return patched_content, files_changed

@@ -46,7 +46,7 @@ def build_pipeline(
     ``state["approval_status"] == "approved"``.
     """
     if llm is None:
-        from apps.api.core.config import get_settings
+        from packages.config.settings import get_settings
         from packages.integrations.providers.registry import (
             create_chat_model,
             ensure_valid_provider_config,

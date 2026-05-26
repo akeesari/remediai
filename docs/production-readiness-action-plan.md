@@ -32,7 +32,7 @@ active security risks in the current state.
 
 ### C1. Sensitive config fields stored as plain `str` — must be `SecretStr`
 
-- [ ] **Status:** Open
+- [x] **Status:** Done
 
 **Problem:**
 Four fields in `Settings` hold secrets but use Python `str`. This means the values
@@ -97,7 +97,7 @@ api_key = SecretStr(raw) if raw else None
 
 ### C2. No `.dockerignore` in any service directory
 
-- [ ] **Status:** Open
+- [x] **Status:** Done
 
 **Problem:**
 Every `docker build` context copies the entire project tree into the build layer unless
@@ -188,7 +188,7 @@ tests/
 
 ### C3. No authentication on API endpoints
 
-- [ ] **Status:** Open
+- [x] **Status:** Done
 
 **Problem:**
 Every FastAPI route — `/incidents`, `/metrics`, `/approvals`, `/integrations/health` —
@@ -259,7 +259,7 @@ validation logic inside changes.
 
 ### C4. OpenAPI docs (`/docs`, `/redoc`) publicly exposed in production
 
-- [ ] **Status:** Open
+- [x] **Status:** Done
 
 **Problem:**
 FastAPI enables `/docs` and `/redoc` by default in all environments. In production,
@@ -293,7 +293,7 @@ app = FastAPI(
 
 ### C5. `alembic.ini` has hardcoded database password committed to git
 
-- [ ] **Status:** Open
+- [x] **Status:** Done
 
 **Problem:**
 `alembic.ini` contains:
@@ -355,7 +355,7 @@ prerequisite for H2, H3, and unblocks M2 and M3.
 
 ### H1. Move `Settings` to a shared package — fixes 9 architecture violations
 
-- [ ] **Status:** Open
+- [x] **Status:** Done
 
 **Problem:**
 `packages/` (shared libraries, importable by any service) all import
@@ -430,7 +430,7 @@ only the re-export.
 
 ### H2. Worker duplicates logging configuration
 
-- [ ] **Status:** Open
+- [x] **Status:** Done
 
 **Problem:**
 `apps/worker/main.py:19–32` implements its own `_configure_logging()` that is
@@ -513,7 +513,7 @@ Step 4 — Verify `FakeListChatModel` import is removed from `portable/llm.py`
 
 ### H4. No CORS middleware
 
-- [ ] **Status:** Open
+- [x] **Status:** Done
 
 **Problem:**
 The React dashboard calls `baseURL: '/api/v1'` which works when served from the
@@ -781,7 +781,7 @@ so Kubernetes waits long enough for the drain.
 
 ### H9. `axios` client has no timeout, no global error interceptors
 
-- [ ] **Status:** Open
+- [x] **Status:** Done
 
 **Problem:**
 `apps/dashboard/src/api/client.ts` creates an axios instance with only `baseURL`
@@ -841,7 +841,7 @@ config.headers['X-Correlation-ID'] = crypto.randomUUID()
 
 ### H10. No React `ErrorBoundary`
 
-- [ ] **Status:** Open
+- [x] **Status:** Done
 
 **Problem:**
 If any page component throws an unhandled JavaScript error (e.g., a `null`
@@ -911,7 +911,7 @@ export function App() {
 
 ### H11. No 404 catch-all route in the React app
 
-- [ ] **Status:** Open
+- [x] **Status:** Done
 
 **Problem:**
 Navigating to any unknown URL path renders a blank page with no feedback.
@@ -960,7 +960,7 @@ all P0 and P1 items.
 
 ### M1. LLM JSON parsing boilerplate duplicated across 5 agent files
 
-- [ ] **Status:** Open
+- [x] **Status:** Done
 
 **Problem:**
 The pattern of extracting JSON from an LLM text response (splitting on ` ```json `,
@@ -1028,7 +1028,7 @@ parsed = parse_llm_json_response(response.content)
 
 ### M2. `AgentTraceEntry` latency measurement boilerplate in every agent
 
-- [ ] **Status:** Open
+- [x] **Status:** Done
 
 **Problem:**
 Every agent node contains identical boilerplate:

@@ -123,7 +123,7 @@ def _resolve_client(
 ) -> ADOBoardsClientProtocol | None:
     if boards_client is not None:
         return boards_client
-    from apps.api.core.config import get_settings
+    from packages.config.settings import get_settings
     from packages.integrations.azure_devops.boards_client import AzureDevOpsBoardsClient
     from packages.integrations.providers.registry import resolve_ticket_provider_id
 

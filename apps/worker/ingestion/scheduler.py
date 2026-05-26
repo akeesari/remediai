@@ -5,8 +5,8 @@ import asyncio
 import structlog
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from apps.api.core.config import Settings, get_settings
 from apps.worker.ingestion.connector import IngestionConnector
+from packages.config.settings import Settings, get_settings
 from packages.domain.models.incident import Incident
 from packages.integrations.azure_monitor.client import AzureMonitorClient
 

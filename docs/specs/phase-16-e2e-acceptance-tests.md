@@ -42,7 +42,7 @@ only the database layer is real.
 
 ## Test Environment
 
-- PostgreSQL started by Docker Compose (`docker-compose.dev.yml`).
+- PostgreSQL started by Docker Compose (`docker-compose.local.yml`).
 - `TEST_DATABASE_URL` environment variable points to the test database
   (separate from the dev database to avoid data pollution).
 - If the configured test database does not yet exist, the session fixture

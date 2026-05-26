@@ -18,11 +18,17 @@ if config.config_file_name is not None:
 
 target_metadata = Base.metadata
 
-_default_url = config.get_main_option(
-    "sqlalchemy.url",
-    "postgresql+asyncpg://remediai:change_me_locally@localhost:5432/remediai",
-)
-database_url: str = os.environ.get("DATABASE_URL", _default_url or "")
+_env = os.environ.get("APP_ENV", "development")
+database_url: str = os.environ.get("DATABASE_URL", "")
+
+if not database_url:
+    if _env == "production":
+        raise RuntimeError(
+            "DATABASE_URL environment variable must be set in production. "
+            "See .env.example for the expected format."
+        )
+    # Local-dev fallback only — never use in staging or production
+    database_url = "postgresql+asyncpg://remediai:change_me_locally@localhost:5432/remediai"
 
 
 def run_migrations_offline() -> None:

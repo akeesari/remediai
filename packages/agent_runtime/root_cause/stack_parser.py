@@ -18,6 +18,24 @@ _INTERNAL_PREFIXES: tuple[str, ...] = (
     "lambda_method",
 )
 
+# ---------------------------------------------------------------------------
+# Docker / build-system path-prefix stripping
+# ---------------------------------------------------------------------------
+# To support a new project whose container uses a different base directory,
+# simply add its prefix here — no other code change is required.
+# Each entry is the absolute path prefix used inside the container image;
+# the prefix (including the trailing slash) is stripped so Azure DevOps
+# receives a repo-relative path that it can resolve correctly.
+_DOCKER_PATH_PREFIXES: tuple[str, ...] = (
+    "/app/",         # common Python / .NET default  (WORKDIR /app)
+    "/src/",         # common .NET SDK images          (COPY . /src)
+    "/code/",        # some Python images              (WORKDIR /code)
+    "/workspace/",   # VS Code dev-containers / GitHub Codespaces
+    "/usr/src/app/", # legacy Node / Python images
+    "/home/app/",    # rootless container pattern
+    "/build/",       # multi-stage build artefact dir
+)
+
 
 @dataclass
 class StackFrame:
@@ -52,12 +70,12 @@ def _is_user_code(method: str) -> bool:
 
 
 def _clean_path(path: str | None) -> str | None:
+    """Strip Docker container path prefixes so the result is repo-relative."""
     if not path:
         return path
-    if path.startswith("/app/"):
-        return path[5:]
-    if path.startswith("/src/"):
-        return path[5:]
+    for prefix in _DOCKER_PATH_PREFIXES:
+        if path.startswith(prefix):
+            return path[len(prefix):]
     return path
 
 

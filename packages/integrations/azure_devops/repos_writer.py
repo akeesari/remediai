@@ -158,6 +158,29 @@ class ADOReposWriter:
 
     @classmethod
     def from_settings(cls, settings: Any) -> ADOReposWriter:
+        """Construct from app settings (uses static AZURE_DEVOPS_REPOSITORY)."""
+        return cls.from_settings_with_overrides(settings)
+
+    @classmethod
+    def from_settings_with_overrides(
+        cls,
+        settings: Any,
+        *,
+        repository: str | None = None,
+        project: str | None = None,
+        default_branch: str | None = None,
+    ) -> ADOReposWriter:
+        """Construct from settings, with optional per-incident overrides.
+
+        Use this factory when routing to different repositories across projects.
+        Any keyword argument that is *not None* takes precedence over the value
+        from ``settings``.  Example::
+
+            writer = ADOReposWriter.from_settings_with_overrides(
+                settings,
+                repository=state.get("ado_repository") or settings.azure_devops_repository,
+            )
+        """
         pat_field = getattr(settings, "azure_devops_pat", "")
         pat = (
             pat_field.get_secret_value()
@@ -166,8 +189,8 @@ class ADOReposWriter:
         )
         return cls(
             org_url=getattr(settings, "azure_devops_org_url", ""),
-            project=getattr(settings, "azure_devops_project", ""),
-            repository=getattr(settings, "azure_devops_repository", ""),
+            project=project if project is not None else getattr(settings, "azure_devops_project", ""),
+            repository=repository if repository is not None else getattr(settings, "azure_devops_repository", ""),
             pat=pat,
-            default_branch=getattr(settings, "azure_devops_branch", "main"),
+            default_branch=default_branch if default_branch is not None else getattr(settings, "azure_devops_branch", "main"),
         )

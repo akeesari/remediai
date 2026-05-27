@@ -1,7 +1,16 @@
-"""Stateful parser that detects Python exceptions in a stream of log lines."""
+"""Stateful parser that detects Python and .NET exceptions in a stream of log lines.
+
+Supports three log formats out of the box:
+  1. Plain-text lines (uvicorn, gunicorn, custom formatters)
+  2. Pipe-separated lines with timestamp|LEVEL|Component|message prefix
+  3. Structured JSON logs (Serilog, Winston, Python structlog, Azure Application
+     Insights) — the message / exception field is extracted automatically before
+     the normal regex matching runs.
+"""
 
 from __future__ import annotations
 
+import json
 import re
 from dataclasses import dataclass, field
 
@@ -19,6 +28,29 @@ _STRIP_TS = re.compile(
 _STRIP_LEVEL = re.compile(r"^(?:DEBUG|INFO|WARNING|ERROR|CRITICAL)\s*:?\s*")
 _HTTP_5XX = re.compile(r'"(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS) \S+ HTTP/[^"]*" 5\d\d ')
 _MAX_TRACEBACK_LINES = 60
+
+# ---------------------------------------------------------------------------
+# Structured / JSON log extraction
+# ---------------------------------------------------------------------------
+# Common field names used by popular structured logging libraries.
+# We try each in order; the first non-empty value wins.
+_JSON_MESSAGE_FIELDS = (
+    # Serilog / .NET JSON formatter
+    "RenderedMessage", "MessageTemplate", "message", "msg",
+    # Winston (Node)
+    "message",
+    # Python structlog / python-json-logger
+    "event", "message",
+    # Azure Application Insights / Monitor
+    "body", "formattedMessage",
+)
+_JSON_EXCEPTION_FIELDS = (
+    # Serilog
+    "Exception",
+    # Python structlog
+    "exception", "exc_info",
+)
+
 
 
 @dataclass
@@ -42,6 +74,8 @@ class ExceptionParser:
         self._dotnet_exc_msg: str = ""
 
     def feed(self, raw_line: str) -> DetectedExcepion | None:
+        # Pre-process: unwrap structured JSON logs into plain text
+        raw_line = _extract_from_json(raw_line)
         clean = _strip_prefixes(raw_line)
 
         # 1. Handle active .NET traceback
@@ -132,3 +166,36 @@ def _strip_prefixes(line: str) -> str:
     line = _STRIP_TS.sub("", line)
     line = _STRIP_LEVEL.sub("", line)
     return line
+
+
+def _extract_from_json(raw_line: str) -> str:
+    """If *raw_line* is a JSON object, return its exception or message value.
+
+    Handles common structured log schemas (Serilog, Winston, Python structlog,
+    Azure Application Insights).  Falls back to the original line if it is not
+    valid JSON or contains no recognised fields.
+
+    Priority: embedded exception/stack-trace text > rendered message field.
+    """
+    stripped = raw_line.strip()
+    if not (stripped.startswith("{") and stripped.endswith("}")):
+        return raw_line
+    try:
+        obj: dict = json.loads(stripped)
+    except (json.JSONDecodeError, ValueError):
+        return raw_line
+
+    # 1. Prefer an explicit exception / stack-trace field
+    for key in _JSON_EXCEPTION_FIELDS:
+        val = obj.get(key)
+        if val and isinstance(val, str) and val.strip():
+            return val.strip()
+
+    # 2. Fall back to the human-readable message field
+    for key in _JSON_MESSAGE_FIELDS:
+        val = obj.get(key)
+        if val and isinstance(val, str) and val.strip():
+            return val.strip()
+
+    return raw_line
+

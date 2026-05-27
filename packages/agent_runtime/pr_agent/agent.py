@@ -106,7 +106,7 @@ def make_pr_agent_node(
         affected_files: list[str] = recommendation.get("affected_files", [])
         file_path: str = affected_files[0] if affected_files else ""
 
-        writer = _resolve_writer(ado_writer, settings)
+        writer = _resolve_writer(ado_writer, settings, state=dict(state))
         if writer is None:
             log.info("pr_agent_skipped", reason="scm_not_configured")
             latency_ms = int(time.monotonic() * 1000) - start_ms
@@ -226,8 +226,18 @@ def make_pr_agent_node(
 
 
 def _resolve_writer(
-    ado_writer: ADOReposWriterProtocol | None, settings: Any
+    ado_writer: ADOReposWriterProtocol | None,
+    settings: Any,
+    state: dict | None = None,
 ) -> ADOReposWriterProtocol | None:
+    """Return an ADO writer, applying per-incident repository override when available.
+
+    Priority order for the target repository:
+    1. Explicitly injected *ado_writer* (tests / DI)
+    2. ``state["ado_repository"]`` — set per incident so different projects
+       route to their own repository
+    3. ``settings.azure_devops_repository`` — the static default from env vars
+    """
     if ado_writer is not None:
         return ado_writer
     from packages.config.settings import get_settings
@@ -240,7 +250,11 @@ def _resolve_writer(
         return None
     if not getattr(s, "azure_devops_org_url", ""):
         return None
-    return ADOReposWriter.from_settings(s)
+
+    # Per-incident repository override (multi-project support)
+    incident_repo: str | None = (state or {}).get("ado_repository") or None
+    return ADOReposWriter.from_settings_with_overrides(s, repository=incident_repo)
+
 
 
 def _resolve_llm(llm: BaseChatModel | None, settings: Any) -> BaseChatModel:

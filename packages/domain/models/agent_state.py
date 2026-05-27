@@ -9,6 +9,10 @@ class IncidentState(TypedDict, total=False):
     exception_message: str
     stack_trace: str
     raw_payload: dict[str, Any]
+    # Optional: target ADO repository for this incident.
+    # When set, the PR agent routes to this repo instead of the static
+    # AZURE_DEVOPS_REPOSITORY setting — enables multi-project support.
+    ado_repository: str | None
 
     # Triage outputs
     priority: str | None

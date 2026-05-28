@@ -11,7 +11,7 @@ export default function Root({ children }: { children: React.ReactNode }): React
     const handleDocsSidebarToggle = () => {
       const sidebar = document.querySelector('.theme-doc-sidebar-container');
       if (sidebar) {
-        const isHidden = sidebar.getAttribute('data-hidden') === 'true';
+        const isHidden = sidebar.getAttribute('data-hidden') !== 'false';
         sidebar.setAttribute('data-hidden', isHidden ? 'false' : 'true');
         document.documentElement.setAttribute('data-sidebar-open', isHidden ? 'true' : 'false');
       }

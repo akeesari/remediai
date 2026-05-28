@@ -5068,3 +5068,155 @@ summary:hover {
     padding: 4px !important;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   UNIFIED MOBILE LAYOUT & RESPONSIVENESS FIX
+   ═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 996px) {
+  /* 1. Navbar Layout Fixes */
+  .navbar {
+    padding: 0 var(--space-4) !important;
+    height: 64px !important;
+  }
+
+  .navbar > .navbar__inner {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    flex-wrap: nowrap !important;
+    width: 100% !important;
+    height: 64px !important;
+    position: relative !important;
+  }
+
+  /* Logo on the left */
+  .navbar .navbar__brand {
+    display: flex !important;
+    align-items: center !important;
+    margin-right: auto !important;
+    min-width: 0 !important;
+    flex-shrink: 1 !important;
+    order: 1 !important;
+  }
+
+  /* Hide search from the top navbar on mobile (it is shown in the hamburger menu) */
+  .navbar .navbar__search {
+    display: none !important;
+  }
+
+  /* Right-side items container (contains theme toggle) */
+  .navbar .navbar__items--right {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: var(--space-2) !important;
+    margin-left: auto !important;
+    margin-right: var(--space-2) !important;
+    flex-shrink: 0 !important;
+    order: 3 !important;
+  }
+
+  /* Show the theme toggle in the top navbar on mobile next to the hamburger */
+  .navbar__items--right .clean-btn,
+  .navbar__items--right button[class*="toggle"],
+  .navbar__items--right [class*="colorModeToggle"] {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  /* Hide the GitHub link from the top navbar on mobile (it is shown in the hamburger menu) */
+  .navbar .navbar__items--right .header-github-link {
+    display: none !important;
+  }
+
+  /* Hamburger Menu Toggle on the far right */
+  .navbar .navbar__toggle,
+  .navbar__inner .navbar__toggle,
+  button.navbar__toggle,
+  .navbar__toggle {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    margin-left: var(--space-2) !important;
+    margin-right: 0 !important;
+    order: 4 !important;
+    flex-shrink: 0 !important;
+    z-index: 100 !important;
+  }
+
+  /* 2. Doc Page Responsive Grid Reset (Removes empty left space and overlapping) */
+  [class*="docPage"],
+  .theme-doc-main-container,
+  main,
+  [class*="docMainContainer"] {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  /* Content inner column full-width */
+  .theme-doc-main-container > .container,
+  .theme-doc-main-container .row,
+  .theme-doc-main-container .col {
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: 1 1 100% !important;
+    padding: 0 var(--space-4) !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Style main scroll area */
+  .theme-doc-markdown {
+    padding: var(--space-4) 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Docs Sidebar - slides in from left overlaying content */
+  .theme-doc-sidebar-container {
+    display: block !important;
+    position: fixed !important;
+    top: 64px !important;
+    left: 0 !important;
+    bottom: 0 !important;
+    width: 280px !important;
+    transform: translateX(-100%) !important;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    z-index: 1000 !important; /* high z-index to overlay content and backdrop */
+    background: var(--bg-elevated) !important;
+    border-right: 1px solid var(--border) !important;
+    box-shadow: var(--shadow-xl) !important;
+    overflow-y: auto !important;
+  }
+
+  /* When sidebar is open */
+  .theme-doc-sidebar-container[data-hidden="false"] {
+    transform: translateX(0) !important;
+  }
+
+  /* Hide Docusaurus native floating button or sidebar toggle since we have a modern sub-header */
+  [class*="sidebarViewport"] {
+    max-width: 100% !important;
+  }
+
+  /* Hide mobile "On this page" (TOC) dropdown completely */
+  .theme-doc-toc-mobile,
+  [class*="tocMobile"],
+  .toc-mobile {
+    display: none !important;
+  }
+}

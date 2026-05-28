@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from '@docusaurus/Link';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import Layout from '@theme/Layout';
@@ -71,48 +71,64 @@ const workflowSteps = [
 
 /* ─── Technology badges ─── */
 const techStack = [
-  { label: 'Python 3.12' },
-  { label: 'FastAPI' },
-  { label: 'LangGraph' },
-  { label: 'Azure OpenAI GPT-4o' },
-  { label: 'Azure AI Search' },
-  { label: 'Azure Monitor' },
-  { label: 'Azure Service Bus' },
-  { label: 'PostgreSQL 16' },
-  { label: 'React 18' },
-  { label: 'TypeScript' },
-  { label: 'Azure DevOps' },
-  { label: 'AKS' },
-  { label: 'Terraform' },
-  { label: 'Helm' },
+  { label: 'Python 3.12', icon: 'python', color: 'blue' },
+  { label: 'FastAPI', icon: 'fastapi', color: 'teal' },
+  { label: 'LangGraph', icon: 'langgraph', color: 'purple' },
+  { label: 'Azure OpenAI GPT-4o', icon: 'openai', color: 'green' },
+  { label: 'Azure AI Search', icon: 'azure-search', color: 'cyan' },
+  { label: 'Azure Monitor', icon: 'azure-monitor', color: 'orange' },
+  { label: 'Azure Service Bus', icon: 'azure-bus', color: 'indigo' },
+  { label: 'PostgreSQL 16', icon: 'postgresql', color: 'blue' },
+  { label: 'React 18', icon: 'react', color: 'cyan' },
+  { label: 'TypeScript', icon: 'typescript', color: 'blue' },
+  { label: 'Azure DevOps', icon: 'azure-devops', color: 'blue' },
+  { label: 'AKS', icon: 'kubernetes', color: 'blue' },
+  { label: 'Terraform', icon: 'terraform', color: 'purple' },
+  { label: 'Helm', icon: 'helm', color: 'cyan' },
 ];
 
 /* ─── Security pillars ─── */
 const securityPillars = [
   {
-    icon: '👤',
+    icon: '👥',
+    step: 'PRINCIPLE 1',
     title: 'Humans in the Loop',
     body: 'Every code change requires an explicit human approval. Recommendations are surfaced, never auto-applied.',
+    color: 'cyan',
   },
   {
     icon: '🚫',
+    step: 'PRINCIPLE 2',
     title: 'No Auto-Merge',
     body: 'PRs are always created as drafts. RemediAI never sets auto-complete or merges directly to any branch.',
+    color: 'orange',
   },
   {
-    icon: '🛡️',
+    icon: '🔒',
+    step: 'PRINCIPLE 3',
     title: 'PII Scrubbed',
     body: 'Emails, IPs, and user identifiers are stripped from every exception payload before transmission to any AI endpoint.',
+    color: 'purple',
   },
   {
-    icon: '📋',
+    icon: '📝',
+    step: 'PRINCIPLE 4',
     title: 'Full Audit Trail',
     body: 'Every agent decision is recorded in an immutable audit log table — what ran, what it decided, and why.',
+    color: 'green',
   },
 ];
 
 export default function Home(): React.JSX.Element {
   const { siteConfig } = useDocusaurusContext();
+  const [activeFeature, setActiveFeature] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveFeature((prev) => (prev + 1) % 3);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <Layout
@@ -120,134 +136,164 @@ export default function Home(): React.JSX.Element {
       description={siteConfig.tagline}
     >
       {/* ── Hero ── */}
-      <header className={clsx('hero hero--primary')}>
-        <div className="container" style={{ textAlign: 'center' }}>
-          <div
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              background: 'rgba(255,255,255,0.15)',
-              border: '1px solid rgba(255,255,255,0.3)',
-              borderRadius: '99px',
-              padding: '0.35rem 1rem',
-              fontSize: '0.82rem',
-              fontWeight: 600,
-              color: '#fff',
-              marginBottom: '1.75rem',
-              backdropFilter: 'blur(4px)',
-            }}
-          >
-            <span>🚀</span> Phases 1–21 complete &nbsp;·&nbsp; v0.4 in active development
+      <header className="hero-modern">
+        <div className="hero-glow hero-glow-1"></div>
+        <div className="hero-glow hero-glow-2"></div>
+        <div className="hero-pattern"></div>
+        
+        <div className="container hero-content">
+          <div className="pill-badge fade-up">
+            <span className="pill-dot"></span>
+            <span>Phases 1–21 complete · v0.4 in active development</span>
           </div>
-          <h1 className="hero__title">
+          
+          <h1 className="hero-title fade-up-1">
             Stop finding bugs.<br />
-            <span style={{ color: 'rgba(255,255,255,0.8)' }}>Start fixing them.</span>
+            <span className="hero-title-gradient">Start fixing them.</span>
           </h1>
-          <p className="hero__subtitle">
+          
+          <p className="hero-subtitle fade-up-2">
             RemediAI is an AI-powered exception analysis and remediation platform for enterprise
             .NET applications on Azure. From Application Insights alert to Azure DevOps Bug in
             under 3 minutes — with full root cause analysis and fix recommendations.
           </p>
-          <div className="hero-cta-group">
-            <Link to="/docs/getting-started/prereqs" className="hero-cta-primary">
-              Get started →
+          
+          <div className="hero-cta-group fade-up-3">
+            <Link to="/docs/getting-started/prereqs" className="btn-modern btn-primary">
+              Get started
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M5 12h14M12 5l7 7-7 7"/>
+              </svg>
             </Link>
-            <Link to="https://github.com/akeesari/remediai" className="hero-cta-secondary">
-              ★ View on GitHub
+            <Link to="https://github.com/akeesari/remediai" className="btn-modern btn-secondary">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+              </svg>
+              Star on GitHub
             </Link>
           </div>
-
-          {/* Stats row */}
-          <div className="stats-row" style={{ marginTop: '4rem' }}>
-            {[
-              { n: '8', label: 'AI agents' },
-              { n: '21', label: 'phases complete' },
-              { n: '< 3 min', label: 'triage time' },
-              { n: '500/hr', label: 'incident throughput' },
-            ].map((s) => (
-              <div key={s.label} className="stat-item">
-                <span className="stat-number" style={{ color: 'rgba(255,255,255,0.95)' }}>{s.n}</span>
-                <span className="stat-label" style={{ color: 'rgba(255,255,255,0.7)' }}>{s.label}</span>
-              </div>
-            ))}
-          </div>
+          
+          <p className="hero-meta fade-up-3">
+            Set up in 15 minutes · Works with Azure · Enterprise-ready
+          </p>
         </div>
       </header>
 
+      {/* ── Stats Bar (Clean Style) ── */}
+      <section className="stats-bar">
+        <div className="container">
+          <div className="stats-bar-grid">
+            <div className="stat-item-clean">
+              <div className="stat-value">8</div>
+              <div className="stat-label-clean">AI agents</div>
+            </div>
+            <div className="stat-divider"></div>
+            <div className="stat-item-clean">
+              <div className="stat-value">21</div>
+              <div className="stat-label-clean">phases complete</div>
+            </div>
+            <div className="stat-divider"></div>
+            <div className="stat-item-clean">
+              <div className="stat-value">&lt; 3 min</div>
+              <div className="stat-label-clean">triage time</div>
+            </div>
+            <div className="stat-divider"></div>
+            <div className="stat-item-clean">
+              <div className="stat-value">500/hr</div>
+              <div className="stat-label-clean">incident throughput</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <main>
-        {/* ── Problem / Solution ── */}
-        <section className="section">
+        {/* ── Problem / Solution (Apple Style) ── */}
+        <section className="section-modern">
           <div className="container">
-            <div className="section__header">
-              <span className="section__eyebrow">The Problem</span>
-              <h2 className="section__title">Engineering time is too valuable to spend finding exceptions</h2>
-              <p className="section__lead">
-                RemediAI automates the investigation and triage steps so your team spends time fixing, not finding.
+            <div className="section-header-modern">
+              <span className="section-eyebrow">The Challenge</span>
+              <h2 className="section-title-modern">Stop wasting time on manual triage</h2>
+              <p className="section-lead-modern">
+                Your engineering team shouldn't spend hours hunting down exceptions. 
+                RemediAI automates the entire investigation pipeline so you can focus on what matters — shipping features.
               </p>
             </div>
-            <div className="ps-grid">
-              <div className="ps-panel ps-panel--before">
-                <div className="ps-panel__heading">
-                  <span>⚠️</span> Without RemediAI
-                </div>
-                {[
-                  'Alert fires at 2 AM — someone gets paged.',
-                  'Engineer manually searches Application Insights.',
-                  'Checks 3 dashboards to correlate the exception.',
-                  'Reads the stack trace and guesses root cause.',
-                  'Creates a Jira / ADO ticket by hand.',
-                  'Searches codebase for the relevant file.',
-                  'Writes up reproduction steps from memory.',
-                  'Repeats for every recurring exception pattern.',
-                ].map((item) => (
-                  <div key={item} className="ps-item">
-                    <span style={{ color: '#c0392b', fontWeight: 700, marginTop: '0.1rem' }}>✗</span>
-                    <span>{item}</span>
+            <div className="apple-cards-grid">
+              <div className="apple-card apple-card-problem">
+                <div className="apple-card-header">
+                  <div className="apple-card-icon apple-card-icon-problem">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="12" cy="12" r="10"/>
+                      <line x1="12" y1="8" x2="12" y2="12"/>
+                      <line x1="12" y1="16" x2="12.01" y2="16"/>
+                    </svg>
                   </div>
-                ))}
+                  <h3 className="apple-card-title">Without RemediAI</h3>
+                </div>
+                <div className="apple-card-content">
+                  <ul className="apple-list">
+                    <li>Alert fires at 2 AM — someone gets paged</li>
+                    <li>Engineer manually searches Application Insights</li>
+                    <li>Checks multiple dashboards to correlate the exception</li>
+                    <li>Reads stack trace and guesses root cause</li>
+                    <li>Creates ticket by hand with incomplete context</li>
+                    <li>Searches codebase for relevant files</li>
+                    <li>Writes reproduction steps from memory</li>
+                    <li>Repeats for every recurring exception</li>
+                  </ul>
+                </div>
+                <div className="apple-card-footer">
+                  <span className="apple-card-metric">Hours wasted per incident</span>
+                </div>
               </div>
-              <div className="ps-panel ps-panel--after">
-                <div className="ps-panel__heading">
-                  <span>✅</span> With RemediAI
-                </div>
-                {[
-                  'Exception detected in Application Insights automatically.',
-                  'Deduplicated — no duplicate incidents for the same error.',
-                  'Triage Agent assigns priority and groups related events.',
-                  'Root Cause Agent produces a structured JSON analysis.',
-                  'Azure DevOps Bug created with full context attached.',
-                  'Code Context Agent finds the exact lines in your repo.',
-                  'Fix Planner ranks remediation options with confidence scores.',
-                  'Engineer reviews the Bug — decides in minutes, not hours.',
-                ].map((item) => (
-                  <div key={item} className="ps-item">
-                    <span style={{ color: '#27ae60', fontWeight: 700, marginTop: '0.1rem' }}>✓</span>
-                    <span>{item}</span>
+
+              <div className="apple-card apple-card-solution">
+                <div className="apple-card-header">
+                  <div className="apple-card-icon apple-card-icon-solution">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                      <polyline points="22 4 12 14.01 9 11.01"/>
+                    </svg>
                   </div>
-                ))}
+                  <h3 className="apple-card-title">With RemediAI</h3>
+                </div>
+                <div className="apple-card-content">
+                  <ul className="apple-list">
+                    <li>Exception detected automatically in Application Insights</li>
+                    <li>Deduplicated — no duplicate incidents for same error</li>
+                    <li>AI Triage Agent assigns priority and groups events</li>
+                    <li>Root Cause Agent produces structured analysis</li>
+                    <li>Azure DevOps Bug created with full context</li>
+                    <li>Code Context Agent finds exact lines in your repo</li>
+                    <li>Fix Planner ranks remediation options with confidence</li>
+                    <li>Engineer reviews and decides in minutes, not hours</li>
+                  </ul>
+                </div>
+                <div className="apple-card-footer">
+                  <span className="apple-card-metric">Under 3 minutes to triage</span>
+                </div>
               </div>
             </div>
           </div>
         </section>
 
         {/* ── Feature Grid ── */}
-        <section className="section section--alt">
+        <section className="section-modern section-alt">
           <div className="container">
-            <div className="section__header">
-              <span className="section__eyebrow">Features</span>
-              <h2 className="section__title">Everything you need to remediate faster</h2>
-              <p className="section__lead">
+            <div className="section-header-modern">
+              <span className="section-eyebrow">Capabilities</span>
+              <h2 className="section-title-modern">Everything you need. Nothing you don't.</h2>
+              <p className="section-lead-modern">
                 A complete agentic pipeline from log ingestion through to draft pull request —
                 with humans in control at every decision point.
               </p>
             </div>
-            <div className="features-grid">
-              {features.map((f) => (
-                <div key={f.title} className="feature-card">
-                  <div className="feature-card__icon">{f.icon}</div>
-                  <div className="feature-card__title">{f.title}</div>
-                  <div className="feature-card__body">{f.body}</div>
+            <div className="features-grid-modern">
+              {features.map((f, i) => (
+                <div key={f.title} className="feature-card-modern" style={{ animationDelay: `${i * 0.05}s` }}>
+                  <div className="feature-icon-modern">{f.icon}</div>
+                  <h3 className="feature-title-modern">{f.title}</h3>
+                  <p className="feature-body-modern">{f.body}</p>
                 </div>
               ))}
             </div>
@@ -255,112 +301,165 @@ export default function Home(): React.JSX.Element {
         </section>
 
         {/* ── Architecture diagram ── */}
-        <section className="section">
+        <section className="section-modern">
           <div className="container">
-            <div className="section__header">
-              <span className="section__eyebrow">Architecture</span>
-              <h2 className="section__title">Cloud-native on Azure, end to end</h2>
-              <p className="section__lead">
+            <div className="section-header-modern">
+              <span className="section-eyebrow">Architecture</span>
+              <h2 className="section-title-modern">Cloud-native on Azure, end to end</h2>
+              <p className="section-lead-modern">
                 Independently deployable services on AKS, communicating via Azure Service Bus,
                 with Workload Identity for zero-credential authentication.
               </p>
             </div>
-            <div
-              style={{
-                background: 'var(--ifm-card-background-color)',
-                border: '1px solid var(--remedia-border)',
-                borderRadius: '16px',
-                padding: '2.5rem',
-                overflowX: 'auto',
-              }}
-            >
-              <pre
-                style={{
-                  fontFamily: 'var(--ifm-font-family-monospace)',
-                  fontSize: '0.78rem',
-                  lineHeight: 1.7,
-                  margin: 0,
-                  color: 'var(--ifm-font-color-base)',
-                  whiteSpace: 'pre',
-                }}
-              >
-{`  Application Workloads (AKS / App Service / VMs)
-           │
-           ▼
-  Application Insights / Azure Monitor  ◄──── KQL queries (every N mins)
-           │
-           ▼
-  Log Ingestion Service (Python · AKS)
-           │  fingerprint + dedup
-           ▼
-  Azure Service Bus ──── incident-events topic
-           │
-           ▼
-  Agent Worker (Python + LangGraph)
-    ├── Azure OpenAI GPT-4o       (Triage / Root Cause / Fix Planner)
-    ├── Azure DevOps Repos         (Code Context)
-    ├── Azure AI Search            (RAG Retrieval)
-    ├── Azure DevOps Boards        (Bug Creation)
-    └── PostgreSQL / Blob Storage  (Persistence)
-           │
-           ▼
-  FastAPI Backend API  ◄─── Redis cache
-           │
-           ▼
-  React Dashboard  ──── Incidents · Analyses · Metrics · Approvals
-
-  Azure Key Vault ──── secrets ──► all services
-  Managed Identity ──────────────► Key Vault`}
-              </pre>
+            <div className="architecture-card">
+              <div className="architecture-header">
+                <div className="window-dots">
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                </div>
+                <span className="architecture-title">System Architecture</span>
+              </div>
+              <div className="architecture-diagram">
+                <div className="arch-line">
+                  <span className="arch-component workload">Application Workloads</span>
+                  <span className="arch-detail">(AKS / App Service / VMs)</span>
+                </div>
+                <div className="arch-arrow">│</div>
+                <div className="arch-arrow">▼</div>
+                <div className="arch-line">
+                  <span className="arch-component monitor">Application Insights / Azure Monitor</span>
+                  <span className="arch-arrow">◄────</span>
+                  <span className="arch-detail">KQL queries (every N mins)</span>
+                </div>
+                <div className="arch-arrow">│</div>
+                <div className="arch-arrow">▼</div>
+                <div className="arch-line">
+                  <span className="arch-component ingestion">Log Ingestion Service</span>
+                  <span className="arch-detail">(Python · AKS)</span>
+                </div>
+                <div className="arch-line arch-indent">
+                  <span className="arch-arrow">│</span>
+                  <span className="arch-detail">fingerprint + dedup</span>
+                </div>
+                <div className="arch-arrow">▼</div>
+                <div className="arch-line">
+                  <span className="arch-component bus">Azure Service Bus</span>
+                  <span className="arch-arrow">────</span>
+                  <span className="arch-detail">incident-events topic</span>
+                </div>
+                <div className="arch-arrow">│</div>
+                <div className="arch-arrow">▼</div>
+                <div className="arch-line">
+                  <span className="arch-component agent">Agent Worker</span>
+                  <span className="arch-detail">(Python + LangGraph)</span>
+                </div>
+                <div className="arch-line arch-indent">
+                  <span className="arch-arrow">├──</span>
+                  <span className="arch-component ai">Azure OpenAI GPT-4o</span>
+                  <span className="arch-detail">(Triage / Root Cause / Fix Planner)</span>
+                </div>
+                <div className="arch-line arch-indent">
+                  <span className="arch-arrow">├──</span>
+                  <span className="arch-component devops">Azure DevOps Repos</span>
+                  <span className="arch-detail">(Code Context)</span>
+                </div>
+                <div className="arch-line arch-indent">
+                  <span className="arch-arrow">├──</span>
+                  <span className="arch-component search">Azure AI Search</span>
+                  <span className="arch-detail">(RAG Retrieval)</span>
+                </div>
+                <div className="arch-line arch-indent">
+                  <span className="arch-arrow">├──</span>
+                  <span className="arch-component devops">Azure DevOps Boards</span>
+                  <span className="arch-detail">(Bug Creation)</span>
+                </div>
+                <div className="arch-line arch-indent">
+                  <span className="arch-arrow">└──</span>
+                  <span className="arch-component db">PostgreSQL / Blob Storage</span>
+                  <span className="arch-detail">(Persistence)</span>
+                </div>
+                <div className="arch-arrow">│</div>
+                <div className="arch-arrow">▼</div>
+                <div className="arch-line">
+                  <span className="arch-component api">FastAPI Backend API</span>
+                  <span className="arch-arrow">◄───</span>
+                  <span className="arch-component cache">Redis cache</span>
+                </div>
+                <div className="arch-arrow">│</div>
+                <div className="arch-arrow">▼</div>
+                <div className="arch-line">
+                  <span className="arch-component dashboard">React Dashboard</span>
+                  <span className="arch-arrow">────</span>
+                  <span className="arch-detail">Incidents · Analyses · Metrics · Approvals</span>
+                </div>
+                <div className="arch-spacer"></div>
+                <div className="arch-line">
+                  <span className="arch-component vault">Azure Key Vault</span>
+                  <span className="arch-arrow">────</span>
+                  <span className="arch-detail">secrets</span>
+                  <span className="arch-arrow">──►</span>
+                  <span className="arch-detail">all services</span>
+                </div>
+                <div className="arch-line">
+                  <span className="arch-component identity">Managed Identity</span>
+                  <span className="arch-arrow">──────────────►</span>
+                  <span className="arch-component vault">Key Vault</span>
+                </div>
+              </div>
             </div>
-            <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
-              <Link to="/docs/architecture/overview" className="button button--primary button--md">
-                Read the full architecture →
+            <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+              <Link to="/docs/architecture/overview" className="btn-modern btn-secondary">
+                Read the full architecture
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M5 12h14M12 5l7 7-7 7"/>
+                </svg>
               </Link>
             </div>
           </div>
         </section>
 
         {/* ── How it works ── */}
-        <section className="section section--alt">
+        <section className="section-modern section-alt">
           <div className="container">
-            <div className="section__header">
-              <span className="section__eyebrow">How It Works</span>
-              <h2 className="section__title">Exception to Azure DevOps Bug in 12 steps</h2>
-              <p className="section__lead">
+            <div className="section-header-modern">
+              <span className="section-eyebrow">How It Works</span>
+              <h2 className="section-title-modern">Exception to Azure DevOps Bug in 12 steps</h2>
+              <p className="section-lead-modern">
                 The full pipeline from detection to a draft pull request, with a human approval gate before any code is touched.
               </p>
             </div>
-            <ul className="workflow-list">
+            <div className="workflow-grid">
               {workflowSteps.map((step, i) => (
-                <li key={i} className="workflow-step">
-                  <div className="step-number">{i + 1}</div>
-                  <div className="step-text">{step}</div>
-                </li>
+                <div key={i} className="workflow-card">
+                  <div className="workflow-number">{i + 1}</div>
+                  <div className="workflow-text">{step}</div>
+                </div>
               ))}
-            </ul>
+            </div>
           </div>
         </section>
 
         {/* ── Technology stack ── */}
-        <section className="section">
+        <section className="section-modern">
           <div className="container">
-            <div className="section__header">
-              <span className="section__eyebrow">Technology Stack</span>
-              <h2 className="section__title">Built on the Azure ecosystem</h2>
-              <p className="section__lead">
+            <div className="section-header-modern">
+              <span className="section-eyebrow">Technology Stack</span>
+              <h2 className="section-title-modern">Built on the Azure ecosystem</h2>
+              <p className="section-lead-modern">
                 Python + LangGraph backend, React frontend, and deep Azure-native integration throughout.
               </p>
             </div>
-            <div className="tech-strip">
-              {techStack.map((t) => (
-                <span key={t.label} className="tech-badge">
-                  {t.label}
-                </span>
+            <div className="tech-grid">
+              {techStack.map((t, i) => (
+                <div key={t.label} className={`tech-badge-modern tech-badge-${t.color}`} style={{ animationDelay: `${i * 0.03}s` }}>
+                  <span className={`tech-icon tech-icon-${t.icon}`}></span>
+                  <span className="tech-label">{t.label}</span>
+                </div>
               ))}
             </div>
-            <div style={{ textAlign: 'center', marginTop: '2rem' }}>
-              <Link to="/docs/architecture/tech-stack" style={{ fontSize: '0.9rem', fontWeight: 600 }}>
+            <div style={{ textAlign: 'center', marginTop: '2.5rem' }}>
+              <Link to="/docs/architecture/tech-stack" className="link-modern">
                 View full stack with rationale →
               </Link>
             </div>
@@ -368,26 +467,29 @@ export default function Home(): React.JSX.Element {
         </section>
 
         {/* ── Security promise ── */}
-        <section className="section section--alt">
+        <section className="section-modern section-alt">
           <div className="container">
-            <div className="section__header">
-              <span className="section__eyebrow">Security</span>
-              <h2 className="section__title">Safe by design — not as an afterthought</h2>
-              <p className="section__lead">
+            <div className="section-header-modern">
+              <span className="section-eyebrow">Security</span>
+              <h2 className="section-title-modern">Safe by design — not as an afterthought</h2>
+              <p className="section-lead-modern">
                 RemediAI operates on a zero-trust, human-in-the-loop model. Agents have read-only access by default.
               </p>
             </div>
-            <div className="security-grid">
-              {securityPillars.map((p) => (
-                <div key={p.title} className="security-card">
-                  <div className="security-card__icon">{p.icon}</div>
-                  <div className="security-card__title">{p.title}</div>
-                  <div className="security-card__body">{p.body}</div>
+            <div className="security-grid-modern">
+              {securityPillars.map((p, i) => (
+                <div key={p.title} className={`security-card-modern security-card-${p.color}`} style={{ animationDelay: `${i * 0.1}s` }}>
+                  <div className={`security-icon-container security-icon-${p.color}`}>
+                    <span className="security-icon-modern">{p.icon}</span>
+                  </div>
+                  <div className="security-step">{p.step}</div>
+                  <h3 className="security-title-modern">{p.title}</h3>
+                  <p className="security-body-modern">{p.body}</p>
                 </div>
               ))}
             </div>
-            <div style={{ textAlign: 'center', marginTop: '2rem' }}>
-              <Link to="/docs/security/principles" style={{ fontSize: '0.9rem', fontWeight: 600 }}>
+            <div style={{ textAlign: 'center', marginTop: '2.5rem' }}>
+              <Link to="/docs/security/principles" className="link-modern">
                 Read the security guardrails →
               </Link>
             </div>
@@ -395,20 +497,27 @@ export default function Home(): React.JSX.Element {
         </section>
 
         {/* ── CTA ── */}
-        <section className="section">
+        <section className="section-modern">
           <div className="container">
-            <div className="cta-section">
+            <div className="cta-modern">
+              <div className="cta-glow"></div>
               <h2>Ready to stop triaging by hand?</h2>
               <p>
                 Deploy RemediAI on your Azure subscription, connect Application Insights, and watch
                 exceptions become triaged incidents in minutes.
               </p>
-              <div className="hero-cta-group">
-                <Link to="/docs/getting-started/prereqs" className="hero-cta-primary">
-                  Get started →
+              <div className="cta-buttons">
+                <Link to="/docs/getting-started/prereqs" className="btn-modern btn-primary">
+                  Get started
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M5 12h14M12 5l7 7-7 7"/>
+                  </svg>
                 </Link>
-                <Link to="https://github.com/akeesari/remediai" className="hero-cta-secondary">
-                  ★ Star on GitHub
+                <Link to="https://github.com/akeesari/remediai" className="btn-modern btn-secondary">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                  </svg>
+                  Star on GitHub
                 </Link>
               </div>
             </div>

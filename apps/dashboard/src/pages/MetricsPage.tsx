@@ -9,12 +9,6 @@ import { SkeletonBlock } from '../components/ui/SkeletonBlock'
 import { StatCard } from '../components/ui/StatCard'
 import { useTheme } from '../components/shell/ThemeContext'
 
-const PRIORITY_COLORS: Record<string, string> = {
-  critical: '#ef4444',
-  high:     '#f97316',
-  medium:   '#eab308',
-  low:      '#22c55e',
-}
 
 function useChartTheme() {
   const { theme } = useTheme()
@@ -102,6 +96,16 @@ export function MetricsPage() {
         <ChartCard title="Incidents by Status" subtitle="Current distribution">
           <ResponsiveContainer width="100%" height={260}>
             <BarChart data={data.by_status} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
+              <defs>
+                <linearGradient id="status-accent" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="var(--color-accent-hover)" stopOpacity={1} />
+                  <stop offset="45%" stopColor="var(--color-accent)" stopOpacity={0.85} />
+                  <stop offset="100%" stopColor="var(--color-accent)" stopOpacity={0.20} />
+                </linearGradient>
+                <filter id="glow-accent" x="-20%" y="-20%" width="140%" height="140%">
+                  <feDropShadow dx="0" dy="3" stdDeviation="3" floodColor="var(--color-accent)" floodOpacity="0.15" />
+                </filter>
+              </defs>
               <XAxis
                 dataKey="status"
                 tick={{ fill: chart.tick, fontSize: 11, fontWeight: 500 }}
@@ -126,7 +130,13 @@ export function MetricsPage() {
                   boxShadow: 'var(--shadow-lg)',
                 }}
               />
-              <Bar dataKey="count" fill="var(--color-accent)" radius={[6, 6, 0, 0]} maxBarSize={48} />
+              <Bar
+                dataKey="count"
+                fill="url(#status-accent)"
+                filter="url(#glow-accent)"
+                radius={[6, 6, 0, 0]}
+                maxBarSize={48}
+              />
             </BarChart>
           </ResponsiveContainer>
         </ChartCard>
@@ -134,6 +144,41 @@ export function MetricsPage() {
         <ChartCard title="Incidents by Priority" subtitle="Severity breakdown">
           <ResponsiveContainer width="100%" height={260}>
             <BarChart data={data.by_priority} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
+              <defs>
+                <linearGradient id="priority-critical" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#f87171" stopOpacity={1} />
+                  <stop offset="45%" stopColor="#ef4444" stopOpacity={0.85} />
+                  <stop offset="100%" stopColor="#ef4444" stopOpacity={0.20} />
+                </linearGradient>
+                <linearGradient id="priority-high" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#fb923c" stopOpacity={1} />
+                  <stop offset="45%" stopColor="#f97316" stopOpacity={0.85} />
+                  <stop offset="100%" stopColor="#f97316" stopOpacity={0.20} />
+                </linearGradient>
+                <linearGradient id="priority-medium" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#fde047" stopOpacity={1} />
+                  <stop offset="45%" stopColor="#eab308" stopOpacity={0.85} />
+                  <stop offset="100%" stopColor="#eab308" stopOpacity={0.20} />
+                </linearGradient>
+                <linearGradient id="priority-low" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#86efac" stopOpacity={1} />
+                  <stop offset="45%" stopColor="#22c55e" stopOpacity={0.85} />
+                  <stop offset="100%" stopColor="#22c55e" stopOpacity={0.20} />
+                </linearGradient>
+
+                <filter id="glow-critical" x="-20%" y="-20%" width="140%" height="140%">
+                  <feDropShadow dx="0" dy="3" stdDeviation="3" floodColor="#ef4444" floodOpacity="0.15" />
+                </filter>
+                <filter id="glow-high" x="-20%" y="-20%" width="140%" height="140%">
+                  <feDropShadow dx="0" dy="3" stdDeviation="3" floodColor="#f97316" floodOpacity="0.15" />
+                </filter>
+                <filter id="glow-medium" x="-20%" y="-20%" width="140%" height="140%">
+                  <feDropShadow dx="0" dy="3" stdDeviation="3" floodColor="#eab308" floodOpacity="0.15" />
+                </filter>
+                <filter id="glow-low" x="-20%" y="-20%" width="140%" height="140%">
+                  <feDropShadow dx="0" dy="3" stdDeviation="3" floodColor="#22c55e" floodOpacity="0.15" />
+                </filter>
+              </defs>
               <XAxis
                 dataKey="priority"
                 tick={{ fill: chart.tick, fontSize: 11, fontWeight: 500 }}
@@ -159,12 +204,16 @@ export function MetricsPage() {
                 }}
               />
               <Bar dataKey="count" radius={[6, 6, 0, 0]} maxBarSize={48}>
-                {data.by_priority.map((entry) => (
-                  <Cell
-                    key={entry.priority}
-                    fill={PRIORITY_COLORS[entry.priority] ?? 'var(--color-accent)'}
-                  />
-                ))}
+                {data.by_priority.map((entry) => {
+                  const p = entry.priority.toLowerCase()
+                  return (
+                    <Cell
+                      key={entry.priority}
+                      fill={`url(#priority-${p})`}
+                      filter={`url(#glow-${p})`}
+                    />
+                  )
+                })}
               </Bar>
             </BarChart>
           </ResponsiveContainer>

@@ -7,25 +7,28 @@ interface Props {
 
 export function Pagination({ page, pages, total, onPage }: Props) {
   if (pages <= 1) return null
+
   return (
-    <div className="flex items-center justify-between border-t border-gray-200 px-4 py-3 sm:px-6">
-      <p className="text-sm text-gray-600">
-        Page {page} of {pages} &mdash; {total} total
+    <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5">
+      <p className="text-xs font-medium text-text-3">
+        Page <span className="text-text-2">{page}</span> of{' '}
+        <span className="text-text-2">{pages}</span> &mdash;{' '}
+        <span className="text-text-2">{total.toLocaleString()}</span> total
       </p>
-      <div className="flex gap-2">
+      <div className="flex items-center gap-1.5">
         <button
           onClick={() => onPage(page - 1)}
           disabled={page <= 1}
-          className="rounded border border-gray-300 px-3 py-1 text-sm disabled:opacity-40 hover:bg-gray-50"
+          className="rounded-lg border border-border bg-surface px-3.5 py-1.5 text-xs font-medium text-text-2 shadow-xs transition-all hover:bg-surface-2 hover:text-text-1 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-40"
         >
-          Previous
+          ← Previous
         </button>
         <button
           onClick={() => onPage(page + 1)}
           disabled={page >= pages}
-          className="rounded border border-gray-300 px-3 py-1 text-sm disabled:opacity-40 hover:bg-gray-50"
+          className="rounded-lg border border-border bg-surface px-3.5 py-1.5 text-xs font-medium text-text-2 shadow-xs transition-all hover:bg-surface-2 hover:text-text-1 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-40"
         >
-          Next
+          Next →
         </button>
       </div>
     </div>

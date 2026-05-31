@@ -14,8 +14,8 @@ Always read these files first to understand current state:
 2. After completing a phase: run `ruff` + `mypy --strict` + `pytest`.
 3. For every project code change, validate a local Docker build before phase sign-off:
   - `cp .env.example .env` (if `.env` is missing)
-  - `docker compose -f docker-compose.local.yml --env-file .env config`
-  - `docker compose -f docker-compose.local.yml --env-file .env build`
+  - `docker compose --env-file .env config`
+  - `docker compose --env-file .env build`
 4. Show a **Phase Summary**, then **stop and wait**.
 5. One commit per phase. No squashing phases without permission.
 

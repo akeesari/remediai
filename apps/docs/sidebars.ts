@@ -81,11 +81,6 @@ const sidebars: SidebarsConfig = {
         'contributing/phase-workflow',
       ],
     },
-    {
-      type: 'doc',
-      id: 'roadmap',
-      label: 'Roadmap',
-    },
   ],
 };
 

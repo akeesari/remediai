@@ -3,14 +3,14 @@
 ## Goal
 
 Create Dockerfiles for all three application services and a full-stack
-`docker-compose.local.yml` that runs the entire RemediAI platform locally —
+`docker-compose.yml` that runs the entire RemediAI platform locally —
 API, Agent Worker, Dashboard, Postgres, Redis, and a Service Bus emulator —
 so any developer can spin up the complete stack and verify it from a browser
 without any Azure credentials.
 
 This phase is the prerequisite for Phase 21 (CI pipeline) which builds the
-same images, and replaces the partial `docker-compose.dev.yml` (which only
-runs Postgres and Redis) for full-stack local testing.
+same images and standardizes full-stack local testing on a single
+`docker-compose.yml` file.
 
 ---
 
@@ -22,7 +22,7 @@ runs Postgres and Redis) for full-stack local testing.
 | `apps/worker/Dockerfile` | Multi-stage Python image for the agent worker |
 | `apps/dashboard/Dockerfile` | Node build stage + Nginx serve stage for the React SPA |
 | `apps/dashboard/nginx.conf` | Nginx config: serve static files, proxy `/api` to the API container |
-| `docker-compose.local.yml` | Full-stack compose: all 3 apps + Postgres + Redis + Service Bus emulator |
+| `docker-compose.yml` | Full-stack compose: all 3 apps + Postgres + Redis + Service Bus emulator |
 | `.env.example` | Example env file for local stack and local service overrides |
 | `Makefile` update | `local-up`, `local-down`, `local-logs`, `local-bridge-e2e`, `local-validate-all` targets |
 
@@ -105,7 +105,7 @@ server {
 
 ---
 
-## `docker-compose.local.yml`
+## `docker-compose.yml`
 
 ```yaml
 services:
@@ -243,16 +243,16 @@ AZURE_SERVICEBUS_NAMESPACE=localhost
 ```makefile
 local-up:
   cp -n .env.example .env || true
-  docker compose -f docker-compose.local.yml --env-file .env up --build -d
+  docker compose --env-file .env up --build -d
 
 local-down:
-    docker compose -f docker-compose.local.yml down
+    docker compose down
 
 local-logs:
-    docker compose -f docker-compose.local.yml logs -f
+    docker compose logs -f
 
 local-migrate:
-    docker compose -f docker-compose.local.yml exec api alembic upgrade head
+    docker compose exec api alembic upgrade head
 
 local-bridge-e2e:
   # Discover local container targets and enable all of them before running bridge tests.
@@ -288,7 +288,7 @@ local-validate-all:
 
 ## Acceptance Criteria
 
-- `docker compose -f docker-compose.local.yml config` validates without errors.
+- `docker compose config` validates without errors.
 - `make local-up` starts all 5 services with no manual steps beyond `.env`.
 - `http://localhost:3000` opens the React dashboard in a browser.
 - `http://localhost:8000/health` returns `{"status": "ok"}`.
@@ -297,7 +297,7 @@ local-validate-all:
 - `POST http://localhost:8000/api/v1/incidents` (test payload) creates an incident record.
 - All three `docker build` commands succeed independently.
 - Images do not contain dev dependencies (multi-stage build verified).
-- `docker compose -f docker-compose.local.yml down -v` cleans up all volumes cleanly.
+- `docker compose down -v` cleans up all volumes cleanly.
 
 ---
 

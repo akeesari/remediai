@@ -507,7 +507,7 @@ preview the exact production build locally before pushing to GitHub Pages.
   so the container path matches the GitHub Pages `baseUrl: '/remediai/'`; no path rewriting needed.
 - **Context:** `context: .` (monorepo root), matching the pattern used by all other services.
 
-#### docker-compose.local.yml addition
+#### docker-compose.yml addition
 
 ```yaml
 docs:
@@ -525,16 +525,16 @@ Override with `LOCAL_DOCS_PORT=<port>` in `.env`.
 
 ```bash
 # Build and start only the docs container
-docker compose -f docker-compose.local.yml up docs --build
+docker compose up docs --build
 
 # Open in browser
 open http://localhost:3001/remediai/
 
 # Rebuild after content changes
-docker compose -f docker-compose.local.yml up docs --build --force-recreate
+docker compose up docs --build --force-recreate
 
 # Start everything including docs
-docker compose -f docker-compose.local.yml up --build
+docker compose up --build
 ```
 
 #### Why the build runs inside Docker
@@ -546,7 +546,7 @@ the developer's local `node_modules`. The `npm ci` step uses the committed
 
 #### Acceptance criteria for this deliverable
 
-- `docker compose -f docker-compose.local.yml up docs --build` exits with code 0.
+- `docker compose up docs --build` exits with code 0.
 - `curl -sI http://localhost:3001/remediai/` returns `HTTP/1.1 200 OK`.
 - `curl -sI http://localhost:3001/` returns `HTTP/1.1 301` redirecting to `/remediai/`.
 - Static assets (`/remediai/assets/js/*.js`, `/remediai/assets/css/*.css`) return 200.

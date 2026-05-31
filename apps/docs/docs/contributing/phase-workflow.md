@@ -98,13 +98,13 @@ The following concerns are **always** enforced from the first phase that introdu
 | 27–29 | Python/Node.js support, Jira | Post-v1.0 |
 | 30 | Documentation site (this site) | ✅ Complete |
 
-See [Roadmap](../roadmap) for the full dependency graph.
+See the [project roadmap on GitHub](https://github.com/akeesari/remediai/blob/main/ROADMAP.md) for the full dependency graph.
 
 ---
 
 ## Contributing a new phase
 
-1. Check the [Roadmap](../roadmap) for the next unstarted phase.
+1. Check the [project roadmap on GitHub](https://github.com/akeesari/remediai/blob/main/ROADMAP.md) for the next unstarted phase.
 2. Write the spec in `docs/specs/phase-NN-<slug>.md`.
 3. Open a PR with just the spec — get it reviewed before writing code.
 4. Implement the phase once the spec is approved.

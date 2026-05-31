@@ -39,7 +39,7 @@ const config: Config = {
         language: ['en'],
         docsRouteBasePath: '/docs',
         indexDocs: true,
-        indexBlog: true,
+        indexBlog: false,
         indexPages: true,
       },
     ],
@@ -91,7 +91,7 @@ const config: Config = {
     announcementBar: {
       id: 'early_access',
       content:
-        'RemediAI is in active development — phases 1–21 complete. <a href="/remediai/docs/roadmap">View the roadmap</a>.',
+        'RemediAI is in active development — phases 1–21 complete.',
       backgroundColor: '#0078D4',
       textColor: '#ffffff',
       isCloseable: true,
@@ -152,7 +152,6 @@ const config: Config = {
         {
           title: 'Project',
           items: [
-            { label: 'Roadmap', to: '/docs/roadmap' },
             { label: 'Contributing', to: '/docs/contributing/dev-environment' },
             { label: 'Security', to: '/docs/security/principles' },
             {

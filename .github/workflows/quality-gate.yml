@@ -187,16 +187,16 @@ jobs:
         run: cp .env.example .env
 
       - name: Validate compose configuration
-        run: docker compose -f docker-compose.local.yml --env-file .env config
+        run: docker compose --env-file .env config
 
       - name: Bring up stack and run smoke checks
         run: |
-          docker compose -f docker-compose.local.yml --env-file .env up -d --build
+          docker compose --env-file .env up -d --build
           make local-smoke
 
       - name: Tear down stack
         if: always()
-        run: docker compose -f docker-compose.local.yml down -v
+        run: docker compose down -v
 
   docker-build:
     name: Docker image build

@@ -6,10 +6,10 @@ install:
 	pip install poetry && poetry install
 
 dev:
-	docker compose -f docker-compose.dev.yml up -d
+	docker compose up -d postgres redis
 
 stop:
-	docker compose -f docker-compose.dev.yml down
+	docker compose stop postgres redis
 
 api:
 	uvicorn apps.api.main:app --reload --host 0.0.0.0 --port 8000
@@ -64,16 +64,16 @@ index-populate:
 
 local-up:
 	cp -n .env.example .env || true
-	docker compose -f docker-compose.local.yml --env-file .env up --build -d
+	docker compose --env-file .env up --build -d
 
 local-down:
-	docker compose -f docker-compose.local.yml down
+	docker compose down
 
 local-logs:
-	docker compose -f docker-compose.local.yml logs -f
+	docker compose logs -f
 
 local-migrate:
-	docker compose -f docker-compose.local.yml exec api alembic upgrade head
+	docker compose exec api alembic upgrade head
 
 local-bridge-e2e:
 	@echo "Running local log bridge end-to-end tests against http://localhost:$${LOCAL_API_PORT:-8000}"
@@ -97,10 +97,10 @@ local-validate-all:
 	@$(MAKE) test-e2e
 
 local-bridge-restart:
-	docker compose -f docker-compose.local.yml --env-file .env restart log-bridge
+	docker compose --env-file .env restart log-bridge
 
 local-bridge-logs:
-	docker compose -f docker-compose.local.yml logs -f log-bridge
+	docker compose logs -f log-bridge
 
 local-smoke:
 	@set -a; [ -f .env ] && . ./.env; set +a; \

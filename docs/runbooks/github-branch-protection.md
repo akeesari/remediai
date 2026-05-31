@@ -40,7 +40,7 @@ Select these jobs from CI workflow runs:
 
 Optional checks for main push quality:
 
-- Local Docker Compose smoke
+- Docker Compose smoke
 - Docker image build
 
 ## Validate Configuration

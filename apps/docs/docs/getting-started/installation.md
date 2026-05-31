@@ -95,7 +95,7 @@ PostgreSQL and Redis run in Docker for local development:
 make local-up
 ```
 
-This runs `docker compose -f docker-compose.local.yml --env-file .env up -d`. To view logs:
+This runs `docker compose --env-file .env up -d`. To view logs:
 
 ```bash
 make local-logs

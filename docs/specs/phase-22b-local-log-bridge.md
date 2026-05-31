@@ -39,7 +39,7 @@ When `LOCAL_MODE=true`:
 | `apps/api/main.py` | Register `local_logs` router when `LOCAL_MODE=true` |
 | `apps/worker/agents/local_poller.py` | Polls Postgres for new incidents; runs agent pipeline |
 | `apps/worker/main.py` | Branch on `local_mode` — use poller instead of scheduler |
-| `docker-compose.local.yml` | Add `log-bridge` service with docker-socket mount |
+| `docker-compose.yml` | Add `log-bridge` service with docker-socket mount |
 | `.env` | Document `LOCAL_MODE=true` |
 | `Makefile` | Add `local-bridge-restart` target |
 | `apps/dashboard/src/pages/LocalLogsPage.tsx` | Live log viewer with exception highlights |
@@ -250,7 +250,7 @@ Response:
 
 ## Acceptance Criteria
 
-- `docker compose -f docker-compose.local.yml up` starts the `log-bridge`
+- `docker compose up` starts the `log-bridge`
   container alongside all other services.
 - Introducing a Python `raise ValueError("test-local-exception")` in the API
   causes an incident to appear in the Incidents tab within 30 s.
@@ -259,7 +259,7 @@ Response:
 - Exception rows link to the created incident detail page.
 - Setting `LOCAL_MODE=false` (or omitting it) does NOT register the
   `/local/*` endpoints and does NOT start the local poller in the worker.
-- The log-bridge container does not start in production (`docker-compose.local.yml`
+- The log-bridge container does not start in production (`docker-compose.yml`
   is never used outside local dev).
 - `make local-bridge-e2e` passes all tests without manual intervention.
 - With an empty target allowlist, no incidents are created from bridge-detected

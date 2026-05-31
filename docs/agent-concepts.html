@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RemediAI — AI Agents · V2 · Pastel Bloom</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  min-height:100vh;
+  background:linear-gradient(135deg,#fdf4ff 0%,#eff6ff 40%,#ecfdf5 100%) fixed;
+  background-attachment:fixed;
+  padding:24px 20px 40px;
+  color:#1f2937;
+}
+
+/* ── HEADER ── */
+.page-hdr{
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  background:#fff;
+  box-shadow:0 2px 20px rgba(0,0,0,.08);
+  border-radius:14px;
+  padding:14px 22px;
+  margin-bottom:16px;
+}
+.brand-pill{
+  background:linear-gradient(135deg,#4f46e5 0%,#7c3aed 100%);
+  color:#fff;font-weight:700;font-size:1.45rem;letter-spacing:.06em;
+  padding:6px 16px;border-radius:999px;
+}
+.hdr-sep{width:1px;height:2.6rem;background:rgba(0,0,0,.12)}
+.page-title{
+  font-size:1.45rem;font-weight:700;
+  background:linear-gradient(135deg,#1e1b4b 0%,#0891b2 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+.page-sub{
+  background:rgba(16,185,129,.7);
+  color:#fff;font-size:.78rem;font-weight:600;letter-spacing:.05em;
+  padding:4px 12px;border-radius:999px;
+}
+
+/* ── ROSTER ── */
+.roster{
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  background:#fff;
+  box-shadow:0 2px 20px rgba(0,0,0,.08);
+  border-radius:12px;
+  padding:10px 16px;
+  margin-bottom:20px;
+}
+.roster-lbl{font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#9ca3af;margin-right:4px}
+.roster-sep{width:1px;height:22px;background:#e5e7eb}
+.ag{
+  font-size:.74rem;font-weight:600;padding:4px 11px;border-radius:999px;
+  border:1px solid transparent;
+  color:#374151;
+}
+.ag-mvp{background:#dbeafe;border-color:#93c5fd;color:#1e40af}
+.ag-p2{background:#ede9fe;border-color:#c4b5fd;color:#5b21b6}
+.ag-road{background:#d1fae5;border-color:#6ee7b7;color:#065f46}
+
+/* ── GRID ── */
+.grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:16px;
+}
+@media(max-width:1024px){.grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:640px){.grid{grid-template-columns:1fr}}
+
+/* ── PANELS ── */
+.panel{
+  border-radius:14px;
+  border-top:3px solid transparent;
+  padding:18px;
+  display:flex;flex-direction:row;gap:14px;
+}
+.p1{background:#dbeafe;border-top:3px solid #3b82f6;box-shadow:0 4px 16px rgba(59,130,246,.15)}
+.p2{background:#ede9fe;border-top:3px solid #8b5cf6;box-shadow:0 4px 16px rgba(139,92,246,.15)}
+.p3{background:#d1fae5;border-top:3px solid #10b981;box-shadow:0 4px 16px rgba(16,185,129,.15)}
+.p4{background:#ffedd5;border-top:3px solid #f97316;box-shadow:0 4px 16px rgba(249,115,22,.15)}
+.p5{background:#e0f2fe;border-top:3px solid #0ea5e9;box-shadow:0 4px 16px rgba(14,165,233,.15)}
+.p6{background:#fef9c3;border-top:3px solid #eab308;box-shadow:0 4px 16px rgba(234,179,8,.15)}
+
+/* ── PANEL TEXT ── */
+.ptxt{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px}
+.pnum{font-size:1.05rem;font-weight:900;letter-spacing:.02em}
+.p1 .pnum{color:#2563eb}
+.p2 .pnum{color:#7c3aed}
+.p3 .pnum{color:#065f46}
+.p4 .pnum{color:#c2410c}
+.p5 .pnum{color:#0369a1}
+.p6 .pnum{color:#92400e}
+
+.ptitle{font-size:.92rem;font-weight:700;line-height:1.3;color:#0f172a}
+.pdesc{font-size:.78rem;line-height:1.55;color:#374151}
+.pdesc strong,.pdesc code{color:inherit}
+.pdesc code{font-family:'SF Mono',Menlo,Monaco,Consolas,monospace;font-size:.73rem}
+
+.checks{display:flex;flex-direction:column;gap:5px;margin-top:2px}
+.chk{display:flex;align-items:flex-start;gap:7px;font-size:.73rem;color:#1f2937;line-height:1.4}
+.chk-icon{
+  width:16px;height:16px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.6rem;font-weight:700;flex-shrink:0;margin-top:1px;
+  color:#fff;
+}
+.p1 .chk-icon{background:#3b82f6}
+.p2 .chk-icon{background:#8b5cf6}
+.p3 .chk-icon{background:#10b981}
+.p4 .chk-icon{background:#f97316}
+.p5 .chk-icon{background:#0ea5e9}
+.p6 .chk-icon{background:#eab308}
+
+/* ── DIAGRAM ── */
+.diag{
+  width:152px;flex-shrink:0;
+  background:rgba(255,255,255,.7);
+  border-radius:10px;
+  padding:10px 8px;
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+}
+.p1 .diag{border:1px solid rgba(59,130,246,.35)}
+.p2 .diag{border:1px solid rgba(139,92,246,.35)}
+.p3 .diag{border:1px solid rgba(16,185,129,.35)}
+.p4 .diag{border:1px solid rgba(249,115,22,.35)}
+.p5 .diag{border:1px solid rgba(14,165,233,.35)}
+.p6 .diag{border:1px solid rgba(234,179,8,.35)}
+
+.dlabel{
+  font-size:.62rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:#6b7280;
+  margin-bottom:4px;text-align:center;
+}
+.darr{font-size:.65rem;color:#9ca3af;line-height:1.2;text-align:center}
+
+.p1 .darr.loop{color:#3b82f6;font-size:.68rem;font-weight:600;margin-top:2px}
+.p2 .darr.loop{color:#8b5cf6;font-size:.68rem;font-weight:600;margin-top:2px}
+.p3 .darr.loop{color:#10b981;font-size:.68rem;font-weight:600;margin-top:2px}
+.p4 .darr.loop{color:#f97316;font-size:.68rem;font-weight:600;margin-top:2px}
+.p5 .darr.loop{color:#0ea5e9;font-size:.68rem;font-weight:600;margin-top:2px}
+.p6 .darr.loop{color:#eab308;font-size:.68rem;font-weight:600;margin-top:2px}
+
+/* ── DIAG NODES ── */
+.dn{
+  width:100%;text-align:center;
+  border-radius:6px;
+  padding:4px 6px;
+  font-size:.65rem;font-weight:600;line-height:1.3;
+  border:1px solid transparent;
+}
+.dn-blue{background:#bfdbfe;border-color:#3b82f6;color:#1e40af}
+.dn-pur{background:#ddd6fe;border-color:#8b5cf6;color:#5b21b6}
+.dn-grn{background:#a7f3d0;border-color:#10b981;color:#065f46}
+.dn-red{background:#fee2e2;border-color:#ef4444;color:#991b1b}
+.dn-ylw{background:#fef08a;border-color:#eab308;color:#713f12}
+.dn-org{background:#fed7aa;border-color:#f97316;color:#9a3412}
+.dn-sky{background:#bae6fd;border-color:#0ea5e9;color:#0c4a6e}
+.dn-gray{background:#e2e8f0;border-color:#94a3b8;color:#334155}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="page-hdr">
+  <span class="brand-pill">RemediAI</span>
+  <div class="hdr-sep"></div>
+  <span class="page-title">AI Agents</span>
+  <div class="hdr-sep"></div>
+  <span class="page-sub">Detect · Analyse · Fix · Deploy · Learn</span>
+</div>
+
+<!-- AGENT ROSTER -->
+<div class="roster">
+  <span class="roster-lbl">Agents</span>
+  <div class="ag ag-mvp">🎯 Triage</div>
+  <div class="ag ag-mvp">🔍 Root Cause</div>
+  <div class="ag ag-mvp">📄 Code Context</div>
+  <div class="ag ag-mvp">📚 RAG Retrieval</div>
+  <div class="ag ag-mvp">⚙️ Fix Planner</div>
+  <div class="ag ag-mvp">🐛 Bug Tracker</div>
+  <div class="roster-sep"></div>
+  <div class="ag ag-p2">🔀 PR Agent</div>
+  <div class="ag ag-p2">✅ Validation</div>
+  <div class="ag ag-p2">📊 Reporting</div>
+  <div class="roster-sep"></div>
+  <div class="ag ag-road">🚀 Deploy</div>
+</div>
+
+<div class="grid">
+
+  <!-- ══ 1 ══ -->
+  <div class="panel p1">
+    <div class="ptxt">
+      <div class="pnum">1. Multi-Agent Pipeline</div>
+      <div class="ptitle">From exception to deployed fix — fully automated</div>
+      <div class="pdesc">RemediAI's goal is not just filing tickets — it is to <strong>fix the bug, open a PR, merge it, and deploy the fix</strong>. Agents share one <code>IncidentState</code> TypedDict through the entire journey. Human approval is the only gate before code lands in production.</div>
+      <div class="checks">
+        <div class="chk"><div class="chk-icon">✓</div>6 MVP agents: triage → root cause → context → RAG → fix → PR tracking</div>
+        <div class="chk"><div class="chk-icon">✓</div>Phase 2: PR creation → validation → merge → deploy → report</div>
+        <div class="chk"><div class="chk-icon">✓</div>Deploy Agent handles rollout — no manual intervention needed</div>
+      </div>
+    </div>
+    <div class="diag">
+      <div class="dlabel">Full Lifecycle</div>
+      <div class="dn dn-red">⚡ Exception Detected</div>
+      <div class="darr">↓</div>
+      <div class="dn dn-blue">🎯→🔍→📄→📚→⚙️</div>
+      <div class="darr">analyse &amp; plan fix</div>
+      <div class="dn dn-ylw">👤 Engineer Approves</div>
+      <div class="darr">↓</div>
+      <div class="dn dn-pur">🔀 PR Created</div>
+      <div class="darr">↓</div>
+      <div class="dn dn-pur">✅ Validated &amp; Merged</div>
+      <div class="darr">↓</div>
+      <div class="dn dn-grn">🚀 Deployed</div>
+      <div class="darr loop">↻ loop</div>
+    </div>
+  </div>
+
+  <!-- ══ 2 ══ -->
+  <div class="panel p2">
+    <div class="ptxt">
+      <div class="pnum">2. LangGraph Orchestration</div>
+      <div class="ptitle">Graph-based engine drives the agent pipeline</div>
+      <div class="pdesc">LangGraph models the 6-agent pipeline as a <code>StateGraph</code>. Each node is a Python async function; typed edges enforce execution order. A conditional edge at Bug Creation either ends the MVP loop or routes to the Phase 2 approval branch.</div>
+      <div class="checks">
+        <div class="chk"><div class="chk-icon">✓</div>Typed IncidentState flows through every node unchanged</div>
+        <div class="chk"><div class="chk-icon">✓</div>Conditional edge: MVP end vs. Phase 2 approval branch</div>
+        <div class="chk"><div class="chk-icon">✓</div>Checkpointing allows pipeline resume after transient failure</div>
+        <div class="chk"><div class="chk-icon">✓</div>Full agent_trace JSON written to audit_log after each run</div>
+      </div>
+    </div>
+    <div class="diag">
+      <div class="dlabel">StateGraph Lifecycle</div>
+      <div class="dn dn-gray">START</div>
+      <div class="darr">↓</div>
+      <div class="dn dn-pur">StateGraph(IncidentState)</div>
+      <div class="darr">↓</div>
+      <div class="dn dn-pur">add_node() × 6</div>
+      <div class="darr">↓</div>
+      <div class="dn dn-pur">add_edge() · conditional</div>
+      <div class="darr">↓</div>
+      <div class="dn dn-pur">graph.compile()</div>
+      <div class="darr">↓</div>
+      <div class="dn dn-gray">END / Phase 2</div>
+    </div>
+  </div>
+
+  <!-- ══ 3 ══ -->
+  <div class="panel p3">
+    <div class="ptxt">
+      <div class="pnum">3. Agentic RAG</div>
+      <div class="ptitle">Hybrid retrieval grounds every fix recommendation</div>
+      <div class="pdesc">The RAG Retrieval Agent queries Azure AI Search with BM25 keyword and vector search in one call. Results are re-ranked by document type priority before the Fix Planner sees them — ensuring runbooks always outrank generic docs.</div>
+      <div class="checks">
+        <div class="chk"><div class="chk-icon">✓</div>Hybrid: BM25 keyword + text-embedding-3-small vectors</div>
+        <div class="chk"><div class="chk-icon">✓</div>Priority: runbook › prior_fix › docs › source_code</div>
+        <div class="chk"><div class="chk-icon">✓</div>Score threshold 0.6 — low-confidence results dropped</div>
+        <div class="chk"><div class="chk-icon">✓</div>Index grows with every resolved incident (feedback loop)</div>
+      </div>
+    </div>
+    <div class="diag">
+      <div class="dlabel">Retrieval Flow</div>
+      <div class="dn dn-grn">root_cause_summary</div>
+      <div class="darr">↓</div>
+      <div class="dn dn-gray">embed → vector query</div>
+      <div class="darr">+ BM25 keyword</div>
+      <div class="dn dn-gray">🔍 Azure AI Search</div>
+      <div class="darr">↓</div>
+      <div class="dn dn-grn">re-rank by doc type</div>
+      <div class="darr">↓</div>
+      <div class="dn dn-grn">top 5 (score › 0.6)</div>
+    </div>
+  </div>
+
+  <!-- ══ 4 ══ -->
+  <div class="panel p4">
+    <div class="ptxt">
+      <div class="pnum">4. Security Guardrails</div>
+      <div class="ptitle">PII scrubbing, auth, and audit on every request</div>
+      <div class="pdesc">Three layers protect every request: bearer token auth on all API endpoints, PII scrubbing before any LLM call via <code>scrub()</code>, and an immutable <code>audit_log</code> row for every agent decision — ensuring full traceability with zero raw PII reaching the LLM.</div>
+      <div class="checks">
+        <div class="chk"><div class="chk-icon">✓</div>Bearer token auth guards all API routes (dev + prod)</div>
+        <div class="chk"><div class="chk-icon">✓</div>scrub() masks emails, IPs, UUIDs, phones before LLM call</div>
+        <div class="chk"><div class="chk-icon">✓</div>audit_log immutable row per agent decision</div>
+        <div class="chk"><div class="chk-icon">✓</div>Secrets via Azure Key Vault + Managed Identity in prod</div>
+      </div>
+    </div>
+    <div class="diag">
+      <div class="dlabel">3-Layer Defence</div>
+      <div class="dn dn-red">🌐 API Request</div>
+      <div class="darr">↓</div>
+      <div class="dn dn-org">🔑 Bearer Token Auth</div>
+      <div class="darr">↓</div>
+      <div class="dn dn-org">🧹 scrub() PII</div>
+      <div class="darr">↓</div>
+      <div class="dn dn-pur">🧠 LLM Call</div>
+      <div class="darr">↓</div>
+      <div class="dn dn-org">📋 audit_log write</div>
+    </div>
+  </div>
+
+  <!-- ══ 5 ══ -->
+  <div class="panel p5">
+    <div class="ptxt">
+      <div class="pnum">5. Human-in-the-Loop</div>
+      <div class="ptitle">One approval triggers fix → PR → merge → deploy</div>
+      <div class="pdesc">The engineer's single approval on the dashboard is the only human step in the entire pipeline. Once confirmed, agents autonomously create the PR, run validation, merge the branch, and trigger deployment — no further manual steps required.</div>
+      <div class="checks">
+        <div class="chk"><div class="chk-icon">✓</div>Top 3 fix recommendations ranked by confidence score</div>
+        <div class="chk"><div class="chk-icon">✓</div>Reject → incident stays "analyzed", re-reviewable anytime</div>
+        <div class="chk"><div class="chk-icon">✓</div>PR Agent, Validation, Merge, and Deploy fire automatically</div>
+        <div class="chk"><div class="chk-icon">✓</div>Audit trail: approver, timestamp, chosen recommendation</div>
+      </div>
+    </div>
+    <div class="diag">
+      <div class="dlabel">One Click → Full Fix</div>
+      <div class="dn dn-ylw">👤 Approve Fix</div>
+      <div class="darr">↓</div>
+      <div class="dn dn-pur">🔀 PR Created</div>
+      <div class="darr">↓</div>
+      <div class="dn dn-pur">✅ Validation Agent</div>
+      <div class="darr">↓</div>
+      <div class="dn dn-pur">🔁 Auto-Merge</div>
+      <div class="darr">↓</div>
+      <div class="dn dn-grn">🚀 Deploy Agent</div>
+      <div class="darr">↓</div>
+      <div class="dn dn-grn">📊 Reporting Agent</div>
+    </div>
+  </div>
+
+  <!-- ══ 6 ══ -->
+  <div class="panel p6">
+    <div class="ptxt">
+      <div class="pnum">6. Continuous Memory</div>
+      <div class="ptitle">Every resolved incident makes the next one faster</div>
+      <div class="pdesc">After a fix is merged and deployed, the Reporting Agent writes a resolution summary back to PostgreSQL. The Ingestion Worker re-indexes it into Azure AI Search as a <code>prior_fix</code> document. Future incidents with a matching fingerprint retrieve a proven fix on the first RAG pass.</div>
+      <div class="checks">
+        <div class="chk"><div class="chk-icon">✓</div>Fingerprint matching groups similar incidents automatically</div>
+        <div class="chk"><div class="chk-icon">✓</div>Merged PRs indexed as prior_fix — highest RAG priority</div>
+        <div class="chk"><div class="chk-icon">✓</div>Embedding model: text-embedding-3-small (Azure OpenAI)</div>
+        <div class="chk"><div class="chk-icon">✓</div>MTTR metrics tracked — improvement visible on dashboard</div>
+      </div>
+    </div>
+    <div class="diag">
+      <div class="dlabel">Feedback Loop</div>
+      <div class="dn dn-grn">🚀 Fix Deployed</div>
+      <div class="darr">↓</div>
+      <div class="dn dn-ylw">📊 Reporting Agent</div>
+      <div class="darr">↓</div>
+      <div class="dn dn-gray">🐘 status=resolved</div>
+      <div class="darr">↓</div>
+      <div class="dn dn-ylw">Ingestion Worker</div>
+      <div class="darr">↓</div>
+      <div class="dn dn-grn">🔍 prior_fix indexed</div>
+      <div class="darr loop">↻ smarter next time</div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

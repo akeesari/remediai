@@ -1,17 +1,19 @@
-import { NavLink, Outlet } from 'react-router-dom'
+import { Outlet } from 'react-router-dom'
 import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { clsx } from 'clsx'
+import { AlertTriangle, X } from 'lucide-react'
 import { getIntegrationsHealth } from '../api/integrations'
-
-const NAV = [
-  { to: '/incidents', label: 'Incidents' },
-  { to: '/targets', label: 'Targets' },
-  { to: '/metrics', label: 'Metrics' },
-  { to: '/logs', label: 'Logs' },
-]
+import { AppShell } from './shell/AppShell'
+import { Button } from './ui/Button'
 
 const BANNER_DISMISS_KEY = 'remediai.integrationWarnings.dismissed'
+
+const PROVIDER_LABELS: Record<string, string> = {
+  llm:       'LLM',
+  retrieval: 'Retrieval',
+  scm:       'SCM',
+  ticketing: 'Ticketing',
+}
 
 export function Layout() {
   const { data: integrations } = useQuery({
@@ -20,7 +22,7 @@ export function Layout() {
   })
 
   const warningText = useMemo(() => integrations?.warnings.join(' ') ?? '', [integrations])
-  const [dismissedWarning, setDismissedWarning] = useState<string>('')
+  const [dismissedWarning, setDismissedWarning] = useState('')
 
   useEffect(() => {
     setDismissedWarning(localStorage.getItem(BANNER_DISMISS_KEY) ?? '')
@@ -30,74 +32,77 @@ export function Layout() {
     warningText && warningText.length > 0 && warningText !== dismissedWarning,
   )
 
-  function dismissWarnings(): void {
-    if (!warningText) {
-      return
-    }
+  function dismissWarnings() {
+    if (!warningText) return
     localStorage.setItem(BANNER_DISMISS_KEY, warningText)
     setDismissedWarning(warningText)
   }
 
   const badges = [
-    { label: 'LLM', value: integrations?.llm_provider_id },
-    { label: 'Retrieval', value: integrations?.retrieval_provider_id },
-    { label: 'SCM', value: integrations?.scm.provider_id },
-    { label: 'Ticketing', value: integrations?.ticketing.provider_id },
+    { key: 'llm',       value: integrations?.llm_provider_id },
+    { key: 'retrieval', value: integrations?.retrieval_provider_id },
+    { key: 'scm',       value: integrations?.scm.provider_id },
+    { key: 'ticketing', value: integrations?.ticketing.provider_id },
   ]
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="border-b border-gray-200 bg-white">
-        <div className="mx-auto flex max-w-7xl items-center gap-8 px-4 py-3">
-          <span className="text-lg font-bold text-indigo-700">RemediAI</span>
-          {NAV.map(({ to, label }) => (
-            <NavLink
-              key={to}
-              to={to}
-              className={({ isActive }) =>
-                clsx(
-                  'text-sm font-medium transition-colors',
-                  isActive ? 'text-indigo-700' : 'text-gray-500 hover:text-gray-900',
-                )
-              }
-            >
-              {label}
-            </NavLink>
-          ))}
-          <div className="ml-auto flex items-center gap-2">
-            {badges.map((badge) => (
+    <AppShell>
+      <div className="space-y-5 page-enter">
+        {/* Integration status bar */}
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-surface px-4 py-3 shadow-xs">
+          <span className="mr-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-text-3">
+            Integrations
+          </span>
+          {badges.map(({ key, value }) => {
+            const active = Boolean(value && value !== 'none')
+            return (
               <span
-                key={badge.label}
-                className="rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-xs text-gray-600"
+                key={key}
+                className="inline-flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-xs font-medium"
               >
-                {badge.label}: {badge.value ?? 'n/a'}
+                <span
+                  className="h-1.5 w-1.5 rounded-full"
+                  style={{
+                    backgroundColor: active ? 'var(--color-success)' : 'var(--color-text-3)',
+                    boxShadow: active ? '0 0 0 2px var(--color-success-muted)' : 'none',
+                  }}
+                />
+                <span className="text-text-2">{PROVIDER_LABELS[key]}:</span>
+                <span className="text-text-1">{value ?? 'n/a'}</span>
               </span>
-            ))}
-          </div>
+            )
+          })}
         </div>
-      </nav>
-      {showWarningBanner && (
-        <div className="border-b border-amber-200 bg-amber-50">
-          <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-2 text-sm text-amber-800">
-            <span className="flex-1">{warningText}</span>
-            <NavLink to="/logs" className="text-amber-900 underline hover:text-amber-950">
-              View logs
-            </NavLink>
-            <NavLink to="/targets" className="text-amber-900 underline hover:text-amber-950">
-              Configure targets
-            </NavLink>
-            <button
+
+        {/* Warning banner */}
+        {showWarningBanner && (
+          <div
+            className="flex items-start gap-3 rounded-xl border px-4 py-3.5"
+            style={{
+              borderColor: 'var(--color-warning-muted)',
+              backgroundColor: 'var(--color-warning-muted)',
+            }}
+          >
+            <AlertTriangle
+              className="mt-0.5 h-4 w-4 shrink-0"
+              style={{ color: 'var(--color-warning)' }}
+            />
+            <p className="flex-1 text-sm leading-relaxed text-text-1">{warningText}</p>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
               onClick={dismissWarnings}
-              className="rounded border border-amber-300 bg-amber-100 px-2 py-0.5 text-xs text-amber-900"
+              className="shrink-0 -mr-1 text-text-2"
+              aria-label="Dismiss"
             >
-              Dismiss
-            </button>
+              <X className="h-3.5 w-3.5" />
+            </Button>
           </div>
-        </div>
-      )}
-      <main className="mx-auto max-w-7xl px-4 py-6">
+        )}
+
         <Outlet />
-      </main>
-    </div>
+      </div>
+    </AppShell>
   )
 }

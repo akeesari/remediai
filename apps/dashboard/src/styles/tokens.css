@@ -1,0 +1,124 @@
+/* ── Google Font: Inter ─────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300..900;1,14..32,300..900&display=swap');
+
+/* ══════════════════════════════════════════════════════════════════
+   LIGHT THEME (default) — clean, premium, Stripe-inspired
+   ══════════════════════════════════════════════════════════════════ */
+:root,
+[data-theme='light'] {
+  /* Page background — barely-there warm grey */
+  --color-bg:        #f6f8fa;
+
+  /* Cards / Surfaces */
+  --color-surface:   #ffffff;
+  --color-surface-2: #f0f3f7;
+  --color-surface-3: #e8ecf2;
+
+  /* Borders — ultra-subtle */
+  --color-border:   rgba(9, 9, 11, 0.08);
+  --color-border-2: rgba(9, 9, 11, 0.14);
+
+  /* Brand accent — Premium Blue */
+  --color-accent:       #2563eb;
+  --color-accent-hover: #1d4ed8;
+  --color-accent-muted: rgba(37, 99, 235, 0.06);
+  --color-accent-glow:  rgba(37, 99, 235, 0.15);
+
+  /* Text */
+  --color-text-1: #0a0a0b;
+  --color-text-2: #52525b;
+  --color-text-3: #a1a1aa;
+
+  /* Semantic */
+  --color-success:        #16a34a;
+  --color-success-muted:  rgba(22, 163, 74, 0.09);
+  --color-warning:        #d97706;
+  --color-warning-muted:  rgba(217, 119, 6, 0.09);
+  --color-error:          #dc2626;
+  --color-error-muted:    rgba(220, 38, 38, 0.09);
+  --color-critical:       #b91c1c;
+  --color-high:           #ea580c;
+  --color-medium:         #ca8a04;
+  --color-low:            #15803d;
+
+  /* Gradient palette — used on stat cards */
+  --gradient-accent:  linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+  --gradient-success: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  --gradient-warning: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  --gradient-error:   linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  --gradient-blue:    linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+
+  /* Shape */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+
+  /* Shadows — layered for depth */
+  --shadow-xs:    0 0 0 1px rgba(9,9,11,0.05);
+  --shadow-sm:    0 0 0 1px rgba(9,9,11,0.05), 0 1px 3px rgba(9,9,11,0.06), 0 2px 8px rgba(9,9,11,0.04);
+  --shadow-md:    0 0 0 1px rgba(9,9,11,0.05), 0 4px 12px rgba(9,9,11,0.08), 0 8px 24px rgba(9,9,11,0.05);
+  --shadow-lg:    0 0 0 1px rgba(9,9,11,0.05), 0 8px 24px rgba(9,9,11,0.10), 0 16px 48px rgba(9,9,11,0.07);
+  --shadow-glow:  0 0 24px rgba(37, 99, 235, 0.15);
+
+  /* Sidebar */
+  --sidebar-bg:      #ffffff;
+  --sidebar-border:  rgba(9, 9, 11, 0.07);
+
+  /* Scrollbar */
+  --scrollbar-thumb:       rgba(9,9,11,0.16);
+  --scrollbar-thumb-hover: rgba(9,9,11,0.26);
+  --scrollbar-track:       transparent;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   DARK THEME — deep zinc, Vercel-inspired
+   ══════════════════════════════════════════════════════════════════ */
+[data-theme='dark'] {
+  --color-bg:        #09090b;
+  --color-surface:   #111113;
+  --color-surface-2: #19191d;
+  --color-surface-3: #222228;
+
+  --color-border:   rgba(255, 255, 255, 0.07);
+  --color-border-2: rgba(255, 255, 255, 0.12);
+
+  --color-accent:       #3b82f6;
+  --color-accent-hover: #60a5fa;
+  --color-accent-muted: rgba(59, 130, 246, 0.10);
+  --color-accent-glow:  rgba(59, 130, 246, 0.25);
+
+  --color-text-1: #fafafa;
+  --color-text-2: #a1a1aa;
+  --color-text-3: #52525b;
+
+  --color-success:        #4ade80;
+  --color-success-muted:  rgba(74, 222, 128, 0.10);
+  --color-warning:        #fbbf24;
+  --color-warning-muted:  rgba(251, 191, 36, 0.10);
+  --color-error:          #f87171;
+  --color-error-muted:    rgba(248, 113, 113, 0.10);
+  --color-critical:       #fca5a5;
+  --color-high:           #fb923c;
+  --color-medium:         #fde047;
+  --color-low:            #86efac;
+
+  --gradient-accent:  linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+  --gradient-success: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  --gradient-warning: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  --gradient-error:   linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  --gradient-blue:    linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+
+  --shadow-xs:    0 0 0 1px rgba(255,255,255,0.04);
+  --shadow-sm:    0 0 0 1px rgba(255,255,255,0.04), 0 1px 4px rgba(0,0,0,0.4);
+  --shadow-md:    0 0 0 1px rgba(255,255,255,0.04), 0 4px 12px rgba(0,0,0,0.5), 0 8px 24px rgba(0,0,0,0.3);
+  --shadow-lg:    0 0 0 1px rgba(255,255,255,0.04), 0 8px 32px rgba(0,0,0,0.6), 0 24px 64px rgba(0,0,0,0.4);
+  --shadow-glow:  0 0 32px rgba(59, 130, 246, 0.20);
+
+  --sidebar-bg:      #111113;
+  --sidebar-border:  rgba(255, 255, 255, 0.06);
+
+  --scrollbar-thumb:       rgba(255,255,255,0.12);
+  --scrollbar-thumb-hover: rgba(255,255,255,0.22);
+  --scrollbar-track:       transparent;
+}

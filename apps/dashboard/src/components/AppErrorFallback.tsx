@@ -5,14 +5,14 @@ interface Props {
 
 export function AppErrorFallback({ error, resetErrorBoundary }: Props) {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-8">
-      <h1 className="text-2xl font-bold text-red-600 mb-4">Something went wrong</h1>
-      <pre className="text-sm text-gray-700 bg-gray-100 rounded p-4 max-w-xl overflow-auto mb-6 whitespace-pre-wrap">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-bg p-8 text-center">
+      <h1 className="mb-4 text-2xl font-semibold text-error">Something went wrong</h1>
+      <pre className="mb-6 max-w-xl overflow-auto rounded-lg border border-border bg-surface p-4 text-sm text-text-2 whitespace-pre-wrap">
         {error.message}
       </pre>
       <button
         onClick={resetErrorBoundary}
-        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+        className="rounded-md border border-accent bg-accent px-4 py-2 text-sm font-medium text-text-1 transition-colors hover:border-accent-hover hover:bg-accent-hover"
       >
         Try again
       </button>

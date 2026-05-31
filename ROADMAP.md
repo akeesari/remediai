@@ -2,7 +2,7 @@
 
 ## Current Status
 
-**Active development.** Phases 1–21, 30, 32, and 33 are complete and committed. The end-to-end
+**Active development.** Phases 1–21, 30, and 32–34 are complete and committed. The end-to-end
 flow now includes approval-gated draft PR creation and validation
 (ingestion → triage → root cause → code context → RAG → fix planner → bug
 creation → approval gate → PR agent → validation agent). Work remaining is
@@ -67,7 +67,7 @@ organised below into milestones and parallel development tracks.
 
 ---
 
-### Milestone 5 — Dashboard (Phases 12 + 14)
+### Milestone 5 — Dashboard (Phases 12 + 14 + 34)
 
 **Goal:** Engineers can see and manage incidents in the React UI.
 
@@ -77,6 +77,8 @@ organised below into milestones and parallel development tracks.
 - [x] React dashboard: incident detail view with root cause and recommendations
 - [x] React dashboard: metrics panel (volume, by status, top errors)
 - [x] Work item link visible on incident detail
+- [x] Premium responsive dashboard shell (desktop sidebar + mobile bottom navigation) → **Phase 34**
+- [x] UI redesign applied to incidents, incident detail, metrics, targets, and local logs pages → **Phase 34**
 - [x] End-to-end acceptance test of first milestone flow → Phase 16 ✅
 
 ---

@@ -2,64 +2,62 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { clsx } from 'clsx'
+import { Terminal, RefreshCw } from 'lucide-react'
 import { fetchLocalLogs } from '../api/localLogs'
+import { Card } from '../components/ui/Card'
+import { EmptyState } from '../components/ui/EmptyState'
+import { PageHeader } from '../components/ui/PageHeader'
 import type { LogLine } from '../types/localLogs'
 
 const CONTAINERS = ['', 'api', 'worker', 'dashboard']
 
-const LEVEL_COLORS: Record<string, string> = {
-  ERROR: 'text-red-600',
-  CRITICAL: 'text-red-700 font-bold',
-  WARNING: 'text-amber-600',
-  WARN: 'text-amber-600',
-  INFO: 'text-gray-300',
-  DEBUG: 'text-gray-500',
+const LEVEL_META: Record<string, { color: string; bg: string }> = {
+  ERROR:    { color: '#ef4444', bg: 'rgba(239,68,68,0.08)' },
+  CRITICAL: { color: '#dc2626', bg: 'rgba(220,38,38,0.12)' },
+  WARNING:  { color: '#f59e0b', bg: 'rgba(245,158,11,0.06)' },
+  WARN:     { color: '#f59e0b', bg: 'rgba(245,158,11,0.06)' },
+  INFO:     { color: 'var(--color-text-1)', bg: 'transparent' },
+  DEBUG:    { color: 'var(--color-text-3)', bg: 'transparent' },
 }
 
-function levelColor(level: string): string {
-  return LEVEL_COLORS[level.toUpperCase()] ?? 'text-gray-300'
-}
-
-function ContainerBadge({ name }: { name: string }) {
-  const colors: Record<string, string> = {
-    api: 'bg-blue-900 text-blue-200',
-    worker: 'bg-purple-900 text-purple-200',
-    dashboard: 'bg-teal-900 text-teal-200',
-  }
-  return (
-    <span
-      className={clsx(
-        'inline-block rounded px-1.5 py-0.5 text-xs font-mono',
-        colors[name] ?? 'bg-gray-700 text-gray-200',
-      )}
-    >
-      {name}
-    </span>
-  )
+function getLevelMeta(level: string) {
+  return LEVEL_META[level.toUpperCase()] ?? { color: 'var(--color-text-1)', bg: 'transparent' }
 }
 
 function LogRow({ log, onIncidentClick }: { log: LogLine; onIncidentClick: (id: string) => void }) {
+  const meta = getLevelMeta(log.level)
   return (
     <div
-      className={clsx(
-        'flex gap-3 px-4 py-1.5 font-mono text-xs border-b border-gray-800',
-        log.is_exception ? 'bg-red-950' : 'hover:bg-gray-800',
-      )}
+      className="grid grid-cols-1 gap-1.5 border-b border-border px-4 py-2.5 font-mono text-[11px] transition-colors sm:grid-cols-[130px_90px_70px_1fr_auto] sm:items-baseline sm:gap-3"
+      style={{ backgroundColor: meta.bg }}
     >
-      <span className="shrink-0 text-gray-500 whitespace-nowrap">
-        {new Date(log.ts).toLocaleTimeString()}
+      <span className="text-text-3 tabular-nums">{new Date(log.ts).toLocaleTimeString()}</span>
+      <span
+        className="rounded px-1.5 py-0.5 text-center text-[10px] font-medium"
+        style={{
+          backgroundColor: 'var(--color-surface-2)',
+          color: 'var(--color-text-2)',
+          border: '1px solid var(--color-border)',
+        }}
+      >
+        {log.container}
       </span>
-      <ContainerBadge name={log.container} />
-      <span className={clsx('shrink-0 w-14', levelColor(log.level))}>
+      <span className="font-semibold uppercase tracking-wider text-[10px]" style={{ color: meta.color }}>
         {log.level.toUpperCase().slice(0, 7)}
       </span>
-      <span className={clsx('flex-1 break-all', log.is_exception ? 'text-red-300' : 'text-gray-300')}>
+      <span className="break-all leading-relaxed" style={{ color: log.is_exception ? '#ef4444' : 'var(--color-text-1)' }}>
         {log.line}
       </span>
       {log.is_exception && log.incident_id && (
         <button
+          type="button"
           onClick={() => onIncidentClick(log.incident_id!)}
-          className="shrink-0 rounded bg-red-700 px-2 py-0.5 text-xs text-white hover:bg-red-600"
+          className="justify-self-start rounded-md px-2 py-1 text-[10px] font-semibold transition-colors"
+          style={{
+            backgroundColor: 'rgba(239,68,68,0.12)',
+            color: '#ef4444',
+            border: '1px solid rgba(239,68,68,0.25)',
+          }}
         >
           Incident →
         </button>
@@ -67,6 +65,9 @@ function LogRow({ log, onIncidentClick }: { log: LogLine; onIncidentClick: (id: 
     </div>
   )
 }
+
+const SELECT_CLS =
+  'h-9 rounded-md border border-border bg-surface px-3 text-sm text-text-1 shadow-xs focus:outline-none focus:ring-2 focus:ring-accent hover:border-border-2 transition-colors'
 
 export function LocalLogsPage() {
   const navigate = useNavigate()
@@ -83,71 +84,91 @@ export function LocalLogsPage() {
   const exceptionCount = data?.filter((l) => l.is_exception).length ?? 0
 
   return (
-    <div>
-      <div className="mb-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h1 className="text-xl font-semibold text-gray-900">Container Logs</h1>
-          {exceptionCount > 0 && (
-            <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-700">
-              {exceptionCount} exception{exceptionCount !== 1 ? 's' : ''}
-            </span>
-          )}
-        </div>
-        <div className="flex items-center gap-3">
-          <select
-            value={container}
-            onChange={(e) => setContainer(e.target.value)}
-            className="rounded border border-gray-300 px-3 py-1.5 text-sm"
-          >
-            {CONTAINERS.map((c) => (
-              <option key={c} value={c}>
-                {c === '' ? 'All containers' : c}
-              </option>
-            ))}
-          </select>
-          <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-600">
-            <input
-              type="checkbox"
-              checked={autoRefresh}
-              onChange={(e) => setAutoRefresh(e.target.checked)}
-              className="rounded"
-            />
-            Auto-refresh
-          </label>
-        </div>
-      </div>
+    <div className="space-y-5">
+      <PageHeader
+        eyebrow="Observability"
+        title="Container Logs"
+        subtitle="Real-time local bridge stream from Docker containers."
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            {exceptionCount > 0 && (
+              <span
+                className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold"
+                style={{
+                  backgroundColor: 'rgba(239,68,68,0.10)',
+                  color: '#ef4444',
+                  boxShadow: '0 0 0 1px rgba(239,68,68,0.25)',
+                }}
+              >
+                ● {exceptionCount} exception{exceptionCount !== 1 ? 's' : ''}
+              </span>
+            )}
+            <select
+              value={container}
+              onChange={(e) => setContainer(e.target.value)}
+              className={SELECT_CLS}
+            >
+              {CONTAINERS.map((c) => (
+                <option key={c} value={c} className="bg-surface text-text-1">
+                  {c === '' ? 'All containers' : c}
+                </option>
+              ))}
+            </select>
+            <label className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-md border border-border bg-surface px-3 text-sm text-text-2 shadow-xs hover:border-border-2 hover:text-text-1 transition-colors">
+              <input
+                type="checkbox"
+                checked={autoRefresh}
+                onChange={(e) => setAutoRefresh(e.target.checked)}
+                className="h-3.5 w-3.5 accent-[var(--color-accent)]"
+              />
+              <RefreshCw className={clsx('h-3 w-3 shrink-0', autoRefresh && 'animate-spin')} style={{ animationDuration: '3s' }} />
+              Live
+            </label>
+          </div>
+        }
+      />
 
-      <div className="rounded-lg bg-gray-900 overflow-hidden shadow-inner">
-        <div className="border-b border-gray-700 px-4 py-2 text-xs text-gray-400 flex justify-between">
-          <span>Last 200 lines — newest first</span>
-          <span className="text-green-400">● LOCAL_MODE</span>
+      <Card className="overflow-hidden">
+        {/* Toolbar */}
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-surface-2 px-4 py-2.5">
+          <div className="flex items-center gap-2 text-xs text-text-2">
+            <Terminal className="h-3.5 w-3.5" />
+            <span>Last 200 lines · newest first</span>
+          </div>
+          <span className="rounded-full bg-success/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-success">
+            LOCAL_MODE
+          </span>
         </div>
 
+        {/* Log content */}
         {isLoading && (
-          <p className="px-6 py-8 text-center text-sm text-gray-500">Loading logs…</p>
+          <p className="px-6 py-10 text-center text-sm text-text-2">Loading logs…</p>
         )}
         {isError && (
-          <p className="px-6 py-8 text-center text-sm text-red-400">
-            Failed to load logs. Is LOCAL_MODE=true and the API running?
-          </p>
+          <EmptyState
+            title="Failed to load logs"
+            description="Ensure LOCAL_MODE=true and API is reachable."
+          />
         )}
         {data && data.length === 0 && (
-          <p className="px-6 py-8 text-center text-sm text-gray-500">
-            No log lines yet. The log-bridge container is tailing docker stdout.
-          </p>
+          <EmptyState
+            icon={Terminal}
+            title="No log lines yet"
+            description="The log-bridge container is tailing Docker stdout."
+          />
         )}
         {data && data.length > 0 && (
-          <div className="max-h-[70vh] overflow-y-auto">
-            {data.map((log, i) => (
+          <div className="max-h-[68vh] overflow-y-auto">
+            {data.map((log, index) => (
               <LogRow
-                key={i}
+                key={index}
                 log={log}
                 onIncidentClick={(id) => navigate(`/incidents/${id}`)}
               />
             ))}
           </div>
         )}
-      </div>
+      </Card>
     </div>
   )
 }

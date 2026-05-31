@@ -1,15 +1,21 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { listDiscoveredTargets, listTargets, upsertTargets } from '../api/targets'
+import { Button } from '../components/ui/Button'
+import { Card } from '../components/ui/Card'
+import { EmptyState } from '../components/ui/EmptyState'
+import { PageHeader } from '../components/ui/PageHeader'
+import { SkeletonBlock } from '../components/ui/SkeletonBlock'
+import { useToast } from '../components/ui/ToastProvider'
 import type { TargetEnvironment } from '../types/targets'
 
 export function TargetsPage() {
+  const toast = useToast()
   const queryClient = useQueryClient()
   const [environment, setEnvironment] = useState<TargetEnvironment>('local')
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set())
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<'all' | 'container' | 'namespace' | 'workload'>('all')
-  const [toast, setToast] = useState<{ kind: 'success' | 'error'; text: string } | null>(null)
 
   const discoveredQuery = useQuery({
     queryKey: ['targets-discovered', environment],
@@ -45,20 +51,12 @@ export function TargetsPage() {
       }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['targets-persisted', environment] })
-      setToast({ kind: 'success', text: 'Saved target policy successfully.' })
+      toast.success('Saved target policy successfully.')
     },
     onError: () => {
-      setToast({ kind: 'error', text: 'Failed to save target policy.' })
+      toast.error('Failed to save target policy.')
     },
   })
-
-  useEffect(() => {
-    if (!toast) {
-      return
-    }
-    const timer = window.setTimeout(() => setToast(null), 2500)
-    return () => window.clearTimeout(timer)
-  }, [toast])
 
   function toggleTarget(targetKey: string): void {
     setSelectedKeys((current) => {
@@ -113,129 +111,147 @@ export function TargetsPage() {
     setSelectedKeys(new Set())
   }
 
+  const loading = discoveredQuery.isLoading || persistedQuery.isLoading
+  const hasError = discoveredQuery.isError || persistedQuery.isError
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold text-gray-900">Targets</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Discover runtime targets and choose what RemediAI should monitor.
-          </p>
-        </div>
-        <select
-          value={environment}
-          onChange={(event) => setEnvironment(event.target.value as TargetEnvironment)}
-          className="rounded border border-gray-300 px-3 py-2 text-sm"
-        >
-          <option value="local">Local</option>
-          <option value="kubernetes">Kubernetes</option>
-        </select>
-      </div>
+    <div className="space-y-4">
+      <PageHeader
+        title="Targets"
+        subtitle="Discover runtime targets and choose what RemediAI should monitor."
+        actions={
+          <select
+            value={environment}
+            onChange={(event) => setEnvironment(event.target.value as TargetEnvironment)}
+            className="h-10 rounded-md border border-border bg-surface px-3 text-sm text-text-1"
+          >
+            <option value="local" className="bg-surface text-text-1">
+              Local
+            </option>
+            <option value="kubernetes" className="bg-surface text-text-1">
+              Kubernetes
+            </option>
+          </select>
+        }
+      />
 
-      <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-gray-900">Discovered targets</h2>
-          <span className="text-xs text-gray-500">Selected: {selectedCount}</span>
-        </div>
-
-        <div className="mb-3 flex flex-wrap items-center gap-2">
+      <Card className="p-4">
+        <div className="flex flex-wrap items-center gap-2">
           <input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Search targets"
-            className="min-w-56 rounded border border-gray-300 px-3 py-1.5 text-sm"
+            className="h-10 min-w-52 rounded-md border border-border bg-surface px-3 text-sm text-text-1"
           />
           {(['all', 'container', 'namespace', 'workload'] as const).map((kind) => (
             <button
               key={kind}
+              type="button"
               onClick={() => setTypeFilter(kind)}
-              className={`rounded-full px-3 py-1 text-xs ${
+              className={`rounded-full px-3 py-1 text-xs transition-colors ${
                 typeFilter === kind
-                  ? 'bg-indigo-600 text-white'
-                  : 'border border-gray-300 bg-white text-gray-700'
+                  ? 'bg-accent text-text-1'
+                  : 'border border-border bg-surface text-text-2 hover:text-text-1'
               }`}
             >
               {kind}
             </button>
           ))}
-          <div className="ml-auto flex items-center gap-2">
-            <button
-              onClick={enableVisible}
-              className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-700"
-            >
+          <div className="ml-auto flex flex-wrap items-center gap-2">
+            <Button type="button" size="sm" onClick={enableVisible}>
               Enable visible
-            </button>
-            <button
-              onClick={disableVisible}
-              className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-700"
-            >
+            </Button>
+            <Button type="button" size="sm" onClick={disableVisible}>
               Disable visible
-            </button>
-            <button
-              onClick={resetSelection}
-              className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-700"
-            >
+            </Button>
+            <Button type="button" size="sm" onClick={resetSelection}>
               Reset
-            </button>
+            </Button>
           </div>
         </div>
+      </Card>
 
-        {(discoveredQuery.isLoading || persistedQuery.isLoading) && (
-          <p className="py-8 text-center text-sm text-gray-500">Loading targets…</p>
-        )}
+      {loading && (
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+          <SkeletonBlock className="h-64" />
+          <SkeletonBlock className="h-64" />
+        </div>
+      )}
 
-        {(discoveredQuery.isError || persistedQuery.isError) && (
-          <p className="py-8 text-center text-sm text-red-600">Failed to load targets.</p>
-        )}
+      {!loading && hasError && (
+        <EmptyState title="Failed to load targets" description="Check API connectivity and try again." />
+      )}
 
-        {!discoveredQuery.isLoading && !persistedQuery.isLoading && filteredTargets.length === 0 && (
-          <p className="py-8 text-center text-sm text-gray-500">
-            No targets discovered for {environment}.
-          </p>
-        )}
+      {!loading && !hasError && (
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+          <Card className="p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-text-2">Discovered targets</h2>
+              <span className="text-xs text-text-2">{filteredTargets.length} visible</span>
+            </div>
 
-        {!discoveredQuery.isLoading && filteredTargets.length > 0 && (
-          <div className="space-y-2">
-            {filteredTargets.map((target) => (
-              <label
-                key={target.target_key}
-                className="flex items-center justify-between rounded border border-gray-200 px-3 py-2 text-sm"
-              >
-                <div>
-                  <p className="font-medium text-gray-900">{target.display_name}</p>
-                  <p className="text-xs text-gray-500">
-                    {target.target_type} · {target.target_key}
-                  </p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={selectedKeys.has(target.target_key)}
-                  onChange={() => toggleTarget(target.target_key)}
-                  className="h-4 w-4 accent-indigo-600"
-                />
-              </label>
-            ))}
-          </div>
-        )}
-      </div>
+            {filteredTargets.length === 0 ? (
+              <EmptyState title="No targets discovered" description={`No targets discovered for ${environment}.`} />
+            ) : (
+              <div className="space-y-2">
+                {filteredTargets.map((target) => (
+                  <label
+                    key={target.target_key}
+                    className="flex cursor-pointer items-center justify-between rounded-lg border border-border bg-surface-2 px-3 py-2"
+                  >
+                    <div>
+                      <p className="text-sm font-medium text-text-1">{target.display_name}</p>
+                      <p className="text-xs text-text-2">
+                        {target.target_type} - {target.target_key}
+                      </p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={selectedKeys.has(target.target_key)}
+                      onChange={() => toggleTarget(target.target_key)}
+                      className="h-4 w-4 accent-accent"
+                    />
+                  </label>
+                ))}
+              </div>
+            )}
+          </Card>
 
-      <div className="flex items-center gap-3">
-        <button
+          <Card className="p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-text-2">Selected targets</h2>
+              <span className="text-xs text-text-2">{selectedCount} selected</span>
+            </div>
+
+            {selectedCount === 0 ? (
+              <EmptyState title="No targets enabled" description="Enable at least one target to start receiving incidents." />
+            ) : (
+              <div className="space-y-2">
+                {[...selectedKeys].map((targetKey) => {
+                  const found = discovered.find((target) => target.target_key === targetKey)
+                  return (
+                    <div key={targetKey} className="rounded-lg border border-border bg-surface-2 px-3 py-2">
+                      <p className="text-sm font-medium text-text-1">{found?.display_name ?? targetKey}</p>
+                      <p className="text-xs text-text-2">{targetKey}</p>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </Card>
+        </div>
+      )}
+
+      <div className="sticky bottom-20 z-20 rounded-lg border border-border bg-surface/95 p-3 backdrop-blur xl:static xl:rounded-none xl:border-0 xl:bg-transparent xl:p-0">
+        <Button
+          type="button"
+          variant="primary"
           onClick={() => saveMutation.mutate()}
           disabled={saveMutation.isPending || discovered.length === 0}
-          className="rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+          className="w-full xl:w-auto"
         >
-          {saveMutation.isPending ? 'Saving…' : 'Save target policy'}
-        </button>
-        {toast && (
-          <span
-            className={`text-sm ${
-              toast.kind === 'success' ? 'text-green-700' : 'text-red-600'
-            }`}
-          >
-            {toast.text}
-          </span>
-        )}
+          {saveMutation.isPending ? 'Saving...' : 'Save target policy'}
+        </Button>
       </div>
     </div>
   )

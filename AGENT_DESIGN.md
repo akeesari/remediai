@@ -96,11 +96,15 @@ class IncidentState(TypedDict):
 
 **Output fields set:**
 - `priority` — `critical | high | medium | low`
-- `triage_labels` — e.g., `["null-reference", "authentication", "timeout"]`
+- `triage_labels` — e.g., `["null-reference", "authentication", "timeout"]` plus an optional language tag such as `"dotnet"`, `"python"`, `"nodejs"`
 - `group_id` — UUID of an existing open incident group, if applicable
 
 **Logic:**
-1. Apply rule-based pattern matching for known exception types (NullReferenceException → `null-reference`; TimeoutException → `timeout`; etc.).
+1. Apply language-aware rule-based pattern matching for known exception types:
+   - .NET: `NullReferenceException` → `null-reference`; `TimeoutException` → `timeout`; etc.
+   - Python: `AttributeError`, `TypeError` → `null-reference`; `TimeoutError` → `timeout`; etc.
+   - Node.js: `TypeError: Cannot read properties of undefined` → `null-reference`; etc.
+   - Java: `NullPointerException` → `null-reference`; `java.sql.SQLException` → `database`; etc.
 2. Call LLM with triage prompt to assign priority and additional labels if no rule matched.
 3. Query open incidents for similar fingerprints to determine grouping.
 
@@ -128,8 +132,8 @@ class IncidentState(TypedDict):
   ```
 
 **Logic:**
-1. Parse stack trace to identify the top 5 significant frames (skip framework internals).
-2. Call LLM with root cause prompt, including stack frames and exception message.
+1. Parse stack trace using the language-appropriate parser (.NET, Python, Node.js, Java) to identify the top 5 significant user-code frames (skip framework/library internals).
+2. Call LLM with root cause prompt, including stack frames, exception message, and detected language.
 3. Extract structured JSON from response.
 4. Append to `agent_trace`.
 
@@ -157,10 +161,14 @@ class IncidentState(TypedDict):
   ```
 
 **Logic:**
-1. Parse stack trace to extract file paths and line numbers.
-2. Use Azure DevOps Repos REST API to fetch file content at the identified lines ± 20 lines of context.
+1. Parse stack trace to extract file paths and line numbers (using language-appropriate parser from Root Cause Agent).
+2. Use the configured source control client (Azure DevOps Repos for MVP; GitHub Phase 38+) to fetch file content at the identified lines ± 20 lines of context.
 3. Limit to 5 most relevant snippets.
-4. Skip snippets from third-party packages (filter by well-known namespace prefixes).
+4. Skip snippets from framework/library internals using language-aware prefix filtering:
+   - .NET: `System.*`, `Microsoft.*`, `Azure.*`
+   - Python: `site-packages/`, standard library paths
+   - Node.js: `node_modules/`
+   - Java: `java.*`, `javax.*`, `org.springframework.*`
 
 **No LLM call required for this agent.**
 

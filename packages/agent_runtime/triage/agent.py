@@ -35,7 +35,8 @@ def make_triage_node(
         log.info("triage_start", exception_type=exception_type)
 
         prompt_version: str | None = None
-        rule_match = apply_rules(exception_type)
+        language: str = state.get("exception_language") or "unknown"
+        rule_match = apply_rules(exception_type, language=language)
 
         with agent_trace_ctx(AGENT_NAME, state) as ctx:
             if rule_match.matched:

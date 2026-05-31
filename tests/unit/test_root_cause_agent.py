@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -10,6 +11,27 @@ from langchain_core.messages import AIMessage
 
 from packages.agent_runtime.root_cause.agent import AGENT_NAME, PROMPT_VERSION, make_root_cause_node
 from packages.domain.models.agent_state import IncidentState
+
+
+def _mock_ado(
+    commits: list[dict] | None = None,
+    dep_content: str | None = "requests==2.31.0",
+) -> MagicMock:
+    client = MagicMock()
+    client.get_recent_commits = AsyncMock(
+        return_value=commits
+        or [
+            {
+                "commit_sha": "abc123",
+                "message": "Fix null check",
+                "author": "dev",
+                "date": "2026-05-01",
+            }
+        ]
+    )
+    client.get_file_content = AsyncMock(return_value=dep_content)
+    return client
+
 
 _RC_VALID = json.dumps(
     {
@@ -210,3 +232,73 @@ class TestRootCauseNodeStateIntegration:
         node = make_root_cause_node(llm)
         result = await node(_make_state(stack_trace=""))
         assert result["root_cause_summary"] != ""
+
+
+class TestRootCauseGap3CommitsAndDeps:
+    """Gap 3 — recent commits and dependency context fetched from ADO."""
+
+    @pytest.mark.asyncio
+    async def test_no_ado_client_returns_empty_commits(self) -> None:
+        node = make_root_cause_node(_make_llm(_RC_VALID))
+        result = await node(_make_state())
+        assert result.get("recent_commits") == []
+        assert result.get("dependency_context") is None
+
+    @pytest.mark.asyncio
+    async def test_ado_commits_stored_in_state(self) -> None:
+        node = make_root_cause_node(_make_llm(_RC_VALID), ado_client=_mock_ado())
+        result = await node(_make_state())
+        commits = result.get("recent_commits", [])
+        assert len(commits) > 0
+        assert commits[0]["commit_sha"] == "abc123"
+        assert "file_path" in commits[0]
+
+    @pytest.mark.asyncio
+    async def test_dependency_context_stored_in_state(self) -> None:
+        node = make_root_cause_node(
+            _make_llm(_RC_VALID), ado_client=_mock_ado(dep_content="flask==3.0.0")
+        )
+        result = await node(_make_state())
+        assert "flask" in str(result.get("dependency_context"))
+
+    @pytest.mark.asyncio
+    async def test_ado_failure_does_not_break_pipeline(self) -> None:
+        ado = MagicMock()
+        ado.get_recent_commits = AsyncMock(side_effect=RuntimeError("ADO down"))
+        ado.get_file_content = AsyncMock(side_effect=RuntimeError("ADO down"))
+        node = make_root_cause_node(_make_llm(_RC_VALID), ado_client=ado)
+        result = await node(_make_state())
+        assert result["root_cause_summary"]
+        assert result.get("recent_commits") == []
+
+    @pytest.mark.asyncio
+    async def test_commits_included_in_llm_prompt(self) -> None:
+        captured: list = []
+
+        async def capture(messages: list) -> SimpleNamespace:
+            captured.extend(messages)
+            return SimpleNamespace(content=_RC_VALID)
+
+        llm = MagicMock()
+        llm.ainvoke = capture
+        ado = _mock_ado(
+            commits=[
+                {
+                    "commit_sha": "feed1234",
+                    "message": "Hotfix",
+                    "author": "dev",
+                    "date": "2026-05-01",
+                }
+            ]
+        )
+        node = make_root_cause_node(llm, ado_client=ado)
+        await node(_make_state())
+        human_content = captured[1].content
+        assert "recent_commits" in human_content
+        assert "feed1234" in human_content
+
+    @pytest.mark.asyncio
+    async def test_no_dep_files_found_gives_none_context(self) -> None:
+        node = make_root_cause_node(_make_llm(_RC_VALID), ado_client=_mock_ado(dep_content=None))
+        result = await node(_make_state())
+        assert result.get("dependency_context") is None

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, cast
 from uuid import uuid4
 
 import structlog
@@ -10,6 +10,7 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from packages.agent_runtime.language_detector import detect_language
 from packages.agent_runtime.pipeline import build_pipeline
 from packages.config.settings import Settings, get_settings
 from packages.data_access.models.analysis_orm import AnalysisOrm
@@ -74,6 +75,7 @@ class AgentPipelineRunner:
             analysis = orm.analyses[0] if orm.analyses else None
             work_item = orm.work_items[0] if orm.work_items else None
 
+            lang = detect_language(incident.exception_type, incident.stack_trace or "")
             initial_state: IncidentState = {
                 "incident_id": str(incident.id),
                 "correlation_id": str(incident.correlation_id),
@@ -81,6 +83,7 @@ class AgentPipelineRunner:
                 "exception_message": incident.exception_message,
                 "stack_trace": incident.stack_trace or "",
                 "raw_payload": dict(incident.raw_payload),
+                "exception_language": lang,
                 "agent_trace": list(analysis.agent_trace)
                 if (analysis and analysis.agent_trace)
                 else [],
@@ -109,17 +112,17 @@ class AgentPipelineRunner:
             ensure_valid_provider_config(self._settings)
             llm = create_chat_model(self._settings)
 
-            pr_node = make_pr_agent_node(llm=llm, settings=self._settings)
+            pr_node = make_pr_agent_node(settings=self._settings)
             val_node = make_validation_agent_node(llm=llm, settings=self._settings)
 
             orig_trace_len = len(initial_state["agent_trace"])
 
             # Invoke nodes
             pr_res = await pr_node(initial_state)
-            initial_state.update(pr_res)
+            initial_state.update(cast(IncidentState, pr_res))
 
             val_res = await val_node(initial_state)
-            initial_state.update(val_res)
+            initial_state.update(cast(IncidentState, val_res))
 
             final_state = initial_state
 
@@ -177,19 +180,22 @@ class AgentPipelineRunner:
                 .values(status=IncidentStatus.TRIAGING.value)
             )
 
-            initial_state: IncidentState = {
-                "incident_id": str(incident.id),
-                "correlation_id": str(incident.correlation_id),
-                "exception_type": incident.exception_type,
-                "exception_message": incident.exception_message,
-                "stack_trace": incident.stack_trace or "",
-                "raw_payload": dict(incident.raw_payload),
-                "agent_trace": [],
-                "errors": [],
-                "triage_labels": [],
-            }
+            initial_state = IncidentState(
+                incident_id=str(incident.id),
+                correlation_id=str(incident.correlation_id),
+                exception_type=incident.exception_type,
+                exception_message=incident.exception_message,
+                stack_trace=incident.stack_trace or "",
+                raw_payload=dict(incident.raw_payload),
+                exception_language=detect_language(
+                    incident.exception_type, incident.stack_trace or ""
+                ),
+                agent_trace=[],
+                errors=[],
+                triage_labels=[],
+            )
 
-            final_state: IncidentState = await self._pipeline.ainvoke(initial_state)
+            final_state = cast(IncidentState, await self._pipeline.ainvoke(initial_state))
 
             await self._persist_agent_trace(final_state, incident)
             await self._update_incident(final_state, incident)

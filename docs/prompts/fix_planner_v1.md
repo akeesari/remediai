@@ -4,6 +4,8 @@
 
 Generate ranked remediation recommendations from root cause, code snippets, and retrieval context.
 
+This prompt is **language-agnostic**. Recommendations must be appropriate for the language of the affected code. Detect the language from the file extension, exception type, or stack trace format, and tailor suggested changes accordingly (.NET/C#, Python, Node.js/TypeScript, Java, or other).
+
 ## Required Input
 
 - incident_id: string
@@ -24,7 +26,7 @@ Return JSON only with this shape:
       "title": "Add null guard for repository response",
       "description": "Return 404 or domain error when user record is missing before dereference.",
       "affected_files": ["src/services/user_service.cs"],
-      "suggested_change": "Add null check before mapping user entity.",
+      "suggested_change": "Add null check before mapping user entity. (For Python: add `if user is None: raise ValueError`. For Node.js: add `if (!user) throw new Error(...)`. For Java: add null guard or use `Optional<User>`.)",
       "confidence": 0.88,
       "source_refs": ["runbook:user-null-pattern", "code:UserService.GetById"]
     }

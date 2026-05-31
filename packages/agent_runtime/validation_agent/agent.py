@@ -14,6 +14,7 @@ from packages.agent_runtime.prompt_registry import get_registry
 from packages.agent_runtime.utils import parse_llm_json_response
 from packages.agent_runtime.validation_agent.models import ValidationCheck, ValidationReport
 from packages.agent_runtime.validation_agent.static_checks import has_fail_checks, run_static_checks
+from packages.agent_runtime.validation_agent.syntax_checks import run_syntax_checks
 from packages.domain.models.agent_state import IncidentState
 from packages.domain.models.audit import AgentTraceEntry
 from packages.integrations.pii_scrubber import scrub
@@ -75,7 +76,13 @@ def make_validation_agent_node(
         try:
             pr_id = _extract_pr_id(str(pr_url))
             diff_text = await reader.get_pr_diff(pr_id)
-            checks = run_static_checks(diff_text)
+            language: str = state.get("exception_language") or "unknown"
+            code_fix: dict[str, Any] = state.get("code_fix_result") or {}
+            patched_content: str = str(code_fix.get("patched_content", ""))
+
+            static = run_static_checks(diff_text, language=language)
+            syntax = run_syntax_checks(patched_content, language=language)
+            checks = static + syntax
 
             if has_fail_checks(checks):
                 report = ValidationReport(

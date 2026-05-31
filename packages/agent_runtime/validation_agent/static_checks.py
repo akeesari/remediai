@@ -18,14 +18,41 @@ _SECRET_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
 ]
 
 
-def run_static_checks(diff_text: str) -> list[ValidationCheck]:
+_TEST_FILE_PATTERNS: dict[str, re.Pattern[str]] = {
+    "dotnet": re.compile(r"(?i)test[s]?\.(cs|vb|fs)$"),
+    "python": re.compile(r"(?i)(test_.*|.*_test)\.(py)$"),
+    "nodejs": re.compile(r"(?i)(test[s]?|spec)\.(js|ts|jsx|tsx)$"),
+    "java": re.compile(r"(?i)test[s]?\.(java)$"),
+    "unknown": re.compile(r"(?i)test"),
+}
+
+_BUILD_FILE_SUFFIXES: dict[str, tuple[str, ...]] = {
+    "dotnet": (".csproj", ".vbproj", ".fsproj", ".sln", ".targets", ".props"),
+    "python": ("setup.py", "pyproject.toml", "setup.cfg", "requirements.txt"),
+    "nodejs": ("package.json", "package-lock.json", "yarn.lock", "tsconfig.json"),
+    "java": ("pom.xml", "build.gradle", "build.gradle.kts", "settings.gradle"),
+    "unknown": (".csproj", ".sln", "pom.xml", "package.json", "pyproject.toml"),
+}
+
+
+_IMPORT_PATTERNS: dict[str, re.Pattern[str]] = {
+    "dotnet": re.compile(r"^\+\s*using\s+\w"),
+    "python": re.compile(r"^\+\s*(import\s+\w|from\s+\w+\s+import)"),
+    "nodejs": re.compile(r"""^\+\s*(import\s+|require\s*\()"""),
+    "java": re.compile(r"^\+\s*import\s+[\w.]+;"),
+    "unknown": re.compile(r"^\+\s*(import|require|using)\s+"),
+}
+
+
+def run_static_checks(diff_text: str, language: str = "unknown") -> list[ValidationCheck]:
     checks: list[ValidationCheck] = []
     checks.append(_check_no_secrets(diff_text))
     checks.append(_check_diff_size(diff_text))
     checks.append(_check_no_new_todos(diff_text))
     checks.append(_check_single_file_scope(diff_text))
-    checks.append(_check_no_test_deletion(diff_text))
-    checks.append(_check_no_build_file_change(diff_text))
+    checks.append(_check_no_test_deletion(diff_text, language))
+    checks.append(_check_no_build_file_change(diff_text, language))
+    checks.append(_check_no_new_imports(diff_text, language))
     return checks
 
 
@@ -128,17 +155,17 @@ def _check_single_file_scope(diff_text: str) -> ValidationCheck:
     )
 
 
-def _check_no_test_deletion(diff_text: str) -> ValidationCheck:
+def _check_no_test_deletion(diff_text: str, language: str = "unknown") -> ValidationCheck:
+    pattern = _TEST_FILE_PATTERNS.get(language, _TEST_FILE_PATTERNS["unknown"])
     current_path = ""
     deleted_lines = 0
-    test_path_pattern = re.compile(r"(?i)test[s]?\.cs$")
 
     for line in diff_text.splitlines():
         if line.startswith("diff --git "):
             parts = line.split()
             current_path = parts[2][2:] if len(parts) >= 3 and parts[2].startswith("a/") else ""
             continue
-        if not test_path_pattern.search(current_path):
+        if not pattern.search(current_path):
             continue
         if line.startswith("-") and not line.startswith("---"):
             deleted_lines += 1
@@ -156,9 +183,14 @@ def _check_no_test_deletion(diff_text: str) -> ValidationCheck:
     )
 
 
-def _check_no_build_file_change(diff_text: str) -> ValidationCheck:
+def _check_no_build_file_change(diff_text: str, language: str = "unknown") -> ValidationCheck:
+    suffixes = _BUILD_FILE_SUFFIXES.get(language, _BUILD_FILE_SUFFIXES["unknown"])
     files = _diff_file_paths(diff_text)
-    build_files = [path for path in files if path.endswith(".csproj") or path.endswith(".sln")]
+    build_files = [
+        path
+        for path in files
+        if any(path.endswith(suffix) or path.split("/")[-1] == suffix for suffix in suffixes)
+    ]
     if build_files:
         return ValidationCheck(
             check_name="no_build_file_change",
@@ -169,4 +201,29 @@ def _check_no_build_file_change(diff_text: str) -> ValidationCheck:
         check_name="no_build_file_change",
         status="pass",
         detail="No build project files modified.",
+    )
+
+
+def _check_no_new_imports(diff_text: str, language: str = "unknown") -> ValidationCheck:
+    """Warn when the diff introduces new import/using/require statements.
+
+    New imports may indicate a new external dependency that needs review.
+    """
+    pattern = _IMPORT_PATTERNS.get(language, _IMPORT_PATTERNS["unknown"])
+    new_imports = [
+        line
+        for line in diff_text.splitlines()
+        if not line.startswith("+++") and pattern.match(line)
+    ]
+    if new_imports:
+        count = len(new_imports)
+        return ValidationCheck(
+            check_name="no_new_imports",
+            status="warn",
+            detail=f"{count} new import statement(s) introduced — verify no unintended dependency added.",
+        )
+    return ValidationCheck(
+        check_name="no_new_imports",
+        status="pass",
+        detail="No new import statements introduced.",
     )

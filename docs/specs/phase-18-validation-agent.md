@@ -3,9 +3,23 @@
 ## Goal
 
 After the PR Agent creates a draft PR, the Validation Agent fetches the diff,
-runs static safety checks, and calls the LLM to assess correctness and risk.
-The validation report is attached to the PR description and stored in the
-incident record so the human reviewer has a structured risk summary.
+runs static and syntactic safety checks, and calls the LLM to assess correctness
+and risk. The validation report is attached to the PR description and stored in
+the incident record so the human reviewer has a structured risk summary.
+
+### Phase 18 Update (Gap 2 — Real Static Analysis)
+
+Phase 35 introduced the `code_fix_result` field in `IncidentState` which contains
+`patched_content` — the complete patched file produced by the Code Fix Agent.
+This update uses that content to run **language-aware syntax validation** and
+**import analysis** without LLM involvement or shell execution:
+
+- **Python**: `ast.parse()` — real syntax check, not a heuristic
+- **All languages**: bracket/brace balance validation
+- **All languages**: new external import detection in the diff
+
+These checks run before the LLM call and can block the PR independently of LLM
+confidence.
 
 ---
 
@@ -22,13 +36,15 @@ node.  It runs after the PR Agent sets `pr_url` and `pr_branch` in state.
 |---|---|
 | `packages/agent_runtime/validation_agent/agent.py` | `make_validation_agent_node(ado_client, llm)` factory |
 | `packages/agent_runtime/validation_agent/models.py` | `ValidationReport`, `ValidationCheck` Pydantic models |
-| `packages/agent_runtime/validation_agent/static_checks.py` | Static diff safety checks (no secrets, diff size, syntax) |
+| `packages/agent_runtime/validation_agent/static_checks.py` | Static diff safety checks + language-aware build/test file detection (Phase 36) |
+| `packages/agent_runtime/validation_agent/syntax_checks.py` | **New (Gap 2)**: language-aware syntax validation using `ast.parse()` for Python; bracket balance for others |
 | `packages/integrations/ado/pr_reader.py` | `get_pr_diff(repo, pr_id)` — fetches unified diff from ADO REST API |
 | Updated `packages/agent_runtime/pipeline.py` | Wire Validation Agent after PR Agent |
 | Updated `packages/domain/models/agent_state.py` | Add `validation_report` field |
 | `docs/prompts/validation_v1.md` | LLM prompt for diff correctness and risk assessment |
 | `tests/unit/test_validation_agent.py` | Unit tests for node, static checks, and mock LLM |
 | `tests/unit/test_static_checks.py` | Dedicated tests for static checker edge cases |
+| `tests/unit/test_syntax_checks.py` | **New (Gap 2)**: syntax validation tests |
 
 ---
 
@@ -48,12 +64,14 @@ Agent succeeded).  If `pr_url` is `None`, this node is a no-op.
 ```
 1. Guard: if state["pr_url"] is None, return state unchanged.
 2. Fetch the PR diff via pr_reader.get_pr_diff().
-3. Run static checks (see below).
-4. If any static check is FAIL severity, skip LLM and set overall_status = "blocked".
-5. Otherwise, call LLM (validation_v1) with the diff + root_cause_summary.
-6. Parse LLM response into ValidationReport.
-7. Append validation report summary to the PR description via ADO PRs PATCH API.
-8. Write validation_report to state.
+3. Extract patched_content and language from state["code_fix_result"] and state["exception_language"].
+4. Run static checks on the diff (secrets, size, TODOs, scope, test deletion, build files).
+5. Run syntax checks on patched_content (ast.parse for Python; bracket balance for others).
+6. If any check is FAIL severity, skip LLM and set overall_status = "blocked".
+7. Otherwise, call LLM (validation_v1) with the diff + root_cause_summary.
+8. Parse LLM response into ValidationReport.
+9. Append validation report summary to the PR description via ADO PRs PATCH API.
+10. Write validation_report to state.
 ```
 
 ---
@@ -84,17 +102,32 @@ class ValidationReport(BaseModel):
 
 ## Static Checks (`static_checks.py`)
 
+These checks run on the **diff text** — pure string analysis, no external calls.
+
 | Check | Severity | Condition |
 |---|---|---|
 | `no_secrets` | FAIL | Diff contains patterns matching secrets (API keys, connection strings, passwords) |
 | `diff_size` | WARN | Total lines changed > 200 |
 | `diff_size` | FAIL | Total lines changed > 500 |
-| `no_new_todos` | WARN | Diff introduces `// TODO` or `// FIXME` comments |
+| `no_new_todos` | WARN | Diff introduces `TODO` or `FIXME` comments |
 | `single_file` | WARN | More than 3 files changed (unexpected scope) |
-| `no_test_deletion` | FAIL | Any `*Test.cs` or `*Tests.cs` file has deletions |
-| `no_build_file_change` | WARN | `*.csproj` or `*.sln` files modified |
+| `no_test_deletion` | FAIL | Language-appropriate test file has deletions (Phase 36: all languages) |
+| `no_build_file_change` | WARN | Language-appropriate build file modified (Phase 36: all languages) |
+| `no_new_imports` | WARN | Diff introduces new import/using/require statements (possible new dependency) |
 
-Static checks run with no external calls — pure string analysis of the diff.
+## Syntax Checks (`syntax_checks.py`) — Gap 2 Addition
+
+These checks run on the **full patched file content** from `code_fix_result` — not
+the diff. They validate the generated code is syntactically correct before human review.
+
+| Check | Severity | Condition | Method |
+|---|---|---|---|
+| `syntax_valid` | FAIL | Patched file has a syntax error | Python: `ast.parse()`; others: bracket balance |
+| `bracket_balance` | WARN | Patched file has unbalanced `{}`/`[]`/`()` | Pure string counting |
+
+**No shell execution.** `ast.parse()` is a Python standard library call. No subprocess,
+no `dotnet build`, no `tsc`. For non-Python languages the check is heuristic but catches
+the most common code-generation mistakes (mismatched braces).
 
 ---
 
@@ -211,5 +244,6 @@ should record `overall_status` and `risk_level`.
 ## Out of Scope
 
 - Automated PR merge even when validation passes (humans always merge).
-- Syntax compilation (running `dotnet build` inside the agent).
+- Full compilation (`dotnet build`, `tsc --noEmit`, `javac`) — requires shell execution.
+- Running the test suite against the patch — requires a CI environment.
 - Custom check plugin system.

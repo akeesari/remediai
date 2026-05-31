@@ -9,6 +9,7 @@ from apps.api.core.auth import require_auth
 from apps.api.core.config import get_settings
 from apps.api.core.logging import configure_logging, get_logger
 from apps.api.routers.approvals import router as approvals_router
+from apps.api.routers.exceptions import router as exceptions_router
 from apps.api.routers.incidents import router as incidents_router
 from apps.api.routers.integrations import router as integrations_router
 from apps.api.routers.local_logs import router as local_logs_router
@@ -67,6 +68,7 @@ _auth = [Depends(require_auth)]
 
 app.include_router(incidents_router, dependencies=_auth)
 app.include_router(approvals_router, dependencies=_auth)
+app.include_router(exceptions_router, dependencies=_auth)
 app.include_router(metrics_router, dependencies=_auth)
 app.include_router(integrations_router, dependencies=_auth)
 app.include_router(targets_router, dependencies=_auth)

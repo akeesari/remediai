@@ -2,10 +2,10 @@
 
 ## Current Status
 
-**Active development.** Phases 1–21, 30, and 32–34 are complete and committed. The end-to-end
+**Active development.** Phases 1–21, 30, 32–35 are complete and committed. The end-to-end
 flow now includes approval-gated draft PR creation and validation
 (ingestion → triage → root cause → code context → RAG → fix planner → bug
-creation → approval gate → PR agent → validation agent). Work remaining is
+creation → approval gate → **code fix agent** → PR agent → validation agent). Work remaining is
 organised below into milestones and parallel development tracks.
 
 ---
@@ -96,14 +96,14 @@ organised below into milestones and parallel development tracks.
 
 ---
 
-### Milestone 7 — PR Draft Generation (Phases 18–19)
+### Milestone 7 — PR Draft Generation (Phases 18–19, 35)
 
 **Goal:** Approved recommendations can become pull requests — with humans in the loop.
 
 - [x] Human approval gate: dashboard action + approval API endpoint → **Phase 19**
-- [x] PR Agent: branch creation from fix recommendation → **Phase 19**
-- [x] PR Agent: code patch generation and application → **Phase 19**
-- [x] PR Agent: draft PR creation in Azure DevOps → **Phase 19**
+- [x] Code Fix Agent: full-file fetch + LLM code generation from approved recommendation → **Phase 35**
+- [x] PR Agent: branch creation and draft PR creation in Azure DevOps → **Phase 19** (refactored Phase 35)
+- [x] PR Agent: uses pre-generated patch from Code Fix Agent (no LLM call in PR Agent) → **Phase 35**
 - [x] Validation Agent: PR diff review and safety check → **Phase 18**
 - [x] PR URL and status tracked in incident record → **Phase 19**
 
@@ -124,10 +124,11 @@ organised below into milestones and parallel development tracks.
 
 ---
 
-### Milestone 9 — Extended Language Support (Phases 27–29)
+### Milestone 9 — Extended Language Support (Phases 36, 27–29)
 
 **Goal:** Expand beyond .NET. These are post-v1.0 and out of MVP scope.
 
+- [ ] Multi-language foundation: language detection, pluggable rule dispatch, Node.js + Java parsers, language-aware filter + validation → **Phase 36** ← prerequisite for all below
 - [ ] Python application exception support → **Phase 27**
 - [ ] Grafana / Loki log source connector → **Phase 27**
 - [ ] Node.js exception support → **Phase 28**

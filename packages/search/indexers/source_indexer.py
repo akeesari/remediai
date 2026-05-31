@@ -32,12 +32,17 @@ def _strip_comments(source: str) -> str:
 async def index_source_files(
     client: ReposClientProtocol,
     path_prefix: str = "src/",
+    extension: str = ".cs",
 ) -> list[SearchDocument]:
-    """Fetch C# source files from ADO Repos and return indexable documents."""
+    """Fetch source files from ADO Repos and return indexable documents.
+
+    *extension* defaults to ``.cs`` for backward compatibility.  Pass a different
+    extension (e.g. ``.py``, ``.ts``, ``.java``) to index other languages.
+    """
     documents: list[SearchDocument] = []
     log = logger.bind(indexer="source", repo=client.repository, prefix=path_prefix)
 
-    file_paths = await client.list_files(path_prefix=path_prefix, extension=".cs")
+    file_paths = await client.list_files(path_prefix=path_prefix, extension=extension)
     log.info("source_index_start", file_count=len(file_paths))
 
     for file_path in file_paths:

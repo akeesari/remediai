@@ -146,19 +146,26 @@ preserved).
 
 ## PR Agent Logic
 
+> **Phase 35 update:** The PR Agent no longer calls the LLM.  Code generation
+> is performed by the Code Fix Agent which runs before the PR Agent and stores
+> `code_fix_result` in `IncidentState`.  The PR Agent reads that result and
+> focuses solely on Git operations.
+
 ```
-1. Validate: recommendations non-empty; approved_recommendation_rank set.
-2. Select the approved recommendation from state["recommendations"].
-3. Call LLM (pr_patch_v1) to refine suggested_change into a unified diff.
-   PII scrub: scrub(recommendation.suggested_change) before json.dumps.
-4. Create branch: remedia/{incident_id[:8]}/{recommendation.rank}
-5. Apply patch via ADO Repos push API.
-6. Create draft PR:
+1. Validate: approval_status == "approved"; approved_recommendation_rank set.
+2. Read code_fix_result from state (set by Code Fix Agent, Phase 35).
+3. Create branch: remedia/{incident_id[:8]}/{recommendation.rank}
+4. If code_fix_result.patch_applied:
+     Push full patched file content to branch via ADO Repos push API.
+   Else:
+     Skip push; PR description will include manual-review note.
+5. Create draft PR:
    - Title:       [RemediAI] {recommendation.title}
-   - Description: root_cause_summary + recommendation.description + disclaimer
+   - Description: root_cause_summary + recommendation.description
+                  + change_summary from code_fix_result + disclaimer
    - Draft:       true
    - Auto-complete: never set
-7. Write pr_branch and pr_url to state and to WorkItemOrm in PostgreSQL.
+6. Write pr_branch and pr_url to state and to WorkItemOrm in PostgreSQL.
 ```
 
 ---

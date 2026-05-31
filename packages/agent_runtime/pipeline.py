@@ -8,6 +8,7 @@ from langgraph.graph import END, StateGraph
 
 from packages.agent_runtime.bug_creator.agent import ADOBoardsClientProtocol, make_bug_creator_node
 from packages.agent_runtime.code_context.agent import ADOClientProtocol, make_code_context_node
+from packages.agent_runtime.code_fix.agent import make_code_fix_node
 from packages.agent_runtime.fix_planner.agent import make_fix_planner_node
 from packages.agent_runtime.pr_agent.agent import ADOReposWriterProtocol, make_pr_agent_node
 from packages.agent_runtime.rag.agent import SearchClientProtocol, make_rag_node
@@ -23,8 +24,8 @@ logger = structlog.get_logger()
 
 
 def _pr_routing(state: IncidentState) -> str:
-    """Route to pr_agent only when the incident has been explicitly approved."""
-    return "pr_agent" if state.get("approval_status") == "approved" else END
+    """Route to code_fix_agent (then pr_agent) only when explicitly approved."""
+    return "code_fix_agent" if state.get("approval_status") == "approved" else END
 
 
 def build_pipeline(
@@ -58,7 +59,10 @@ def build_pipeline(
 
     graph: StateGraph = StateGraph(IncidentState)
     graph.add_node("triage", make_triage_node(llm=llm))
-    graph.add_node("root_cause", make_root_cause_node(llm=llm))
+    graph.add_node(
+        "root_cause",
+        make_root_cause_node(llm=llm, ado_client=ado_client, settings=settings),
+    )
     graph.add_node(
         "code_context",
         make_code_context_node(ado_client=ado_client, settings=settings),
@@ -70,8 +74,12 @@ def build_pipeline(
         make_bug_creator_node(boards_client=boards_client, settings=settings),
     )
     graph.add_node(
+        "code_fix_agent",
+        make_code_fix_node(llm=llm, ado_client=ado_client, settings=settings),
+    )
+    graph.add_node(
         "pr_agent",
-        make_pr_agent_node(llm=llm, ado_writer=ado_writer, settings=settings),
+        make_pr_agent_node(ado_writer=ado_writer, settings=settings),
     )
     graph.add_node(
         "validation_agent",
@@ -84,7 +92,10 @@ def build_pipeline(
     graph.add_edge("code_context", "rag")
     graph.add_edge("rag", "fix_planner")
     graph.add_edge("fix_planner", "bug_creator")
-    graph.add_conditional_edges("bug_creator", _pr_routing, {"pr_agent": "pr_agent", END: END})
+    graph.add_conditional_edges(
+        "bug_creator", _pr_routing, {"code_fix_agent": "code_fix_agent", END: END}
+    )
+    graph.add_edge("code_fix_agent", "pr_agent")
     graph.add_edge("pr_agent", "validation_agent")
     graph.add_edge("validation_agent", END)
 

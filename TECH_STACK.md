@@ -9,14 +9,14 @@
 | Agent Orchestration | LangGraph                               | Stateful, graph-based agent workflows; native LangChain compat |
 | AI Platform         | Azure AI Foundry / Azure OpenAI GPT-4.1 (default) + portable adapters | Azure-optimized by default while preserving cloud-agnostic deployment profiles |
 | RAG                 | Azure AI Search (hybrid)                | Integrated vector + keyword search; Azure-native               |
-| Log Source          | Application Insights / Azure Monitor KQL| Target platform for MVP                                        |
+| Log Source          | Application Insights / Azure Monitor KQL (MVP) · Grafana Loki (Phase 27) · Webhook / OpenTelemetry (Phase 38+) | MVP targets Azure Monitor; architecture supports pluggable ingestion sources |
 | Work Queue          | PostgreSQL `incidents.status` column    | No broker required; ACID guarantees prevent double-processing  |
 | Database            | PostgreSQL 16 on AKS                    | Reliable relational store kept on the cluster network          |
 | Cache               | Redis 7 on AKS                          | API response caching and deduplication without an external cache tier |
 | Target Registry     | PostgreSQL `monitor_targets`            | Persisted allowlist for local container and Kubernetes target selection |
 | Storage             | Azure Blob Storage                      | Evidence bundles, prompt files, large agent artifacts          |
-| Source Control      | Azure DevOps Repos (Git)                | MVP target; code context and PR creation                       |
-| Work Items          | Azure DevOps Boards                     | Bug creation and work item tracking                            |
+| Source Control      | Azure DevOps Repos (MVP) · GitHub (Phase 38) | Abstracted via `SourceControlAdapter`; provider selected per repository |
+| Work Items          | Azure DevOps Boards (MVP) · Jira (Phase 29) | Abstracted via `TicketProvider`; provider selected per project |
 | UI Framework        | React 18 + TypeScript                   | Component ecosystem; type safety                               |
 | UI Build            | Vite                                    | Fast dev server; ESM-native                                    |
 | UI State            | React Query (TanStack Query)            | Server state management; cache + refetch                       |

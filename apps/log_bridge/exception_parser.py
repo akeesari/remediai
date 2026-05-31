@@ -13,6 +13,7 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import dataclass, field
+from typing import Any
 
 # Matches: "System.InvalidOperationException: message" or "NullReferenceException: message"
 _DOTNET_EXCEPTION_START = re.compile(r"([\w\.]+?(?:Exception|Error|Fault|Failure|Exit)):\s*(.+)$")
@@ -36,21 +37,26 @@ _MAX_TRACEBACK_LINES = 60
 # We try each in order; the first non-empty value wins.
 _JSON_MESSAGE_FIELDS = (
     # Serilog / .NET JSON formatter
-    "RenderedMessage", "MessageTemplate", "message", "msg",
+    "RenderedMessage",
+    "MessageTemplate",
+    "message",
+    "msg",
     # Winston (Node)
     "message",
     # Python structlog / python-json-logger
-    "event", "message",
+    "event",
+    "message",
     # Azure Application Insights / Monitor
-    "body", "formattedMessage",
+    "body",
+    "formattedMessage",
 )
 _JSON_EXCEPTION_FIELDS = (
     # Serilog
     "Exception",
     # Python structlog
-    "exception", "exc_info",
+    "exception",
+    "exc_info",
 )
-
 
 
 @dataclass
@@ -181,7 +187,7 @@ def _extract_from_json(raw_line: str) -> str:
     if not (stripped.startswith("{") and stripped.endswith("}")):
         return raw_line
     try:
-        obj: dict = json.loads(stripped)
+        obj: dict[str, Any] = json.loads(stripped)
     except (json.JSONDecodeError, ValueError):
         return raw_line
 
@@ -189,13 +195,12 @@ def _extract_from_json(raw_line: str) -> str:
     for key in _JSON_EXCEPTION_FIELDS:
         val = obj.get(key)
         if val and isinstance(val, str) and val.strip():
-            return val.strip()
+            return str(val).strip()
 
     # 2. Fall back to the human-readable message field
     for key in _JSON_MESSAGE_FIELDS:
         val = obj.get(key)
         if val and isinstance(val, str) and val.strip():
-            return val.strip()
+            return str(val).strip()
 
     return raw_line
-

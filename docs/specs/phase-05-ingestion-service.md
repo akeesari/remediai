@@ -90,6 +90,74 @@ poetry run python -m apps.worker.main
 
 ---
 
+## Gap 4 Enhancement — Webhook + Manual Upload Endpoints
+
+### Problem
+
+The ingestion service only pulls exceptions from Azure Monitor on a schedule. Any application
+that is not instrumented with Application Insights (Python apps, local services, non-Azure
+workloads) cannot feed exceptions into RemediAI.
+
+### Solution
+
+Add two new API endpoints that accept exceptions from any source:
+
+| Endpoint | Purpose |
+|---|---|
+| `POST /api/v1/exceptions/ingest` | Webhook intake — applications POST exceptions directly (CI hooks, error handlers, agents) |
+| `POST /api/v1/exceptions/upload` | Manual upload — developers paste a stack trace from any environment |
+
+Both endpoints:
+- Accept `exception_type`, `exception_message`, `stack_trace`, `source`, `application_name`
+- Fingerprint and deduplicate against existing incidents (same logic as Azure Monitor ingestion)
+- Persist as a new `Incident` with `status=new`
+- Return `{status: "created"|"duplicate", incident_id}`
+- Require auth (same middleware as all other API routes)
+- Write an audit event on every create
+
+### New Files
+
+| Path | Purpose |
+|---|---|
+| `apps/api/routers/exceptions.py` | New router — `POST /api/v1/exceptions/ingest` and `/upload` |
+| `apps/api/schemas/exception_intake.py` | `ExceptionIngestPayload`, `ExceptionUploadPayload`, `ExceptionIntakeResponse` |
+
+### Modified Files
+
+| Path | Change |
+|---|---|
+| `apps/api/main.py` | Register new exceptions router (always registered — not local-mode only) |
+
+### Payload Schemas
+
+**`POST /api/v1/exceptions/ingest`** — designed for programmatic callers:
+```json
+{
+  "exception_type": "NullReferenceException",
+  "exception_message": "Object reference not set.",
+  "stack_trace": "   at MyApp.Service.Run() in src/Service.cs:line 42",
+  "source": "payment-api",
+  "application_name": "payment-api",
+  "environment": "production",
+  "language": "dotnet"
+}
+```
+
+**`POST /api/v1/exceptions/upload`** — identical schema, separate endpoint for UI/manual use.
+
+### Response
+```json
+{ "status": "created", "incident_id": "uuid" }
+{ "status": "duplicate", "incident_id": null }
+```
+
+### Security Touchpoints
+- Auth required on both endpoints (same `require_auth()` as all other routes).
+- `exception_message` and `stack_trace` are PII-scrubbed before the LLM call (existing pipeline behaviour — no additional scrubbing needed at intake).
+- No shell execution or file system access.
+
+---
+
 ## Acceptance Criteria
 
 - [ ] `pytest tests/integration/test_ingestion_scheduler.py -v` — all pass

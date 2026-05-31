@@ -1,8 +1,7 @@
-"""Unit tests for the Phase 19 PR agent."""
+"""Unit tests for the Phase 19 PR agent (refactored Phase 35: no LLM, reads code_fix_result)."""
 
 from __future__ import annotations
 
-import json
 from types import SimpleNamespace
 from typing import Any
 
@@ -11,13 +10,17 @@ import pytest
 from packages.agent_runtime.pr_agent.agent import make_pr_agent_node
 from packages.domain.models.agent_state import IncidentState
 
+_ORIGINAL = "public class PaymentService {\n  public void Run() {\n    var x = gateway.Get();\n    Console.WriteLine(x.Value);\n  }\n}\n"
+_PATCHED = "public class PaymentService {\n  public void Run() {\n    var x = gateway.Get();\n    if (x == null) return;\n    Console.WriteLine(x.Value);\n  }\n}\n"
 
-class _FakeLLM:
-    def __init__(self, payload: dict[str, Any]) -> None:
-        self._payload = payload
-
-    async def ainvoke(self, _: object) -> Any:
-        return SimpleNamespace(content=json.dumps(self._payload))
+_CODE_FIX_RESULT = {
+    "file_path": "src/PaymentService.cs",
+    "original_content": _ORIGINAL,
+    "patched_content": _PATCHED,
+    "change_summary": "Added null guard before accessing x.Value.",
+    "confidence": 0.9,
+    "patch_applied": True,
+}
 
 
 class _FakeWriter:
@@ -82,12 +85,8 @@ def _base_state() -> IncidentState:
                 "suggested_change": "Add a null guard around gateway response usage.",
             }
         ],
-        "code_snippets": [
-            {
-                "file_path": "src/PaymentService.cs",
-                "content": "public class PaymentService {\n  public void Run() {\n    var x = gateway.Get();\n    Console.WriteLine(x.Value);\n  }\n}\n",
-            }
-        ],
+        "code_snippets": [],
+        "code_fix_result": _CODE_FIX_RESULT,
         "agent_trace": [],
         "errors": [],
     }
@@ -95,14 +94,8 @@ def _base_state() -> IncidentState:
 
 @pytest.mark.asyncio
 async def test_approved_incident_creates_branch() -> None:
-    llm = _FakeLLM(
-        {
-            "patched_content": "public class PaymentService {\n  public void Run() {\n    var x = gateway.Get();\n    if (x == null) return;\n    Console.WriteLine(x.Value);\n  }\n}\n",
-            "files_changed": ["src/PaymentService.cs"],
-        }
-    )
     writer = _FakeWriter()
-    node = make_pr_agent_node(llm=llm, ado_writer=writer)
+    node = make_pr_agent_node(ado_writer=writer)
 
     await node(_base_state())
 
@@ -112,14 +105,8 @@ async def test_approved_incident_creates_branch() -> None:
 
 @pytest.mark.asyncio
 async def test_approved_incident_creates_draft_pr() -> None:
-    llm = _FakeLLM(
-        {
-            "patched_content": "public class PaymentService {\n  public void Run() {\n    var x = gateway.Get();\n    if (x == null) return;\n    Console.WriteLine(x.Value);\n  }\n}\n",
-            "files_changed": ["src/PaymentService.cs"],
-        }
-    )
     writer = _FakeWriter()
-    node = make_pr_agent_node(llm=llm, ado_writer=writer)
+    node = make_pr_agent_node(ado_writer=writer)
 
     await node(_base_state())
 
@@ -129,14 +116,8 @@ async def test_approved_incident_creates_draft_pr() -> None:
 
 @pytest.mark.asyncio
 async def test_pr_url_written_to_state() -> None:
-    llm = _FakeLLM(
-        {
-            "patched_content": "public class PaymentService {\n  public void Run() {\n    var x = gateway.Get();\n    if (x == null) return;\n    Console.WriteLine(x.Value);\n  }\n}\n",
-            "files_changed": ["src/PaymentService.cs"],
-        }
-    )
     writer = _FakeWriter()
-    node = make_pr_agent_node(llm=llm, ado_writer=writer)
+    node = make_pr_agent_node(ado_writer=writer)
 
     result = await node(_base_state())
 
@@ -145,14 +126,8 @@ async def test_pr_url_written_to_state() -> None:
 
 @pytest.mark.asyncio
 async def test_unapproved_incident_skips_pr() -> None:
-    llm = _FakeLLM(
-        {
-            "patched_content": "unchanged",
-            "files_changed": ["src/PaymentService.cs"],
-        }
-    )
     writer = _FakeWriter()
-    node = make_pr_agent_node(llm=llm, ado_writer=writer)
+    node = make_pr_agent_node(ado_writer=writer)
 
     state = _base_state()
     state["approval_status"] = "rejected"
@@ -167,17 +142,18 @@ async def test_unapproved_incident_skips_pr() -> None:
 async def test_patch_too_large_sets_error() -> None:
     original = "\n".join(f"line {i}" for i in range(700)) + "\n"
     patched = "\n".join(f"changed {i}" for i in range(700)) + "\n"
-    llm = _FakeLLM(
-        {
-            "patched_content": patched,
-            "files_changed": ["src/PaymentService.cs"],
-        }
-    )
     writer = _FakeWriter()
-    node = make_pr_agent_node(llm=llm, ado_writer=writer)
+    node = make_pr_agent_node(ado_writer=writer)
 
     state = _base_state()
-    state["code_snippets"] = [{"file_path": "src/PaymentService.cs", "content": original}]
+    state["code_fix_result"] = {
+        "file_path": "src/PaymentService.cs",
+        "original_content": original,
+        "patched_content": patched,
+        "change_summary": "Large change.",
+        "confidence": 0.8,
+        "patch_applied": True,
+    }
     result = await node(state)
 
     assert any("exceeds the 500-line limit" in e for e in result["errors"])
@@ -187,13 +163,7 @@ async def test_patch_too_large_sets_error() -> None:
 
 @pytest.mark.asyncio
 async def test_missing_scm_writer_skips_cleanly() -> None:
-    llm = _FakeLLM(
-        {
-            "patched_content": "unchanged",
-            "files_changed": ["src/PaymentService.cs"],
-        }
-    )
-    node = make_pr_agent_node(llm=llm, settings=SimpleNamespace(scm_provider_id="none"))
+    node = make_pr_agent_node(settings=SimpleNamespace(scm_provider_id="none"))
 
     result = await node(_base_state())
 

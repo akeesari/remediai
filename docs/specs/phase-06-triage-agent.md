@@ -4,7 +4,9 @@
 
 Implement the first LangGraph agent node in the MVP pipeline: the Triage Agent.
 It classifies incoming incidents by priority and label, using a fast rule-based path for
-known .NET exception types and falling back to GPT-4o when no rule matches. The
+known exception types across all supported languages, falling back to the LLM when no rule matches.
+
+> **Language scope:** Rule table covers .NET (MVP), Python (Phase 27), Node.js (Phase 28), Java (future). The rule engine dispatches to the correct language table based on the detected `exception_type` format. Adding a new language requires only a new rule table — no pipeline changes. The
 LangGraph pipeline scaffold is established here so every subsequent agent just adds a
 new node.
 
@@ -49,8 +51,9 @@ All already declared in `pyproject.toml`:
 
 ### Rule Engine (`rules.py`)
 
-Ordered priority table. The first matching rule wins; rules with higher severity appear
-first so a single exception type does not get downgraded by a later generic rule.
+Ordered priority table per language. The first matching rule wins; rules with higher severity appear first. The engine selects the correct rule table by detecting the exception type format (e.g., `.NET` uses PascalCase class names; Python uses snake_case or dotted module paths; Node.js uses short type names with message patterns; Java uses fully-qualified class names).
+
+#### .NET Rules (MVP)
 
 | Patterns (substring match on `exception_type`) | Labels | Priority |
 |------------------------------------------------|--------|----------|
@@ -67,6 +70,47 @@ first so a single exception type does not get downgraded by a later generic rule
 | KeyNotFoundException | missing-key | medium |
 | ObjectDisposedException | object-disposed | medium |
 | NotImplementedException | not-implemented | low |
+
+#### Python Rules (Phase 27)
+
+| Patterns | Labels | Priority |
+|----------|--------|----------|
+| MemoryError | resource-exhaustion | critical |
+| PermissionError, AuthenticationError, jwt.exceptions | authentication | critical |
+| TimeoutError, asyncio.TimeoutError, concurrent.futures.TimeoutError | timeout | high |
+| sqlalchemy.exc, psycopg2, pymysql, django.db | database | high |
+| ConnectionError, requests.exceptions, httpx | network | high |
+| AttributeError, TypeError (None) | null-reference | high |
+| ValueError, TypeError | argument-validation | medium |
+| FileNotFoundError, IsADirectoryError, IOError | file-system | medium |
+| KeyError | missing-key | medium |
+| NotImplementedError | not-implemented | low |
+
+#### Node.js / JavaScript Rules (Phase 28)
+
+| Patterns (type + message substring) | Labels | Priority |
+|--------------------------------------|--------|----------|
+| RangeError, ENOMEM | resource-exhaustion | critical |
+| JsonWebTokenError, UnauthorizedError | authentication | critical |
+| ETIMEDOUT, ECONNABORTED, AbortError | timeout | high |
+| SequelizeError, MongoError, QueryFailedError | database | high |
+| ECONNREFUSED, ENOTFOUND, FetchError | network | high |
+| TypeError: Cannot read properties of null/undefined | null-reference | high |
+| TypeError, RangeError (validation) | argument-validation | medium |
+| ENOENT, EISDIR | file-system | medium |
+| ReferenceError | missing-key | medium |
+
+#### Java Rules (Future)
+
+| Patterns | Labels | Priority |
+|----------|--------|----------|
+| java.lang.OutOfMemoryError | resource-exhaustion | critical |
+| java.lang.NullPointerException | null-reference | high |
+| java.sql.SQLException, org.hibernate | database | high |
+| java.net.SocketTimeoutException, java.util.concurrent.TimeoutException | timeout | high |
+| java.io.FileNotFoundException, java.io.IOException | file-system | medium |
+| java.lang.IllegalArgumentException | argument-validation | medium |
+| java.lang.UnsupportedOperationException | not-implemented | low |
 
 If no rule matches, `matched=False` and the node falls through to the LLM.
 

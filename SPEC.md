@@ -2,7 +2,9 @@
 
 ## Overview
 
-RemediAI is an AI-powered exception analysis and remediation platform for enterprise .NET applications hosted on Azure. It ingests application exceptions from Azure Monitor / Application Insights, runs an agentic analysis pipeline, creates Azure DevOps Bugs, and (in a later phase) generates pull requests for human review.
+RemediAI is an AI-powered exception analysis and remediation platform for enterprise applications across languages and runtimes. It ingests application exceptions from observability platforms (Azure Monitor / Application Insights for MVP; OpenTelemetry, Loki, and webhooks in later phases), runs an agentic analysis pipeline, creates work items, and generates pull requests for human review.
+
+**Language support:** .NET is the MVP target. Python support is added in Phase 27. Node.js in Phase 28. Java in a future phase. The pipeline, domain model, and agent contracts are language-agnostic by design — language-specific behaviour (stack trace parsing, triage rules, framework prefix filtering) is isolated to pluggable modules.
 
 ## Problem Statement
 
@@ -20,10 +22,16 @@ Engineering teams lose significant time triaging the same recurring exception pa
 
 - Auto-merging pull requests.
 - Direct modification of production systems.
-- Jira or GitHub Issues integration.
-- Node.js, Java, or Python application support.
-- Grafana / Loki / Datadog ingestion.
+- Jira or GitHub Issues integration (Phase 29).
+- Python, Node.js, or Java application support (Phases 27–28; Java future).
+- Grafana / Loki / Datadog ingestion (Phase 27+).
+- GitHub source control (Phase 38).
 - Self-healing without human approval.
+
+> **Clarification:** "not in MVP" means the ingestion connector, stack trace parser,
+> and triage rules for that language are not yet implemented — **not** that the
+> platform is architecturally tied to .NET. All agent logic, domain models, and APIs
+> are language-agnostic.
 
 ---
 
@@ -57,7 +65,7 @@ Engineering teams lose significant time triaging the same recurring exception pa
 
 - Group related exceptions into a single incident where appropriate.
 - Assign priority based on exception frequency, affected service, and error type.
-- Detect known patterns (null reference, timeout, authentication failures) and apply standard triage labels.
+- Detect known patterns (null reference, timeout, authentication failures) and apply standard triage labels across all supported languages.
 
 ### FR-4 — Root Cause Agent
 
@@ -136,7 +144,7 @@ Engineering teams lose significant time triaging the same recurring exception pa
 | id                | UUID      | Primary key                                 |
 | correlation_id    | UUID      | Cross-service trace ID                      |
 | source            | string    | Application name / resource                 |
-| exception_type    | string    | .NET exception class name                   |
+| exception_type    | string    | Exception class name (language-native format) |
 | exception_message | string    | Exception message text                      |
 | stack_trace       | text      | Full stack trace                            |
 | fingerprint       | string    | Deduplication hash                          |
@@ -190,7 +198,7 @@ Engineering teams lose significant time triaging the same recurring exception pa
 
 ## Acceptance Criteria — First Milestone
 
-1. A .NET application exception logged in Application Insights is detected within 5 minutes.
+1. An application exception logged in Application Insights is detected within 5 minutes.
 2. The exception is stored as an incident in PostgreSQL with `new` status.
 3. The LangGraph pipeline transitions the incident to `analyzed` with a root cause summary.
 4. An Azure DevOps Bug is created with incident context and linked to the incident record.

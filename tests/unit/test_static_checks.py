@@ -5,8 +5,8 @@ from __future__ import annotations
 from packages.agent_runtime.validation_agent.static_checks import run_static_checks
 
 
-def _status_map(diff_text: str) -> dict[str, str]:
-    checks = run_static_checks(diff_text)
+def _status_map(diff_text: str, language: str = "dotnet") -> dict[str, str]:
+    checks = run_static_checks(diff_text, language=language)
     return {check.check_name: check.status for check in checks}
 
 
@@ -56,3 +56,21 @@ def test_large_diff_200_500_warns() -> None:
     body = "\n".join(f"+line {i}" for i in range(250))
     statuses = _status_map(body)
     assert statuses["diff_size"] == "warn"
+
+
+def test_new_dotnet_import_warns() -> None:
+    diff = "+using System.Net.Http;\n"
+    statuses = _status_map(diff, language="dotnet")
+    assert statuses["no_new_imports"] == "warn"
+
+
+def test_new_python_import_warns() -> None:
+    diff = "+import requests\n"
+    statuses = _status_map(diff, language="python")
+    assert statuses["no_new_imports"] == "warn"
+
+
+def test_no_new_imports_passes() -> None:
+    diff = " existing_code = 1\n"
+    statuses = _status_map(diff, language="dotnet")
+    assert statuses["no_new_imports"] == "pass"

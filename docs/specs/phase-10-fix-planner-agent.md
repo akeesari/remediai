@@ -62,7 +62,12 @@ class FixPlannerOutput(BaseModel):
 
 ## Pipeline Position
 
-`triage → root_cause → code_context → rag → fix_planner → END`
+`triage → root_cause → code_context → rag → fix_planner → bug_creator`
+
+`suggested_change` in each `Recommendation` is a natural-language description
+of the fix.  It is consumed by the **Code Fix Agent (Phase 35)** which
+translates it into a real code patch using the full file content from the
+repository.  The fix planner does not generate code directly.
 
 ## Files
 

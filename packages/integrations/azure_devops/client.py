@@ -60,6 +60,41 @@ class AzureDevOpsClient:
             logger.warning("ado_request_error", path=file_path, error=str(exc))
             return None
 
+    async def get_recent_commits(self, file_path: str, top: int = 5) -> list[dict[str, str]]:
+        """Return the *top* most recent commits that touched *file_path*.
+
+        Each entry has keys: ``commit_sha``, ``message``, ``author``, ``date``.
+        Returns an empty list on any error.
+        """
+        try:
+            resp = await self._http.get(
+                self._commits_url,
+                params={
+                    "searchCriteria.itemPath": file_path,
+                    "searchCriteria.itemVersion.version": self._branch,
+                    "$top": top,
+                    "api-version": _API_VERSION,
+                },
+            )
+            if resp.status_code == 404:
+                return []
+            resp.raise_for_status()
+            data: dict[str, Any] = resp.json()
+            result: list[dict[str, str]] = []
+            for c in data.get("value", []):
+                result.append(
+                    {
+                        "commit_sha": str(c.get("commitId", ""))[:8],
+                        "message": str(c.get("comment", "")).splitlines()[0][:120],
+                        "author": str(c.get("author", {}).get("name", "unknown")),
+                        "date": str(c.get("author", {}).get("date", "")),
+                    }
+                )
+            return result
+        except (httpx.HTTPError, KeyError) as exc:
+            logger.warning("ado_commits_fetch_failed", path=file_path, error=str(exc))
+            return []
+
     async def get_latest_commit_sha(self) -> str:
         """Return the HEAD commit SHA on the configured branch, or empty string on failure."""
         try:

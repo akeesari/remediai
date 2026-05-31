@@ -1,21 +1,15 @@
 from __future__ import annotations
 
-import json
 import time
 from collections.abc import Awaitable, Callable
 from typing import Any, Protocol
 
 import structlog
-from langchain_core.language_models.chat_models import BaseChatModel
-from langchain_core.messages import HumanMessage, SystemMessage
 
 from packages.agent_runtime.pr_agent.models import PRAgentOutput
 from packages.agent_runtime.pr_agent.patch_builder import PatchTooLargeError, build_patch
-from packages.agent_runtime.prompt_registry import get_registry
-from packages.agent_runtime.utils import parse_llm_json_response
 from packages.domain.models.agent_state import IncidentState
 from packages.domain.models.audit import AgentTraceEntry
-from packages.integrations.pii_scrubber import scrub
 
 logger = structlog.get_logger()
 
@@ -49,11 +43,10 @@ class ADOReposWriterProtocol(Protocol):
 
 
 def make_pr_agent_node(
-    llm: BaseChatModel | None = None,
     ado_writer: ADOReposWriterProtocol | None = None,
     settings: Any = None,
 ) -> Callable[[IncidentState], Awaitable[dict[str, Any]]]:
-    """Return an async LangGraph node that creates a draft PR from an approved recommendation."""
+    """Return an async LangGraph node that creates a draft PR using code_fix_result from state."""
 
     async def pr_agent_node(state: IncidentState) -> dict[str, Any]:
         start_ms = int(time.monotonic() * 1000)
@@ -123,18 +116,16 @@ def make_pr_agent_node(
                 "errors": existing_errors,
             }
 
-        resolved_llm = _resolve_llm(llm, settings)
         error: str | None = None
         output: PRAgentOutput | None = None
 
         try:
-            # Resolve code snippet for the affected file (if fetched in previous step)
-            original_content = _find_snippet_content(state, file_path)
-
-            # Call LLM to refine suggested_change into patched file content
-            patched_content, files_changed = await _call_llm(
-                resolved_llm, recommendation, original_content, file_path
-            )
+            # Read pre-generated patch from code_fix_agent (Phase 35)
+            code_fix: dict[str, Any] = state.get("code_fix_result") or {}
+            original_content = str(code_fix.get("original_content", ""))
+            patched_content = str(code_fix.get("patched_content", ""))
+            files_changed: list[str] = [file_path] if file_path else []
+            change_summary = str(code_fix.get("change_summary", ""))
 
             patch_applied = False
             if original_content and patched_content and patched_content != original_content:
@@ -166,6 +157,7 @@ def make_pr_agent_node(
             description = _build_pr_description(
                 root_cause_summary=root_cause_summary,
                 recommendation=recommendation,
+                change_summary=change_summary,
                 patch_applied=patch_applied,
             )
             pr_data = await writer.create_pull_request(
@@ -228,7 +220,7 @@ def make_pr_agent_node(
 def _resolve_writer(
     ado_writer: ADOReposWriterProtocol | None,
     settings: Any,
-    state: dict | None = None,
+    state: dict[str, Any] | None = None,
 ) -> ADOReposWriterProtocol | None:
     """Return an ADO writer, applying per-incident repository override when available.
 
@@ -256,64 +248,10 @@ def _resolve_writer(
     return ADOReposWriter.from_settings_with_overrides(s, repository=incident_repo)
 
 
-
-def _resolve_llm(llm: BaseChatModel | None, settings: Any) -> BaseChatModel:
-    if llm is not None:
-        return llm
-    from packages.config.settings import get_settings
-    from packages.integrations.providers.registry import (
-        create_chat_model,
-        ensure_valid_provider_config,
-    )
-
-    s = settings or get_settings()
-    ensure_valid_provider_config(s)
-    return create_chat_model(s)
-
-
-def _find_snippet_content(state: IncidentState, file_path: str) -> str:
-    """Return the code snippet content for *file_path* from state, or empty string."""
-    if not file_path:
-        return ""
-    for snippet in state.get("code_snippets", []):
-        if isinstance(snippet, dict) and snippet.get("file_path") == file_path:
-            return str(snippet.get("content", ""))
-    return ""
-
-
-async def _call_llm(
-    llm: BaseChatModel,
-    recommendation: dict[str, Any],
-    original_content: str,
-    file_path: str,
-) -> tuple[str, list[str]]:
-    """Ask the LLM to produce patched file content from the recommendation."""
-    system_prompt = get_registry().load("pr_patch", "1")
-    suggested_change = recommendation.get("suggested_change", "")
-    log = logger.bind(agent=AGENT_NAME)
-    log.debug("pii_scrub_applied", fields_scrubbed=["suggested_change"])
-
-    user_content = json.dumps(
-        {
-            "file_path": file_path,
-            "original_content": original_content[:4000],  # source exempt from scrub per phase-15
-            "suggested_change": scrub(suggested_change),
-        },
-        ensure_ascii=False,
-    )
-
-    messages = [SystemMessage(content=system_prompt), HumanMessage(content=user_content)]
-    response = await llm.ainvoke(messages)
-
-    data = parse_llm_json_response(str(response.content))
-    patched_content = str(data.get("patched_content", original_content))
-    files_changed: list[str] = list(data.get("files_changed", [file_path] if file_path else []))
-    return patched_content, files_changed
-
-
 def _build_pr_description(
     root_cause_summary: str,
     recommendation: dict[str, Any],
+    change_summary: str,
     patch_applied: bool,
 ) -> str:
     parts = [
@@ -324,6 +262,8 @@ def _build_pr_description(
         recommendation.get("description", ""),
         "",
     ]
+    if change_summary:
+        parts += ["## Changes Made", change_summary, ""]
     if not patch_applied:
         parts += [
             "> **Note:** Automatic patch could not be applied cleanly. "

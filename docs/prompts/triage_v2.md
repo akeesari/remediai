@@ -6,6 +6,10 @@ Assign incident priority, labels, affected service, and optional grouping signal
 using exception data.  v2 adds explicit `service_name` extraction from stack
 trace file paths and an `affected_service` output field.
 
+This prompt is **language-agnostic**. It handles .NET, Python, Node.js, Java, and any
+other language. Reason from the exception type and stack trace without assuming a
+specific language unless the evidence clearly indicates one.
+
 ## Required Input
 
 - incident_id: string
@@ -34,7 +38,11 @@ Rules:
 - triage_labels is a non-empty list of lowercase strings
 - group_id is null or UUID string
 - confidence is a float in [0, 1]
-- affected_service is the top-level service inferred from stack trace file paths (e.g., `src/services/OrderService.cs` → `OrderService`); null if undetermined
+- `affected_service` is the top-level service inferred from stack trace file paths; null if undetermined. Examples by language:
+  - .NET: `src/services/OrderService.cs` → `OrderService`
+  - Python: `src/services/order_service.py` → `order_service`
+  - Node.js: `src/services/OrderService.ts` → `OrderService`
+  - Java: `src/main/java/com/example/services/OrderService.java` → `OrderService`
 
 ## Failure Policy
 

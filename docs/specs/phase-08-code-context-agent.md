@@ -2,7 +2,9 @@
 
 ## Goal
 
-Add a **Code Context Agent** as the third node in the LangGraph pipeline. It parses user-code stack frames, fetches the relevant source lines from Azure DevOps Repos, and stores up to five `CodeSnippet` records in `IncidentState`. No LLM is required.
+Add a **Code Context Agent** as the third node in the LangGraph pipeline. It parses user-code stack frames (language-agnostic, reusing the multi-language parser from Phase 7), fetches the relevant source lines from the configured source control provider (Azure DevOps Repos for MVP; GitHub Phase 38+), and stores up to five `CodeSnippet` records in `IncidentState`. No LLM is required.
+
+> **Language scope:** Frame parsing and internal-prefix filtering are language-aware. Source file fetching works for any language since it is purely path-based. The agent handles `.cs`, `.py`, `.js`, `.ts`, `.java`, and any other text file without special-casing.
 
 ---
 

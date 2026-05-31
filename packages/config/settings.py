@@ -51,6 +51,9 @@ class Settings(BaseSettings):
     openai_embedding_model: str = "text-embedding-3-small"
     openai_embedding_deployment: str = ""
     ado_source_path_prefix: str = "src/"
+    # File extension for source code indexing (Phase 36: language-agnostic)
+    # Override per language: .cs (dotnet), .py (python), .ts/.js (nodejs), .java (java)
+    source_file_extension: str = ".cs"
 
     # Azure Monitor
     azure_monitor_workspace_id: str = ""
